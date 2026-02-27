@@ -63,6 +63,7 @@ func TestGetArchive(t *testing.T) {
 
 	require.Equal(t, len(upload.Files), len(z.File), "invalid archive file count")
 	require.Equal(t, file.Name, z.File[0].Name, "invalid archived file name")
+	require.Equal(t, zip.Store, z.File[0].Method, "invalid compression method, must be zip.Store to prevent CPU exhaustion")
 
 	fileReader, err := z.File[0].Open()
 	require.NoError(t, err, "unable to open archived file")
@@ -212,6 +213,7 @@ func TestGetArchiveOneShot(t *testing.T) {
 
 	require.Equal(t, len(upload.Files), len(z.File), "invalid archive file count")
 	require.Equal(t, file.Name, z.File[0].Name, "invalid archived file name")
+	require.Equal(t, zip.Store, z.File[0].Method, "invalid compression method, must be zip.Store to prevent CPU exhaustion")
 
 	fileReader, err := z.File[0].Open()
 	require.NoError(t, err, "unable to open archived file")
