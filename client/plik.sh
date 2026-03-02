@@ -16,7 +16,7 @@ function jsonValue() {
     sed -e "s/,/\n/g" | sed -e "s/[\"{}]//g" | grep $KEY | cut -d ":" -f2-
 }
 
-function qecho(){ 
+function qecho(){
     if [ "$QUIET" == false ]; then echo "$@"; fi
 }
 function generatePassphrase() {
@@ -32,6 +32,23 @@ function setTtl() {
         *)   TTL=$1;;
     esac
     return
+}
+
+function urlencode() {
+    local LANG=C
+    local string="$1"
+    local length=${#string}
+    local encoded=""
+    local c hex
+
+    for (( i=0 ; i<length ; i++ )); do
+        c=${string:$i:1}
+        case "$c" in
+            [a-zA-Z0-9.~_\-/:]) encoded+="$c" ;;
+            *) printf -v hex '%%%02X' "'$c"; encoded+="$hex" ;;
+        esac
+    done
+    echo "$encoded"
 }
 
 #
@@ -173,7 +190,7 @@ do
 
     FILENAME=$FILE
     if [[ "$FILE" == *\/* ]]; then
-        FILENAME=$(basename $FILE)
+        FILENAME=$(basename "$FILE")
     fi
 
     UPLOAD_COMMAND=""
@@ -223,7 +240,8 @@ do
     FILE_URL="$DOWNLOAD_DOMAIN/file/$UPLOAD_ID/$FILE_ID/$FILE_NAME"
 
     # Compute get command
-    COMMAND="curl -s $FILE_URL"
+    ENCODED_URL=$(urlencode "$FILE_URL")
+    COMMAND="curl -s '$ENCODED_URL'"
 
     if [ "$SECURE" == true ]; then
         COMMAND+=" | openssl aes-256-cbc -d -pass \"pass:$PASSPHRASE\""
@@ -232,12 +250,12 @@ do
     if [ "$ARCHIVE" == true ]; then
         COMMAND+=" | tar zxvf -"
     else
-        COMMAND+=" > $FILE_NAME"
+        COMMAND+=" > '$FILE_NAME'"
     fi
 
     # Output
     if [ "$QUIET" == true ]; then
-        echo "$FILE_URL"
+        echo "$ENCODED_URL"
     else
         echo "$COMMAND"
     fi
