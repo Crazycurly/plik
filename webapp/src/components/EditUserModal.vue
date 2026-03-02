@@ -38,7 +38,7 @@ function clampField(field) {
     <div v-if="modelValue"
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
          @mousedown.self="close">
-      <div class="glass-card p-6 max-w-md w-full space-y-5 animate-fade-in max-h-[90vh] overflow-y-auto">
+      <div class="glass-card p-4 sm:p-6 max-w-md w-full space-y-5 animate-fade-in max-h-[90vh] overflow-y-auto">
         <h2 class="text-lg font-semibold text-surface-200">{{ title }}</h2>
 
         <!-- Error -->

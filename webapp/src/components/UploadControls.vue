@@ -36,7 +36,7 @@ const emit = defineEmits(['update:sort-by', 'update:sort-order', 'toggle-filter'
       </div>
     </div>
     <!-- Badge filters -->
-    <div class="flex items-center gap-2 text-surface-400">
+    <div class="flex flex-wrap items-center gap-2 text-surface-400">
         <span>Filter:</span>
         <button @click="emit('toggle-filter', 'oneShot')"
                 :class="badgeFilters.oneShot ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/50' : 'text-surface-500 hover:text-surface-300'"
