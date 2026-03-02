@@ -78,11 +78,11 @@ make docker                 # Build Docker image (rootgg/plik:dev)
 make helm                   # Package Helm chart locally (dry-run)
 make helm-install           # Package and install Helm chart locally
 cd server && ./plikd        # Run server on http://127.0.0.1:8080
+```
 
 #### Pull Request Deployments (GitHub Actions)
 - `docker build` (comment on PR): Builds and pushes image `rootgg/plik:pr-{PR_NUMBER}`
 - `docker deploy` (comment on PR): Deploy PR image to `plik.root.gg` (requires secrets)
-```
 
 ## Test
 

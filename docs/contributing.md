@@ -37,17 +37,32 @@ make client
 ### Running Tests
 
 ```bash
-# Go unit tests
+# Go lint (fmt + vet + fix)
+make lint
+
+# Go unit tests (includes CLI e2e tests)
 make test
 
 # Frontend unit tests (vitest)
 make test-frontend
 
-# Go linter (golangci-lint)
-make lint
+# Frontend E2E tests (Playwright — builds server+frontend, starts fresh plikd)
+make test-frontend-e2e
 
-# Backend integration tests (requires Docker)
+# Backend integration tests (Docker-based — all backends)
 make test-backends
+
+# Test a single backend
+make test-backend postgres
+
+# Vulnerability scan (govulncheck + npm audit)
+make vuln
+
+# Build docs (validates links and dead references)
+make docs
+
+# Regenerate Helm chart README (CI fails if out of date)
+make helm-docs
 ```
 
 ### Running Locally
@@ -66,7 +81,6 @@ The server starts at [http://127.0.0.1:8080](http://127.0.0.1:8080) and serves b
 For frontend development with hot-reload, run the Vite dev server which proxies API calls to the Go backend:
 
 ```bash
-make docs
 cd webapp
 npm install
 npm run dev           # http://localhost:5173
@@ -105,12 +119,14 @@ Your agent should read `AGENTS.md` first, then follow pointers to scoped `ARCHIT
 
 ### Agentic Workflows
 
-Pre-built workflows live in `.agents/workflows/` and can be invoked as slash commands:
+Pre-built workflows live in `.agent/workflows/` and can be invoked as slash commands:
 
 | Command | What it does |
 |---------|-------------|
 | `/review-changes` | Critical self-review of local changes (lint, build, test, code review checklist) |
 | `/prepare-pr` | Full PR preparation pipeline (review → commit → push → draft PR) |
+| `/commit` | Commit and push local changes (with mandatory user review) |
+| `/cut-release` | Cut a new release (changelog, docs, commit, PR, tag, GitHub release) |
 
 ## Code Organization
 

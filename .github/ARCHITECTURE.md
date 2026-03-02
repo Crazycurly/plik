@@ -9,13 +9,14 @@
 ```
 .github/
 ├── workflows/
-│   ├── tests.yaml              ← CI: lint, test, docs build on push/PR
-│   ├── pages.yml               ← Deploy docs to gh-pages
-│   ├── release.yaml            ← Build release archives, Docker images, Helm chart on release
-│   ├── master.yaml             ← Post-merge actions on master
-│   ├── docker-build-pr.yaml    ← Build Docker image on PR (triggered by comment)
-│   └── docker-deploy-pr.yaml   ← Deploy PR image to staging (triggered by comment)
-└── ARCHITECTURE.md             ← this file
+│   ├── tests.yaml                 ← CI: lint, test, docs build on PR
+│   ├── pages.yml                  ← Deploy docs to gh-pages
+│   ├── release.yaml               ← Build release archives, Docker images, Helm chart on release
+│   ├── master.yaml                ← Post-merge actions on master
+│   ├── docker-build-pr.yaml       ← Build Docker image on PR (triggered by comment)
+│   ├── docker-build-reusable.yaml ← Reusable Docker build job (called by build/deploy)
+│   └── docker-deploy-pr.yaml      ← Deploy PR image to staging (triggered by comment)
+└── ARCHITECTURE.md                ← this file
 ```
 
 ---
@@ -24,16 +25,21 @@
 
 ### `tests.yaml` — CI Tests
 
-Runs on every push and pull request. Steps:
-1. Go lint (`make lint`)
-2. Go tests (`make test`)
-3. Frontend tests (`make test-frontend`) — vitest unit tests for the Vue webapp
-4. Docs build (`make docs`) — verifies VitePress builds without errors
-5. Helm docs check (`make helm-docs`) — regenerates chart README and fails if there are uncommitted changes
+Runs on every pull request. Contains 7 parallel jobs:
+
+| Job | What it does |
+|-----|--------------|
+| `test` | Go lint + unit tests (`make lint`, `make test`) + uncommitted changes check + `govulncheck` |
+| `test-frontend` | Webapp unit tests (`make test-frontend` — vitest) |
+| `test-frontend-e2e` | Webapp E2E tests (`make test-frontend-e2e` — Playwright + Chromium) |
+| `test-backends` | Docker-based backend integration tests (`make test-backends`) |
+| `release` | Release build dry-run (`make release` — Docker buildx) |
+| `docs` | VitePress docs build (`make docs` — verifies links and structure) |
+| `helm-docs` | Helm chart README regeneration check (`make helm-docs` — fails if out of date) |
 
 ### `pages.yml` — GitHub Pages (Docs)
 
-Runs on push to `master` when `docs/**` or the workflow itself changes. Deploys VitePress documentation to the `gh-pages` branch via `peaceiris/actions-gh-pages`.
+Runs on push to `master` when `docs/**`, any `ARCHITECTURE.md`, or the workflow itself changes. Deploys VitePress documentation to the `gh-pages` branch via `peaceiris/actions-gh-pages`.
 
 > [!NOTE]
 > The `keep_files: true` flag preserves the Helm `index.yaml` and APT repository (`apt/`) on `gh-pages` (updated by the release workflow).
@@ -59,7 +65,7 @@ Triggered by a `docker build` comment on a PR. Builds a Docker image tagged `roo
 
 ### `docker-deploy-pr.yaml` — PR Docker Deploy
 
-Triggered by a `docker deploy` comment on a PR. Deploys the PR-specific Docker image to the staging instance at `plik.root.gg`. Reports back with a deployment confirmation comment.
+Triggered by a `docker deploy` comment on a PR. Conditionally builds the Docker image via the reusable workflow (if not already built), then deploys it to the staging instance at `plik.root.gg`. Reports back with a deployment confirmation comment.
 
 ---
 

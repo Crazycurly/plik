@@ -28,7 +28,7 @@ features:
     link: /backends/data
   - icon: 🔒
     title: Security First
-    details: Password protection, OneShot downloads, server-side encryption, XSRF protection.
+    details: Password protection, OneShot downloads, end-to-end encryption (age), XSRF protection.
     link: /guide/security
   - icon: 🔑
     title: Flexible Authentication
