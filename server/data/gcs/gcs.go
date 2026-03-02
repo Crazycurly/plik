@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync/atomic"
 
 	"cloud.google.com/go/storage"
 	"github.com/root-gg/utils"
@@ -24,7 +23,6 @@ type gcsReadSeekCloser struct {
 	obj       *storage.ObjectHandle
 	r         *storage.Reader
 	pos, size int64
-	nread     int64 // Read/write with atomic
 }
 
 func newReader(ctx context.Context, obj *storage.ObjectHandle) (*gcsReadSeekCloser, error) {
@@ -56,7 +54,6 @@ func (r *gcsReadSeekCloser) Read(dest []byte) (int, error) {
 	}
 	n, err := r.r.Read(dest)
 	r.pos += int64(n)
-	atomic.AddInt64(&r.nread, int64(n))
 	return n, err
 }
 
@@ -67,7 +64,7 @@ func (r *gcsReadSeekCloser) Seek(offset int64, whence int) (int64, error) {
 	case io.SeekStart:
 		newPos = offset
 	case io.SeekCurrent:
-		newPos += r.pos + offset
+		newPos = r.pos + offset
 	case io.SeekEnd:
 		newPos = r.size + offset
 	default:
@@ -96,12 +93,6 @@ func (r *gcsReadSeekCloser) Close() error {
 	err := r.r.Close()
 	r.r = nil
 	return err
-}
-
-// NRead reports the number of bytes that have been read from Reader.
-// This is safe to call concurrently with Read.
-func (r *gcsReadSeekCloser) NRead() int64 {
-	return atomic.LoadInt64(&r.nread)
 }
 
 // Ensure File Data Backend implements data.Backend interface

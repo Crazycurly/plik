@@ -98,7 +98,7 @@ The `Backend` interface is minimal (3 methods):
 ```go
 type Backend interface {
     AddFile(file *common.File, reader io.Reader) (err error)
-    GetFile(file *common.File) (reader io.ReadCloser, err error)
+    GetFile(file *common.File) (reader io.ReadSeekCloser, err error)
     RemoveFile(file *common.File) (err error)
 }
 ```
@@ -221,7 +221,7 @@ Each handler file contains one or more `http.Handler` functions.
 | `create_upload.go` | `CreateUpload` | Create upload with options, validate config/quotas |
 | `add_file.go` | `AddFile` | Upload file to existing upload (multipart) |
 | `get_upload.go` | `GetUpload` | Return upload metadata |
-| `get_file.go` | `GetFile` | Download file, handle OneShot, extend TTL. E2EE uploads: redirects webapp to download page, forces `application/octet-stream` |
+| `get_file.go` | `GetFile` | Download file, handle OneShot, extend TTL, support HTTP range requests (via `http.ServeContent` for non-stream/non-oneshot). E2EE uploads: redirects webapp to download page, forces `application/octet-stream` |
 | `get_archive.go` | `GetArchive` | Download all files as zip |
 | `remove_file.go` | `RemoveFile` | Mark file as removed |
 | `remove_upload.go` | `RemoveUpload` | Soft-delete upload |

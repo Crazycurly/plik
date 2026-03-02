@@ -221,7 +221,7 @@ When processing a request, limits are resolved via the custom `Context`:
 | POST | `/file/{uploadID}` | `AddFile` | Token | Add file to upload |
 | POST | `/file/{uploadID}/{fileID}/{filename}` | `AddFile` | Token | Add file with known ID (stream mode) |
 | DELETE | `/file/{uploadID}/{fileID}/{filename}` | `RemoveFile` | Token | Remove file |
-| HEAD/GET | `/file/{uploadID}/{fileID}/{filename}` | `GetFile` | Token | Download file |
+| HEAD/GET | `/file/{uploadID}/{fileID}/{filename}` | `GetFile` | Token | Download file (supports HTTP range requests) |
 | POST | `/stream/{uploadID}/{fileID}/{filename}` | `AddFile` | Token | Stream upload |
 | HEAD/GET | `/stream/{uploadID}/{fileID}/{filename}` | `GetFile` | Token | Stream download |
 | HEAD/GET | `/archive/{uploadID}/{filename}` | `GetArchive` | Token | Download as zip |
@@ -371,7 +371,7 @@ Both are disabled by default (`enabled: false`) and fall back to `emptyDir` when
 ```go
 type Backend interface {
     AddFile(file *common.File, reader io.Reader) (err error)
-    GetFile(file *common.File) (reader io.ReadCloser, err error)
+    GetFile(file *common.File) (reader io.ReadSeekCloser, err error)
     RemoveFile(file *common.File) (err error)  // must not fail if file not found
 }
 ```

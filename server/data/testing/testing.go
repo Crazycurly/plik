@@ -12,7 +12,7 @@ import (
 // Ensure Testing Data Backend implements data.Backend interface
 var _ data.Backend = (*Backend)(nil)
 
-// This is like a bytes.Buffer but seekable. We implent io.ReadSeekCloser
+// Buffer is like bytes.Buffer but seekable. Implements io.ReadSeekCloser.
 type Buffer struct {
 	buf []byte
 	off int
@@ -20,8 +20,6 @@ type Buffer struct {
 
 func (b *Buffer) Read(p []byte) (n int, err error) {
 	if len(b.buf) <= b.off {
-		b.buf = b.buf[:0]
-		b.off = 0
 		if len(p) == 0 {
 			return 0, nil
 		}
