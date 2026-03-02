@@ -478,7 +478,7 @@ App.vue
 ├── AppHeader.vue          — top nav bar (Upload, CLI, Source, user/admin links)
 ├── RootView.vue           — switches between Upload/Download based on query.id
 │   ├── UploadView.vue     — file staging, settings, upload execution
-│   │   ├── UploadSidebar  — upload settings (one-shot, stream, TTL, E2EE, etc.)
+│   │   ├── UploadSidebar  — upload settings (one-shot, stream, TTL, E2EE, etc.) with (?) help tooltips
 │   │   ├── FileRow        — individual file display
 │   │   └── CodeEditor     — text paste mode with syntax highlighting
 │   └── DownloadView.vue   — file list, admin actions
@@ -640,8 +640,12 @@ The `style.css` file defines custom utility classes via `@utility` (Tailwind v4 
 | `toggle-switch`    | Toggle switch base                                |
 | `toggle-dot`       | Toggle switch dot (animated)                      |
 | `input-field`      | Styled text input                                 |
-| `sidebar-section`  | Glass-card styled sidebar section                 |
+| `sidebar-section`  | Glass-card styled sidebar section (`overflow: visible` for tooltips) |
 | `file-row`         | Glass-card styled file row with hover effect      |
+| `setting-help`     | Small muted (?) circle icon for setting help      |
+| `setting-tooltip`  | Absolute-positioned tooltip bubble (shown on hover/focus) |
+
+> **Note**: The `.setting-help-wrap` CSS class (not a `@utility`) controls tooltip visibility via `:hover` and `:focus-within`.
 
 > **Gotcha**: These are `@utility` blocks, NOT traditional CSS classes or Tailwind `@apply`. They follow Tailwind v4's custom utility syntax and generate single utility classes.
 

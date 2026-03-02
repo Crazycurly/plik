@@ -345,3 +345,76 @@ test.describe('Header feature flags', () => {
     })
 })
 
+// ── Setting Help Tooltips ─────────────────────────────────────────────────
+
+test.describe('Setting help tooltips', () => {
+    const ALL_FEATURES = {
+        feature_one_shot: 'enabled',
+        feature_stream: 'enabled',
+        feature_removable: 'enabled',
+        feature_e2ee: 'enabled',
+        feature_password: 'enabled',
+        feature_comments: 'enabled',
+        feature_extend_ttl: 'enabled',
+    }
+
+    const TOOLTIP_DATA = [
+        { label: 'Destruct after download', tooltip: 'Files are permanently deleted after they are downloaded once' },
+        { label: 'Streaming', tooltip: 'Files are streamed directly to the downloader without being stored on the server' },
+        { label: 'Removable', tooltip: 'Anyone with the link can delete uploaded files' },
+        { label: 'End-to-End Encryption', tooltip: 'Files are encrypted in the browser before upload' },
+        { label: 'Password', tooltip: 'Protect the upload with HTTP basic authentication credentials' },
+        { label: 'Comment', tooltip: 'Add a Markdown-formatted message to the download page' },
+        { label: 'Extend TTL on access', tooltip: 'Reset the expiration timer each time a file is accessed' },
+    ]
+
+    for (const { label, tooltip } of TOOLTIP_DATA) {
+        test(`${label} has a help icon`, async ({ page, withConfig }) => {
+            await withConfig(ALL_FEATURES)
+            await page.goto('/')
+            await page.waitForLoadState('networkidle')
+
+            // Locate the (?) icon near the label
+            const helpIcon = page.getByText(label, { exact: false }).first()
+                .locator('xpath=..').locator('.setting-help')
+            await expect(helpIcon).toBeVisible()
+            await expect(helpIcon).toHaveText('?')
+        })
+    }
+
+    test('tooltip appears on hover', async ({ page, withConfig }) => {
+        await withConfig(ALL_FEATURES)
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Find the help wrapper near "Destruct after download"
+        const helpWrap = page.getByText('Destruct after download', { exact: false }).first()
+            .locator('xpath=..').locator('.setting-help-wrap')
+        const tooltipEl = helpWrap.locator('.setting-tooltip')
+
+        // Tooltip should be hidden initially (opacity 0)
+        await expect(tooltipEl).toBeAttached()
+
+        // Hover over the (?) icon
+        await helpWrap.locator('.setting-help').hover()
+
+        // Tooltip should now be visible
+        await expect(tooltipEl).toHaveCSS('opacity', '1')
+        await expect(tooltipEl).toContainText('Files are permanently deleted after they are downloaded once')
+    })
+
+    test('tooltip appears on keyboard focus', async ({ page, withConfig }) => {
+        await withConfig(ALL_FEATURES)
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Focus the help icon via keyboard (it has tabindex=0)
+        const helpIcon = page.getByText('Destruct after download', { exact: false }).first()
+            .locator('xpath=..').locator('.setting-help')
+        await helpIcon.focus()
+
+        // Tooltip should be visible via :focus-within
+        const tooltipEl = helpIcon.locator('xpath=..').locator('.setting-tooltip')
+        await expect(tooltipEl).toHaveCSS('opacity', '1')
+    })
+})
