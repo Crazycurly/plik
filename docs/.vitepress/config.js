@@ -20,7 +20,7 @@ export default withMermaid(defineConfig({
                 {
                     text: 'Guide',
                     items: [
-                        { text: 'Getting Started', link: '/guide/getting-started' },
+                        { text: 'Installation', link: '/guide/installation' },
                         { text: 'Configuration', link: '/guide/configuration' },
                         { text: 'Docker Deployment', link: '/guide/docker' },
                         { text: 'Kubernetes (Helm)', link: '/guide/kubernetes' },

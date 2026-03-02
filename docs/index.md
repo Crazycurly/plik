@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: Documentation
-      link: /guide/getting-started
+      link: /guide/installation
     - theme: alt
       text: View on GitHub
       link: https://github.com/root-gg/plik
