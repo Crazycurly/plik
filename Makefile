@@ -126,6 +126,21 @@ test-frontend-e2e: frontend server
 	@cd webapp && npx playwright test $(if $(HEADED),--headed)
 
 ###
+# Run bash client tests (unit + e2e against a temporary server)
+###
+test-bash-client: server
+	@echo "Running bash client unit tests..."
+	@bash client/plik_bash_test.sh --unit
+	@echo ""
+	@echo "Starting plik server for integration tests..."
+	@cd server && ./plikd > /dev/null 2>&1 &
+	@sleep 2
+	@echo "Running bash client integration tests..."
+	@bash client/plik_bash_test.sh; EXIT=$$?; \
+		kill $$(lsof -ti:8080) 2>/dev/null || true; \
+		exit $$EXIT
+
+###
 # Open last cover profile in web browser
 ###
 cover:
@@ -282,4 +297,4 @@ deb-publish:
 # by make, we must declare these targets as phony to avoid :
 # "make: `client' is up to date" cases at compile time
 ###
-.PHONY: client clients server release helm helm-docs helm-install deb deb-publish docs test-backend test-frontend test-frontend-e2e
+.PHONY: client clients server release helm helm-docs helm-install deb deb-publish docs test-backend test-bash-client test-frontend test-frontend-e2e

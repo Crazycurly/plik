@@ -39,6 +39,24 @@ jobs:
     - name: Run vulnerability check (report only)
       run: make vuln || true
 
+  test-bash-client:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+
+    - name: Fetch tags
+      run: git fetch --prune --unshallow --tags
+
+    - name: Run bash client tests (unit + e2e)
+      run: make test-bash-client
+
   test-frontend:
     runs-on: ubuntu-latest
     steps:
