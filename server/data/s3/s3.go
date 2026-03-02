@@ -113,7 +113,7 @@ func NewBackend(config *Config) (b *Backend, err error) {
 }
 
 // GetFile implementation for S3 Data Backend
-func (b *Backend) GetFile(file *common.File) (reader io.ReadCloser, err error) {
+func (b *Backend) GetFile(file *common.File) (reader io.ReadSeekCloser, err error) {
 	getOpts := minio.GetObjectOptions{}
 
 	// Configure server side encryption

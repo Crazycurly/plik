@@ -19,6 +19,8 @@ func TestGetFileURL(t *testing.T) {
 	require.NoError(t, err, "unable to start plik server")
 
 	data := "data data data"
+	dataBytes := []byte(data)
+
 	upload, file, err := pc.UploadReader("filename", bytes.NewBufferString(data))
 	require.NoError(t, err, "unable to upload file")
 	require.Len(t, upload.Files(), 1, "invalid files count")
@@ -35,8 +37,31 @@ func TestGetFileURL(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err, "unable to read response body")
-
 	require.Equal(t, data, string(body), "invalid file content")
+
+	req, err = http.NewRequest("GET", fileURL.String(), &bytes.Buffer{})
+	require.NoError(t, err, "unable to create request")
+
+	req.Header.Add("Range", "bytes=0-7")
+	resp, err = pc.HTTPClient.Do(req)
+	require.NoError(t, err, "unable to execute request")
+	require.Equal(t, http.StatusPartialContent, resp.StatusCode, "invalid response status code")
+
+	body, err = io.ReadAll(resp.Body)
+	require.NoError(t, err, "unable to read response body")
+	require.Equal(t, dataBytes[0:8], body, "invalid file content")
+
+	req, err = http.NewRequest("GET", fileURL.String(), &bytes.Buffer{})
+	require.NoError(t, err, "unable to create request")
+
+	req.Header.Add("Range", "bytes=7-14")
+	resp, err = pc.HTTPClient.Do(req)
+	require.NoError(t, err, "unable to execute request")
+	require.Equal(t, http.StatusPartialContent, resp.StatusCode, "invalid response status code")
+
+	body, err = io.ReadAll(resp.Body)
+	require.NoError(t, err, "unable to read response body")
+	require.Equal(t, dataBytes[7:], body, "invalid file content")
 }
 
 func TestNotUploadedGetFileURL(t *testing.T) {

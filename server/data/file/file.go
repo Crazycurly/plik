@@ -44,7 +44,7 @@ func NewBackend(config *Config) (b *Backend) {
 
 // GetFile implementation for file data backend will search
 // on filesystem the asked file and return its reading filehandle
-func (b *Backend) GetFile(file *common.File) (reader io.ReadCloser, err error) {
+func (b *Backend) GetFile(file *common.File) (reader io.ReadSeekCloser, err error) {
 	_, path, err := b.getPathCompat(file)
 	if err != nil {
 		return nil, err

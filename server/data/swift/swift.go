@@ -45,21 +45,15 @@ func NewBackend(config *Config) (b *Backend) {
 }
 
 // GetFile implementation for Swift Data Backend
-func (b *Backend) GetFile(file *common.File) (reader io.ReadCloser, err error) {
+func (b *Backend) GetFile(file *common.File) (reader io.ReadSeekCloser, err error) {
 	err = b.auth()
 	if err != nil {
 		return nil, err
 	}
 
-	reader, pipeWriter := io.Pipe()
 	objectID := objectID(file)
-	go func() {
-		_, e := b.connection.ObjectGet(b.config.Container, objectID, pipeWriter, true, nil)
-		defer func() { _ = pipeWriter.CloseWithError(e) }()
-	}()
-
-	// This does only very basic checking and basically always return nil, error will happen when reading from the reader
-	return reader, nil
+	reader, _, err = b.connection.ObjectOpen(b.config.Container, objectID, true, nil)
+	return reader, err
 }
 
 // AddFile implementation for Swift Data Backend

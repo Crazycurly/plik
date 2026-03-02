@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/root-gg/plik/server/common"
 	"github.com/root-gg/plik/server/context"
@@ -103,10 +104,6 @@ func GetFile(ctx *context.Context, resp http.ResponseWriter, req *http.Request) 
 		resp.Header().Set("Expires", "0")                                         // Proxies
 	}
 
-	if file.Size > 0 && !upload.Stream {
-		resp.Header().Set("Content-Length", strconv.FormatInt(file.Size, 10))
-	}
-
 	// If "dl" GET params is set
 	// -> Set Content-Disposition header
 	// -> The client should download file instead of displaying it
@@ -119,26 +116,42 @@ func GetFile(ctx *context.Context, resp http.ResponseWriter, req *http.Request) 
 
 	// HEAD Request => Do not print file, user just wants http headers
 	// GET  Request => Print file content
-	if req.Method == "GET" {
-		// Get file in data backend
-		var backend data.Backend
-		if upload.Stream {
-			backend = ctx.GetStreamBackend()
-		} else {
-			backend = ctx.GetDataBackend()
-		}
-
+	if !upload.Stream && !upload.OneShot {
+		backend := ctx.GetDataBackend()
 		fileReader, err := backend.GetFile(file)
 		if err != nil {
 			ctx.InternalServerError("unable to get file from data backend", err)
 			return
 		}
 		defer func() { _ = fileReader.Close() }()
+		http.ServeContent(resp, req, file.Name, time.Time{}, fileReader)
+	} else {
+		// Set content length otherwise handled by http.ServeContent
+		if file.Size > 0 && !upload.Stream {
+			resp.Header().Set("Content-Length", strconv.FormatInt(file.Size, 10))
+		}
 
-		// File is piped directly to http response body without buffering
-		_, err = io.Copy(resp, fileReader)
-		if err != nil {
-			log.Warningf("error while copying file to response : %s", err)
+		if req.Method == "GET" {
+			// Get file in data backend
+			var backend data.Backend
+			if upload.Stream {
+				backend = ctx.GetStreamBackend()
+			} else {
+				backend = ctx.GetDataBackend()
+			}
+
+			fileReader, err := backend.GetFile(file)
+			if err != nil {
+				ctx.InternalServerError("unable to get file from data backend", err)
+				return
+			}
+			defer func() { _ = fileReader.Close() }()
+
+			// File is piped directly to http response body without buffering
+			_, err = io.Copy(resp, fileReader)
+			if err != nil {
+				log.Warningf("error while copying file to response : %s", err)
+			}
 		}
 	}
 
