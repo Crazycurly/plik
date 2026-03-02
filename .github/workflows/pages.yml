@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - "docs/**"
+      - "**/ARCHITECTURE.md"
       - ".github/workflows/pages.yml"
 
 permissions:

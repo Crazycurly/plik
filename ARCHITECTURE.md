@@ -435,7 +435,7 @@ docs/
 ```
 
 - **Build**: `make docs` (or `cd docs && npm run dev` for local dev server)
-- **Deploy**: Automated via `.github/workflows/pages.yml` on push to `master` (also publishes the Helm chart via chart-releaser)
+- **Deploy**: Automated via `.github/workflows/pages.yml` on push to `master` when `docs/**` or any `ARCHITECTURE.md` changes
 - **CI**: Build is verified on every push/PR via `.github/workflows/tests.yaml`. Automated docker build (`docker build` comment) and deploy (`docker deploy` comment) are available on PRs.
 
 **Build pipeline** (`make docs`):
