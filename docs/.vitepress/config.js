@@ -34,9 +34,9 @@ export default withMermaid(defineConfig({
                         { text: 'CLI', link: '/features/cli-client' },
                         { text: 'Web UI', link: '/features/web-ui' },
                         { text: 'Authentication', link: '/features/authentication' },
+                        { text: 'Encryption', link: '/features/encryption' },
                         { text: 'Streaming', link: '/features/streaming' },
                         { text: 'MCP Server', link: '/features/mcp' },
-                        { text: 'Encryption', link: '/features/encryption' },
                     ],
                 },
                 {
