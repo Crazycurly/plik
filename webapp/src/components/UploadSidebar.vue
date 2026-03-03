@@ -119,7 +119,7 @@ const hasAnySettings = computed(() =>
 <template>
   <aside v-if="hasAnySettings" class="w-full md:w-80 md:shrink-0 p-4 space-y-3 animate-slide-in">
     <!-- Upload Settings -->
-    <div class="sidebar-section">
+    <div class="sidebar-section relative z-10">
       <h3 class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Upload Settings</h3>
 
       <!-- One Shot -->
@@ -132,6 +132,10 @@ const hasAnySettings = computed(() =>
             <path stroke-linecap="round" stroke-width="2" d="M14 9l2-2" />
           </svg>
           Destruct after download
+          <span class="setting-help-wrap relative" @click.prevent.stop>
+            <span class="setting-help" tabindex="0" role="button" aria-label="Help">?</span>
+            <span class="setting-tooltip">Files are permanently deleted after they are downloaded once</span>
+          </span>
         </span>
         <button type="button"
                 class="toggle-switch"
@@ -150,6 +154,10 @@ const hasAnySettings = computed(() =>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728M9.172 15.828a5 5 0 010-7.072m5.656 0a5 5 0 010 7.072M12 12h.01" />
           </svg>
           Streaming
+          <span class="setting-help-wrap relative" @click.prevent.stop>
+            <span class="setting-help" tabindex="0" role="button" aria-label="Help">?</span>
+            <span class="setting-tooltip">Files are streamed directly to the downloader without being stored on the server</span>
+          </span>
         </span>
         <button type="button"
                 class="toggle-switch"
@@ -168,6 +176,10 @@ const hasAnySettings = computed(() =>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
           Removable
+          <span class="setting-help-wrap relative" @click.prevent.stop>
+            <span class="setting-help" tabindex="0" role="button" aria-label="Help">?</span>
+            <span class="setting-tooltip">Anyone with the link can delete uploaded files</span>
+          </span>
         </span>
         <button type="button"
                 class="toggle-switch"
@@ -187,6 +199,10 @@ const hasAnySettings = computed(() =>
                     d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
             End-to-End Encryption
+            <span class="setting-help-wrap relative" @click.prevent.stop>
+              <span class="setting-help" tabindex="0" role="button" aria-label="Help">?</span>
+              <span class="setting-tooltip">Files are encrypted in the browser before upload — only someone with the passphrase can decrypt them</span>
+            </span>
           </span>
           <button type="button"
                   class="toggle-switch"
@@ -228,6 +244,10 @@ const hasAnySettings = computed(() =>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
             Password
+            <span class="setting-help-wrap relative" @click.prevent.stop>
+              <span class="setting-help" tabindex="0" role="button" aria-label="Help">?</span>
+              <span class="setting-tooltip">Protect the upload with HTTP basic authentication credentials</span>
+            </span>
           </span>
           <button type="button"
                   class="toggle-switch"
@@ -273,6 +293,10 @@ const hasAnySettings = computed(() =>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
           </svg>
           Comment
+          <span class="setting-help-wrap relative" @click.prevent.stop>
+            <span class="setting-help" tabindex="0" role="button" aria-label="Help">?</span>
+            <span class="setting-tooltip">Add a Markdown-formatted message to the download page</span>
+          </span>
         </span>
         <button type="button"
                 class="toggle-switch"
@@ -291,6 +315,10 @@ const hasAnySettings = computed(() =>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
           Extend TTL on access
+          <span class="setting-help-wrap relative" @click.prevent.stop>
+            <span class="setting-help" tabindex="0" role="button" aria-label="Help">?</span>
+            <span class="setting-tooltip">Reset the expiration timer each time a file is accessed</span>
+          </span>
         </span>
         <button type="button"
                 class="toggle-switch"
@@ -314,6 +342,10 @@ const hasAnySettings = computed(() =>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" />
           </svg>
           Never expires
+          <span class="setting-help-wrap relative" @click.prevent.stop>
+            <span class="setting-help" tabindex="0" role="button" aria-label="Help">?</span>
+            <span class="setting-tooltip">The upload will never be automatically deleted</span>
+          </span>
         </span>
         <button type="button"
                 class="toggle-switch"
