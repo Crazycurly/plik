@@ -5,10 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4-RC5]
+## [1.4.0]
 
 ### Added
+- `PlikDomain` config value for OAuth redirects, CORS, and download domain redirects
 - `helm-docs` annotations in `values.yaml` and generated chart `README.md`
+
+## [1.4-RC5]
+
+No Helm chart changes in this release.
 
 ## [1.4-RC4] — Initial Release
 
