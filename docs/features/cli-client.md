@@ -29,20 +29,6 @@ Available platforms: `linux-amd64`, `linux-386`, `linux-arm`, `linux-arm64`, `da
 
 Any running Plik instance serves its client binaries through the web interface. Navigate to your Plik server and download the client for your platform.
 
-### Bash Client
-
-A lightweight bash client (`plik.sh`) is also available for environments where you can't install a Go binary. It requires only `curl`, `openssl`, and standard POSIX tools:
-
-```bash
-# Download from GitHub releases
-wget https://github.com/root-gg/plik/releases/download/__VERSION__/plik-__VERSION__.sh
-chmod +x plik-__VERSION__.sh
-sudo mv plik-__VERSION__.sh /usr/local/bin/plik
-
-# Or grab it from a running Plik server
-curl -o plik https://your-plik-server/clients/bash/plik.sh
-chmod +x plik
-```
 
 ## Usage
 
@@ -228,3 +214,17 @@ alias pshot="scrot -s -e 'plik -q \$f | xclip ; xclip -o ; rm \$f'"
 
 Upload files to Plik directly from the Windows Explorer right-click menu. See the [dedicated guide](/guide/windows-send-to) for step-by-step instructions.
 
+## Bash Client (Lightweight Alternative)
+
+A minimal bash client (`plik.sh`) is available for environments where installing a Go binary is not practical. It requires only `bash`, `curl`, and optionally `openssl`.
+
+```bash
+# From a running Plik server
+curl -o plik.sh https://your-plik-server/clients/bash/plik.sh
+chmod +x plik.sh
+
+# Or from GitHub releases
+wget https://github.com/root-gg/plik/releases/download/__VERSION__/plik-__VERSION__.sh
+```
+
+Run `plik.sh -h` for the full list of supported options. The bash client supports most upload features (oneshot, removable, stream, TTL, comments, basic auth, encryption) but does not support STDIN piping, JSON output, auto-update, browser login, or age/PGP encryption.
