@@ -35,12 +35,14 @@ Authentication: session cookie or `X-PlikToken` header.
 ```json
 {
     "ttl": 86400,
+    "extend_ttl": false,
     "oneShot": false,
     "removable": true,
     "stream": false,
     "login": "foo",
     "password": "bar",
-    "comments": "optional markdown"
+    "comments": "optional markdown",
+    "e2ee": "age"
 }
 ```
 
@@ -62,6 +64,8 @@ Send as `multipart/form-data` with `file` field. The `X-UploadToken` header is r
 
 The upload token is not required for public uploads. For password-protected uploads, provide HTTP Basic auth with the upload's login/password.
 
+HTTP Range requests (`Range` header) are supported on file downloads, allowing partial content retrieval (206 responses).
+
 ## Authentication Endpoints
 
 | Method | Path | Description |
@@ -73,6 +77,9 @@ The upload token is not required for public uploads. For password-protected uplo
 | `GET` | `/auth/oidc/login` | Get OIDC consent URL |
 | `GET` | `/auth/oidc/callback` | OIDC callback |
 | `POST` | `/auth/local/login` | Login `{ "login": "...", "password": "..." }` |
+| `POST` | `/auth/cli/init` | Start CLI auth session `{ "hostname": "..." }` |
+| `POST` | `/auth/cli/approve` | Approve CLI session `{ "code": "...", "comment": "..." }` |
+| `POST` | `/auth/cli/poll` | Poll CLI session `{ "code": "...", "secret": "..." }` |
 | `GET` | `/auth/logout` | Logout |
 
 ## User Endpoints
@@ -86,7 +93,7 @@ Requires authenticated session cookie.
 | `GET` | `/me/token` | List tokens (paginated) |
 | `POST` | `/me/token` | Create upload token `{ "comment": "..." }` |
 | `DELETE` | `/me/token/{token}` | Revoke token |
-| `GET` | `/me/uploads` | List uploads (paginated) |
+| `GET` | `/me/uploads` | List uploads (paginated, filterable) |
 | `DELETE` | `/me/uploads` | Remove all uploads |
 | `GET` | `/me/stats` | User statistics |
 
@@ -101,16 +108,55 @@ Requires admin session cookie.
 | `POST` | `/user/{userID}` | Update user |
 | `DELETE` | `/user/{userID}` | Delete user |
 | `GET` | `/stats` | Server statistics |
-| `GET` | `/users` | List all users (paginated) |
-| `GET` | `/uploads` | List all uploads (paginated) |
+| `GET` | `/users` | List all users (paginated, filterable) |
+| `GET` | `/users/search?q=...` | Search users (optional: `provider`, `admin`, `limit`) |
+| `GET` | `/uploads` | List all uploads (paginated, filterable) |
 
 ## Pagination
 
-Paginated endpoints accept these query parameters:
+Paginated endpoints use **cursor-based** pagination. Parameters can be passed as query strings or as a JSON object in the `X-Plik-Paging` header.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `offset` | `0` | Skip N results |
-| `limit` | `50` | Max results per page |
+| `limit` | `20` | Max results per page |
 | `order` | `desc` | Sort order (`asc`/`desc`) |
-| `sort` | `createdAt` | Sort field |
+| `before` | | Cursor: fetch items before this ID |
+| `after` | | Cursor: fetch items after this ID |
+
+Paginated responses use this envelope:
+
+```json
+{
+    "before": "cursor-id-for-previous-page",
+    "after": "cursor-id-for-next-page",
+    "total": 142,
+    "results": [...]
+}
+```
+
+Pass the `after` value as the `after` query parameter to fetch the next page. Pass `before` to go backwards. A `null` cursor means there are no more pages in that direction.
+
+## Upload Filters
+
+Upload listing endpoints (`/me/uploads`, `/uploads`) accept these optional query parameters:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sort` | `string` | `size` to sort by total upload size (default: `createdAt`) |
+| `user` | `string` | Filter by user ID (admin only) |
+| `token` | `string` | Filter by upload token (admin only) |
+| `oneShot` | `bool` | Filter one-shot uploads |
+| `removable` | `bool` | Filter removable uploads |
+| `stream` | `bool` | Filter stream uploads |
+| `extendTTL` | `bool` | Filter extend-TTL uploads |
+| `password` | `bool` | Filter password-protected uploads |
+| `e2ee` | `bool` | Filter end-to-end encrypted uploads |
+
+## User Filters
+
+User listing endpoints (`/users`) accept:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `provider` | `string` | Filter by auth provider (e.g. `google`, `ovh`, `oidc`, `local`) |
+| `admin` | `bool` | Filter admin/non-admin users |
