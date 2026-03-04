@@ -22,6 +22,9 @@ Edit `settings.json` to change the app name, background, and overlay. The file u
   // Title displayed in the header logo and browser tab
   "name": "Plik",
 
+  // Path to a logo image (e.g. "/img/logo.png"). When set, replaces the text logo.
+  "logo": "",
+
   // Background image path (e.g. "/img/background.jpg")
   "backgroundImage": "",
 

@@ -17,14 +17,16 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
     <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
       <!-- Logo (centered over sidebar width) -->
       <router-link to="/" class="hidden md:flex items-center justify-center w-72 shrink-0 group">
-        <span class="plik-logo-text text-2xl font-bold italic text-accent-400 tracking-tight
+        <img v-if="settings.logo" :src="settings.logo" :alt="settings.name" class="plik-logo-img h-8" />
+        <span v-else class="plik-logo-text text-2xl font-bold italic text-accent-400 tracking-tight
                      group-hover:text-accent-300 transition-colors duration-200">
           {{ settings.name }}
         </span>
       </router-link>
       <router-link to="/" class="md:hidden flex items-center gap-2 group"
                    @click="mobileOpen = false">
-        <span class="plik-logo-text text-2xl font-bold italic text-accent-400 tracking-tight
+        <img v-if="settings.logo" :src="settings.logo" :alt="settings.name" class="plik-logo-img h-8" />
+        <span v-else class="plik-logo-text text-2xl font-bold italic text-accent-400 tracking-tight
                      group-hover:text-accent-300 transition-colors duration-200">
           {{ settings.name }}
         </span>

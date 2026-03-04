@@ -8,6 +8,7 @@ import { reactive } from 'vue'
 // if settings.json is missing or fails to load.
 export const settings = reactive({
     name: '',
+    logo: '',
     backgroundImage: '',
     backgroundColor: '',
     overlayOpacity: 0,

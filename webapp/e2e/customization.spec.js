@@ -57,6 +57,59 @@ test.describe('Customization — settings.json', () => {
         // Page title should be empty
         await expect(page).toHaveTitle('')
     })
+
+    test('default settings: no logo image rendered', async ({ page }) => {
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // No <img> logo should be present
+        await expect(page.locator('.plik-logo-img')).toHaveCount(0)
+
+        // Text logo should be visible
+        const logo = page.locator('.plik-logo-text').first()
+        await expect(logo).toBeVisible()
+    })
+
+    test('custom logo image via settings.json override', async ({ page }) => {
+        await page.route('**/settings.json', async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    name: 'MyApp',
+                    logo: '/img/test-logo.png',
+                }),
+            })
+        })
+
+        // Serve a 1x1 transparent PNG so the <img> loads
+        await page.route('**/img/test-logo.png', async (route) => {
+            const pixel = Buffer.from(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAAlwSFlzAAAWJQAAFiUBSVIk8AAAAA0lEQVQI12P4z8BQDwAEgAF/QualzQAAAABJRU5ErkJggg==',
+                'base64'
+            )
+            await route.fulfill({
+                status: 200,
+                contentType: 'image/png',
+                body: pixel,
+            })
+        })
+
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Image logo should be rendered
+        const img = page.locator('.plik-logo-img').first()
+        await expect(img).toBeVisible()
+        await expect(img).toHaveAttribute('src', '/img/test-logo.png')
+        await expect(img).toHaveAttribute('alt', 'MyApp')
+
+        // Text logo should NOT be rendered
+        await expect(page.locator('.plik-logo-text')).toHaveCount(0)
+
+        // Page title should still use the name
+        await expect(page).toHaveTitle('MyApp')
+    })
 })
 
 test.describe('Customization — custom CSS', () => {

@@ -414,6 +414,7 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 | Field | Type | Default | Purpose |
 |-------|------|---------|--------|
 | `name` | string | `"Plik"` | Logo text and page title |
+| `logo` | string | `""` | Logo image path (replaces text when set) |
 | `backgroundImage` | string | `""` | Background image path |
 | `backgroundColor` | string | `""` | Fallback background color |
 | `overlayOpacity` | number | `0.2` | Dark overlay over background |

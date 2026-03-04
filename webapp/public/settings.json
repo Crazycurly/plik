@@ -2,6 +2,9 @@
   // Title displayed in the header logo and browser tab
   "name": "Plik",
 
+  // Path to a logo image (e.g. "/img/logo.png"). When set, replaces the text logo.
+  "logo": "",
+
   // Background image path (relative to webapp root, e.g. "/img/background.jpg")
   "backgroundImage": "",
 
