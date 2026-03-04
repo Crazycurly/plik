@@ -87,7 +87,7 @@ The router's `beforeEach` guard enforces authentication in three layers (checked
 
 CLI auth approval (`to.name === 'cli-auth'`) always requires authentication regardless of auth mode.
 
-> **Gotcha**: In `main.js`, `app.use(router)` is called inside the `Promise.all([loadConfig(), checkSession()]).then(...)` callback, NOT before it. This is critical because the router's navigation guards rely on `config.feature_authentication` being loaded. Installing the router before config loads would cause the forced-auth guard to see the default value (`"disabled"`) instead of the server-configured value.
+> **Gotcha**: In `main.js`, `app.use(router)` is called inside the `Promise.all([loadConfig(), loadSettings(), checkSession()]).then(...)` callback, NOT before it. This is critical because the router's navigation guards rely on `config.feature_authentication` being loaded, and the UI needs settings (name, background, custom CSS/JS) resolved before rendering. Installing the router before these load would cause the forced-auth guard to see default values and the UI to flash with empty branding.
 
 **Redirect preservation**: When the guard redirects to login, it saves the intended destination to `sessionStorage` (`plik-auth-redirect` key) instead of a URL query parameter. This is necessary because OAuth flows do a full-page round-trip through an external provider (Google, OIDC, OVH), and the server callback redirects back to `/#/login` — any hash-fragment query params would be lost during this round-trip. Using sessionStorage solves this uniformly for all auth methods (local login and OAuth).
 
@@ -404,6 +404,27 @@ The `GET /config` response also includes:
 | `oidcProviderName` | Display name for OIDC button (e.g. `"Keycloak"`, defaults to `"OpenID"`) |
 | `downloadDomain` | Alternate domain for download URLs (set in `api.js` via `setDownloadDomain`) |
 | `abuseContact` | Abuse contact email → displayed in global footer (`App.vue`) |
+
+---
+
+## Webapp Settings (`settings.js`)
+
+The webapp loads instance-level settings from `/settings.json` at startup (JSONC — `//` comments are stripped before parsing). This is separate from the server `/config` endpoint and lives in `webapp/public/settings.json`.
+
+| Field | Type | Default | Purpose |
+|-------|------|---------|--------|
+| `name` | string | `"Plik"` | Logo text and page title |
+| `backgroundImage` | string | `""` | Background image path |
+| `backgroundColor` | string | `""` | Fallback background color |
+| `overlayOpacity` | number | `0.2` | Dark overlay over background |
+| `customCSS` | string | `""` | Path to custom CSS (injected if non-empty) |
+| `customJS` | string | `""` | Path to custom JS (injected if non-empty) |
+
+**White-label safety**: The JS defaults are all empty (name = `''`). Only the shipped `settings.json` provides `"Plik"`. If the file is missing or fails to load, no branding leaks.
+
+**Custom asset injection**: `loadSettings()` conditionally injects `<link>` and `<script>` tags if `customCSS`/`customJS` paths are set. Injection happens before Vue mounts (inside the `Promise.all` in `main.js`), so there's no flash of unstyled content.
+
+**CSS hook**: Logo `<span>` elements in `AppHeader.vue` have the class `plik-logo-text` for targeting via custom CSS.
 
 ---
 
@@ -775,6 +796,7 @@ Tests live in `webapp/e2e/` and cover core flows:
 | `qrcode.spec.js` | QR code modal |
 | `retry.spec.js` | Upload failure/retry, cancel |
 | `streaming.spec.js` | Stream upload, URL path, hidden actions |
+| `customization.spec.js` | Runtime settings.json override, custom CSS/JS injection, white-label fallback |
 
 **Server lifecycle**: Playwright's `webServer` launches `e2e/start-server.sh` which creates a fresh temp directory with clean SQLite DB + data backend, seeds an admin user, and starts `plikd`. The `globalTeardown` cleans up after the suite.
 

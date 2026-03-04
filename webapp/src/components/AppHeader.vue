@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { config, isFeatureEnabled } from '../config.js'
 import { auth, clearImpersonate } from '../authStore.js'
-import { branding } from '../branding.js'
+import { settings } from '../settings.js'
 
 const route = useRoute()
 const mobileOpen = ref(false)
@@ -17,16 +17,16 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
     <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
       <!-- Logo (centered over sidebar width) -->
       <router-link to="/" class="hidden md:flex items-center justify-center w-72 shrink-0 group">
-        <span class="text-2xl font-bold italic text-accent-400 tracking-tight
+        <span class="plik-logo-text text-2xl font-bold italic text-accent-400 tracking-tight
                      group-hover:text-accent-300 transition-colors duration-200">
-          {{ branding.name }}
+          {{ settings.name }}
         </span>
       </router-link>
       <router-link to="/" class="md:hidden flex items-center gap-2 group"
                    @click="mobileOpen = false">
-        <span class="text-2xl font-bold italic text-accent-400 tracking-tight
+        <span class="plik-logo-text text-2xl font-bold italic text-accent-400 tracking-tight
                      group-hover:text-accent-300 transition-colors duration-200">
-          {{ branding.name }}
+          {{ settings.name }}
         </span>
       </router-link>
 

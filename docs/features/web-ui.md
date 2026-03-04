@@ -11,22 +11,46 @@ Plik serves a web interface on the same port as the API by default.
 
 ## Customization
 
-The web interface can be customized:
+Place or volume-mount files into the webapp root (`server/webapp/dist/`, or `/home/plik/server/webapp/dist/` in Docker). Changes take effect on next page load — no rebuild required.
 
-| File | Purpose |
-|------|---------|
-| `js/custom.js` | Change the page title |
-| `css/custom.css` | Override styles (use `!important`) |
-| `img/background.jpg` | Custom background image |
-| `favicon.ico` | Custom favicon |
+### Settings
 
-### Docker Customization
+Edit `settings.json` to change the app name, background, and overlay. The file uses JSONC (supports `//` comments):
 
-When running in Docker, files are at `/home/plik/webapp/dist`:
+```jsonc
+{
+  // Title displayed in the header logo and browser tab
+  "name": "Plik",
+
+  // Background image path (e.g. "/img/background.jpg")
+  "backgroundImage": "",
+
+  // Fallback background color (CSS value, e.g. "#1a1a2e")
+  "backgroundColor": "",
+
+  // Overlay opacity (0–1) — darkens the background for readability
+  "overlayOpacity": 0.2,
+
+  // Path to a custom CSS file (e.g. "/css/custom.css")
+  "customCSS": "",
+
+  // Path to a custom JavaScript file (e.g. "/js/custom.js")
+  "customJS": ""
+}
+```
+
+Custom CSS and JS are loaded only when their path is set (empty = disabled, no extra HTTP requests).
+
+To use a background image, place it at `img/background.jpg` and set `"backgroundImage": "/img/background.jpg"`.
+
+To change the favicon, replace `favicon.ico`.
+
+### Docker Example
 
 ```bash
 docker run -p 8080:8080 \
-  -v my_background.jpg:/home/plik/webapp/dist/img/background.jpg \
+  -v ./settings.json:/home/plik/server/webapp/dist/settings.json:ro \
+  -v ./custom.css:/home/plik/server/webapp/dist/css/custom.css:ro \
   rootgg/plik
 ```
 
@@ -39,6 +63,7 @@ The web interface includes an inline file viewer for text files (code, logs, mar
 - **Auto-display**: If an upload contains only one viewable file, the viewer is displayed by default.
 - **Syntax Highlighting**: Automatic detection of hundreds of languages.
 - **JSON Formatting**: Pretty-print and validation buttons for JSON files.
+- **Markdown Preview**: Rendered HTML preview with Code/Preview tabs.
 - **Image Preview**: Inline display for all image types (`image/*`).
 - **Video Playback**: Native HTML5 player with controls for video files (`video/*`).
 - **Audio Playback**: Native HTML5 player with controls for audio files (`audio/*`).
