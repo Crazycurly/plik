@@ -295,9 +295,28 @@ export function isImageFile(file) {
 }
 
 /**
- * Determine if a file can be previewed inline (text or image).
- * Combines isTextFile and isImageFile for a single viewability check.
+ * Determine if a file is a video (playable inline via native <video>).
+ * Checks that the MIME type starts with video/.
+ * No size limit — browsers handle streaming playback natively.
+ */
+export function isVideoFile(file) {
+    const mime = (file.fileType || '').toLowerCase()
+    return mime.startsWith('video/')
+}
+
+/**
+ * Determine if a file is audio (playable inline via native <audio>).
+ * Checks that the MIME type starts with audio/.
+ */
+export function isAudioFile(file) {
+    const mime = (file.fileType || '').toLowerCase()
+    return mime.startsWith('audio/')
+}
+
+/**
+ * Determine if a file can be previewed inline (text, image, video, or audio).
+ * Combines detection helpers for a single viewability check.
  */
 export function isViewableFile(file) {
-    return isTextFile(file) || isImageFile(file)
+    return isTextFile(file) || isImageFile(file) || isVideoFile(file) || isAudioFile(file)
 }
