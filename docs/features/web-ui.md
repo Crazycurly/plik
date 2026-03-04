@@ -25,7 +25,8 @@ Edit `settings.json` to change the app name, background, and overlay. The file u
   // Path to a logo image (e.g. "/img/logo.png"). When set, replaces the text logo.
   "logo": "",
 
-  // Theme: "dark", "light", or "auto" (follows user's OS preference)
+  // Theme: "dark", "light", "auto" (OS preference), or a custom theme name
+  // matching a CSS file in the themes/ directory (e.g. "solarized-dark")
   "theme": "auto",
 
   // Background image path (e.g. "/img/background.jpg")
@@ -57,6 +58,26 @@ To change the favicon, replace `favicon.ico`.
 docker run -p 8080:8080 \
   -v ./settings.json:/home/plik/server/webapp/dist/settings.json:ro \
   -v ./custom.css:/home/plik/server/webapp/dist/css/custom.css:ro \
+  rootgg/plik
+```
+
+## Custom Themes
+
+Plik ships with `dark` (default) and `light` themes. You can create your own:
+
+1. Copy `themes/TEMPLATE.css` to `themes/my-theme.css`
+2. Replace `THEME_NAME` with `my-theme` in the CSS selectors
+3. Customize the color values — each token is documented in the template
+4. Set `"theme": "my-theme"` in `settings.json`
+
+Theme files are lazy-loaded on startup and cached by the browser.
+
+### Docker
+
+```bash
+docker run -p 8080:8080 \
+  -v ./settings.json:/home/plik/server/webapp/dist/settings.json:ro \
+  -v ./my-theme.css:/home/plik/server/webapp/dist/themes/my-theme.css:ro \
   rootgg/plik
 ```
 

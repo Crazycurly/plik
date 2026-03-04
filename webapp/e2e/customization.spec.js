@@ -110,6 +110,45 @@ test.describe('Customization — theme', () => {
         const theme = await page.evaluate(() => document.documentElement.dataset.theme)
         expect(theme).toBe('light')
     })
+
+    test('custom theme loads CSS file and sets data-theme', async ({ page }) => {
+        await page.route('**/settings.json', async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ name: 'Plik', theme: 'solarized-dark' }),
+            })
+        })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // data-theme should match the custom theme name
+        const theme = await page.evaluate(() => document.documentElement.dataset.theme)
+        expect(theme).toBe('solarized-dark')
+
+        // The theme CSS file should have been injected as a <link> tag
+        const link = page.locator('link[href*="solarized-dark.css"]')
+        await expect(link).toHaveCount(1)
+    })
+
+    test('non-existent theme falls back gracefully', async ({ page }) => {
+        await page.route('**/settings.json', async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ name: 'Plik', theme: 'nonexistent' }),
+            })
+        })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // data-theme should still be set (CSS 404 is handled gracefully)
+        const theme = await page.evaluate(() => document.documentElement.dataset.theme)
+        expect(theme).toBe('nonexistent')
+
+        // Page should still be visible and functional
+        await expect(page.locator('#app')).toBeVisible()
+    })
 })
 
 test.describe('Customization — logo', () => {

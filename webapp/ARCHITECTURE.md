@@ -415,7 +415,7 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 |-------|------|---------|--------|
 | `name` | string | `"Plik"` | Logo text and page title |
 | `logo` | string | `""` | Logo image path (replaces text when set) |
-| `theme` | string | `"auto"` | `"dark"`, `"light"`, or `"auto"` (OS preference) |
+| `theme` | string | `"auto"` | `"dark"`, `"light"`, `"auto"` (OS preference), or any custom theme name matching a CSS file in `themes/` |
 | `backgroundImage` | string | `""` | Background image path |
 | `backgroundColor` | string | `""` | Fallback background color |
 | `overlayOpacity` | number | `0.2` | Dark overlay over background |
@@ -425,6 +425,8 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 **White-label safety**: The JS defaults are all empty (name = `''`). Only the shipped `settings.json` provides `"Plik"`. If the file is missing or fails to load, no branding leaks.
 
 **Custom asset injection**: `loadSettings()` conditionally injects `<link>` and `<script>` tags if `customCSS`/`customJS` paths are set. Injection happens before Vue mounts (inside the `Promise.all` in `main.js`), so there's no flash of unstyled content.
+
+**Theme system**: Themes are standalone CSS files in `webapp/public/themes/` that override the design tokens defined in `style.css`'s `@theme` block. The built-in `dark` theme is compiled into `style.css` (zero HTTP cost). All other themes (including `light`) are lazy-loaded from `/themes/{name}.css` before `data-theme` is set. A `loadedThemes` Set prevents duplicate `<link>` injection on OS theme toggle. Flash prevention uses inline `<style>` in `index.html` to hide the page with `visibility: hidden` + `background: transparent !important` until the theme is resolved. Custom themes can be created by copying `themes/TEMPLATE.css`.
 
 **CSS hook**: Logo `<span>` elements in `AppHeader.vue` have the class `plik-logo-text` for targeting via custom CSS.
 

@@ -56,20 +56,37 @@ function injectJS(src) {
 
 /**
  * Resolve and apply the theme.
- * - "dark" / "light" → set directly
+ * - "dark" / "light" / "my-custom" → set directly
  * - "auto" → follow OS preference via prefers-color-scheme
+ *
+ * Non-"dark" themes lazy-load their CSS from /themes/{name}.css
+ * before setting the data-theme attribute (prevents unstyled flash).
  */
-function applyTheme(value) {
+const loadedThemes = new Set()
+
+async function applyTheme(value) {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
 
-    function resolve() {
-        const resolved = value === 'auto'
+    async function resolve() {
+        const name = value === 'auto'
             ? (mq.matches ? 'dark' : 'light')
             : value
-        document.documentElement.dataset.theme = resolved
+
+        // "dark" is the compiled-in default — no external CSS needed.
+        // All other themes (including "light") load from /themes/{name}.css.
+        if (name !== 'dark') {
+            const href = `/themes/${name}.css`
+            if (!loadedThemes.has(href)) {
+                await injectCSS(href)
+                loadedThemes.add(href)
+            }
+        }
+
+        document.documentElement.dataset.theme = name
+        document.documentElement.style.colorScheme = name === 'dark' ? 'dark' : ''
     }
 
-    resolve()
+    await resolve()
 
     // Live-switch when the user toggles OS dark mode (only for "auto")
     if (value === 'auto') {
