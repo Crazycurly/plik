@@ -421,6 +421,7 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 | `overlayOpacity` | number | `0.2` | Dark overlay over background |
 | `customCSS` | string | `""` | Path to custom CSS (injected if non-empty) |
 | `customJS` | string | `""` | Path to custom JS (injected if non-empty) |
+| `themes` | array | `[]` | Available themes in the picker (empty = all built-ins). Entries can be strings (`"nord"`) or objects (`{ "name": "custom", "label": "My Theme" }`) |
 
 **White-label safety**: The JS defaults are all empty (name = `''`). Only the shipped `settings.json` provides `"Plik"`. If the file is missing or fails to load, no branding leaks.
 
@@ -429,6 +430,8 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 **Theme system**: Themes are standalone CSS files in `webapp/public/themes/` that override the design tokens defined in `style.css`'s `@theme` block. The built-in `dark` theme is compiled into `style.css` (zero HTTP cost). All other themes (including `light`) are lazy-loaded from `/themes/{name}.css` before `data-theme` is set. A `loadedThemes` Set prevents duplicate `<link>` injection on OS theme toggle. Flash prevention uses inline `<style>` in `index.html` to hide the page with `visibility: hidden` + `background: transparent !important` until the theme is resolved.
 
 Built-in themes: `solarized-dark`, `solarized-light`, `nord`, `nord-light`, `catppuccin-mocha`, `catppuccin-latte`, `matrix`, `bewiwi`. Dark themes may use outlined buttons (transparent bg + colored border with 40% opacity, brightening to 60% on hover) — see `TEMPLATE.css` for the pattern. Custom themes can be created by copying `themes/TEMPLATE.css`.
+
+**Theme picker** (`ThemePicker.vue`): Palette icon dropdown in the header nav bar, with "Theme" text label and dedicated separators. Lists themes from `getAvailableThemes()` (reads `settings.themes` — empty = all built-ins). The picker is hidden when `themes.length ≤ 1`. Selection writes to localStorage (`plik-theme` key) and calls `applyTheme()` for instant switching. On boot, `loadSettings()` reads localStorage first, falling back to `settings.theme` default. The `autoListener` variable tracks the OS `prefers-color-scheme` listener and properly removes it when switching away from "auto" mode.
 
 **Dark theme refinements**: The default dark theme uses semi-transparent button fills (`color-mix` at 85% for primary, 75% for danger) to reduce visual harshness. Body text defaults to `surface-200` (not `surface-100`) for reduced eye strain; `surface-100`/`surface-50` are reserved for headings and hover highlights. CodeEditor uses a single unified theme with CSS custom properties (`--color-surface-*`, `--color-accent-*`) so all themes get correct editor styling automatically — no per-theme CodeMirror overrides needed.
 

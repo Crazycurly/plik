@@ -2,7 +2,24 @@
 // Fetches /settings.json at startup and provides reactive state.
 // The file uses JSONC (JSON with comments) — single-line // comments are stripped before parsing.
 
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
+
+// All built-in themes with display metadata
+const BUILTIN_THEMES = [
+    { name: 'auto', label: 'Auto' },
+    { name: 'dark', label: 'Dark' },
+    { name: 'light', label: 'Light' },
+    { name: 'catppuccin-mocha', label: 'Catppuccin Mocha' },
+    { name: 'catppuccin-latte', label: 'Catppuccin Latte' },
+    { name: 'nord', label: 'Nord' },
+    { name: 'nord-light', label: 'Nord Light' },
+    { name: 'solarized-dark', label: 'Solarized Dark' },
+    { name: 'solarized-light', label: 'Solarized Light' },
+    { name: 'matrix', label: 'Matrix' },
+    { name: 'bewiwi', label: 'Bewiwi' },
+]
+
+const STORAGE_KEY = 'plik-theme'
 
 // White-label safe defaults: empty name so "Plik" is never leaked
 // if settings.json is missing or fails to load.
@@ -10,6 +27,7 @@ export const settings = reactive({
     name: '',
     logo: '',
     theme: 'auto',
+    themes: [],
     backgroundImage: '',
     backgroundColor: '',
     overlayOpacity: 0,
@@ -17,12 +35,15 @@ export const settings = reactive({
     customJS: '',
 })
 
+/** Reactive current theme value — used by ThemePicker */
+export const currentTheme = ref('auto')
+
 /**
  * Strip single-line // comments from JSONC text.
  * Ignores // inside quoted strings.
  */
 function stripJSONCComments(text) {
-    return text.replace(/("(?:[^"\\]|\\.)*")|\/\/[^\n]*/g, (match, quoted) => {
+    return text.replace(/(\"(?:[^\"\\]|\\.)*\")|\/\/[^\n]*/g, (match, quoted) => {
         return quoted || ''
     })
 }
@@ -63,9 +84,16 @@ function injectJS(src) {
  * before setting the data-theme attribute (prevents unstyled flash).
  */
 const loadedThemes = new Set()
+let autoListener = null
 
-async function applyTheme(value) {
+export async function applyTheme(value) {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
+
+    // Remove previous auto listener if switching away
+    if (autoListener) {
+        mq.removeEventListener('change', autoListener)
+        autoListener = null
+    }
 
     async function resolve() {
         const name = value === 'auto'
@@ -90,8 +118,56 @@ async function applyTheme(value) {
 
     // Live-switch when the user toggles OS dark mode (only for "auto")
     if (value === 'auto') {
+        autoListener = resolve
         mq.addEventListener('change', resolve)
     }
+}
+
+/**
+ * Get the list of available themes for the picker.
+ * If settings.themes is empty, returns all built-in themes.
+ * Otherwise, returns only the themes listed in settings.themes.
+ */
+export function getAvailableThemes() {
+    if (!settings.themes || settings.themes.length === 0) {
+        return BUILTIN_THEMES
+    }
+
+    return settings.themes.map(entry => {
+        if (typeof entry === 'string') {
+            // Look up built-in metadata
+            const builtin = BUILTIN_THEMES.find(t => t.name === entry)
+            return builtin || { name: entry, label: entry }
+        }
+        // Object with name + label
+        return { name: entry.name, label: entry.label || entry.name }
+    })
+}
+
+/**
+ * Get the user's preferred theme from localStorage, falling back to settings default.
+ */
+export function getUserTheme() {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY)
+        if (stored) return stored
+    } catch {
+        // localStorage unavailable
+    }
+    return settings.theme
+}
+
+/**
+ * Set the user's theme preference — writes to localStorage and applies immediately.
+ */
+export async function setUserTheme(name) {
+    try {
+        localStorage.setItem(STORAGE_KEY, name)
+    } catch {
+        // localStorage unavailable
+    }
+    currentTheme.value = name
+    await applyTheme(name)
 }
 
 /**
@@ -114,8 +190,12 @@ export async function loadSettings() {
         // Silently fall back to defaults
     }
 
+    // Resolve theme: localStorage > settings.json default
+    const theme = getUserTheme()
+    currentTheme.value = theme
+
     // Apply theme before anything renders
-    applyTheme(settings.theme)
+    await applyTheme(theme)
 
     // Set page title (stays empty if no custom settings — white-label safe)
     document.title = settings.name

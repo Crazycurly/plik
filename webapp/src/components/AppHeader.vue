@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { config, isFeatureEnabled } from '../config.js'
 import { auth, clearImpersonate } from '../authStore.js'
 import { settings } from '../settings.js'
+import ThemePicker from './ThemePicker.vue'
 
 const route = useRoute()
 const mobileOpen = ref(false)
@@ -74,6 +75,12 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
           </svg>
           GitHub
         </a>
+
+        <!-- Separator + Theme picker -->
+        <div class="w-px h-5 bg-surface-700/50 mx-1"></div>
+        <ThemePicker>
+          <span>Theme</span>
+        </ThemePicker>
 
         <!-- Separator before auth -->
         <div v-if="isFeatureEnabled('authentication')"
@@ -179,9 +186,12 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
           GitHub
         </a>
 
-        <!-- Auth separator -->
-        <div v-if="isFeatureEnabled('authentication')"
-             class="border-t border-surface-700/50 my-1"></div>
+        <!-- Theme separator + picker (mobile) -->
+        <div class="border-t border-surface-700/50 my-1"></div>
+        <ThemePicker>
+          <span>Theme</span>
+        </ThemePicker>
+        <div class="border-t border-surface-700/50 my-1"></div>
 
         <router-link v-if="auth.user"
                      to="/home"

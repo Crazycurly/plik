@@ -160,12 +160,12 @@ const canAddFiles = computed(() => props.upload.admin && !props.upload.stream)
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <div class="absolute left-0 -top-2 -translate-y-full hidden group-hover:block w-56 p-2 text-xs bg-surface-800 text-surface-200 rounded shadow-lg z-10">
+          <div class="absolute left-0 -top-2 -translate-y-full hidden group-hover:block w-56 p-2 text-xs bg-surface-900 text-surface-200 rounded shadow-lg z-10">
             Share this URL with others to allow them to add files to this upload
           </div>
         </div>
       </div>
-      <div class="flex items-center gap-2 p-2 rounded bg-surface-800/50 border border-surface-700 min-w-0 overflow-hidden">
+      <div class="flex items-center gap-2 p-2 rounded bg-surface-900/50 border border-surface-700 min-w-0 overflow-hidden">
         <span class="text-xs text-surface-300 truncate flex-1">{{ adminUrl }}</span>
         <CopyButton :text="adminUrl" size="sm" />
       </div>

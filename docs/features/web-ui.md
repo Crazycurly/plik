@@ -85,6 +85,25 @@ You can also create your own:
 
 Theme files are lazy-loaded on startup and cached by the browser.
 
+### Theme Picker
+
+Users can switch themes via the palette icon in the header navigation bar. The selected theme is stored in the browser's localStorage and persists across page reloads.
+
+To control which themes appear in the picker, set the `themes` array in `settings.json`:
+
+```jsonc
+// All built-in themes available (default when empty)
+"themes": []
+
+// Only allow specific themes
+"themes": ["dark", "light", "catppuccin-mocha"]
+
+// Include a custom theme with a display label
+"themes": ["dark", "light", { "name": "company", "label": "Acme Corp" }]
+```
+
+When only one theme is configured, the picker is hidden automatically.
+
 ### Docker
 
 ```bash
