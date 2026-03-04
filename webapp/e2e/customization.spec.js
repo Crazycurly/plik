@@ -57,7 +57,62 @@ test.describe('Customization — settings.json', () => {
         // Page title should be empty
         await expect(page).toHaveTitle('')
     })
+})
 
+test.describe('Customization — theme', () => {
+    test('auto theme follows OS dark preference', async ({ page }) => {
+        // Emulate dark color scheme
+        await page.emulateMedia({ colorScheme: 'dark' })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        const theme = await page.evaluate(() => document.documentElement.dataset.theme)
+        expect(theme).toBe('dark')
+    })
+
+    test('auto theme follows OS light preference', async ({ page }) => {
+        await page.emulateMedia({ colorScheme: 'light' })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        const theme = await page.evaluate(() => document.documentElement.dataset.theme)
+        expect(theme).toBe('light')
+    })
+
+    test('explicit dark override ignores OS light preference', async ({ page }) => {
+        await page.emulateMedia({ colorScheme: 'light' })
+        await page.route('**/settings.json', async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ name: 'Plik', theme: 'dark' }),
+            })
+        })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        const theme = await page.evaluate(() => document.documentElement.dataset.theme)
+        expect(theme).toBe('dark')
+    })
+
+    test('explicit light override ignores OS dark preference', async ({ page }) => {
+        await page.emulateMedia({ colorScheme: 'dark' })
+        await page.route('**/settings.json', async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ name: 'Plik', theme: 'light' }),
+            })
+        })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        const theme = await page.evaluate(() => document.documentElement.dataset.theme)
+        expect(theme).toBe('light')
+    })
+})
+
+test.describe('Customization — logo', () => {
     test('default settings: no logo image rendered', async ({ page }) => {
         await page.goto('/')
         await page.waitForLoadState('networkidle')

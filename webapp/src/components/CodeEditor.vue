@@ -19,6 +19,8 @@ const emit = defineEmits(['update:modelValue', 'language-detected'])
 const editorContainer = ref(null)
 let view = null
 const languageCompartment = new Compartment()
+const themeCompartment = new Compartment()
+let themeObserver = null
 
 // Map file extension to language
 function getLanguageFromFilename(filename) {
@@ -109,20 +111,20 @@ function prettifyJson() {
   showFeedback('prettify')
 }
 
-// Custom theme to match Plik's dark glass-card aesthetic
-const plikTheme = EditorView.theme({
-  '&': {
-    fontSize: '13px',
-    backgroundColor: 'transparent',
-  },
+// Shared CodeMirror style overrides (font, sizing)
+const plikBaseTheme = EditorView.theme({
+  '&': { fontSize: '13px', backgroundColor: 'transparent' },
   '.cm-content': {
     fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
-    caretColor: '#38bdf8',
     minHeight: '120px',
   },
-  '&.cm-focused .cm-content': {
-    caretColor: '#38bdf8',
-  },
+  '.cm-scroller': { overflow: 'auto' },
+})
+
+// Dark theme overrides
+const plikDarkOverrides = EditorView.theme({
+  '.cm-content': { caretColor: '#38bdf8' },
+  '&.cm-focused .cm-content': { caretColor: '#38bdf8' },
   '.cm-gutters': {
     backgroundColor: 'color-mix(in srgb, #1e293b 40%, transparent)',
     color: '#475569',
@@ -136,9 +138,7 @@ const plikTheme = EditorView.theme({
   '.cm-activeLine': {
     backgroundColor: 'color-mix(in srgb, #334155 25%, transparent)',
   },
-  '&.cm-focused .cm-cursor': {
-    borderLeftColor: '#38bdf8',
-  },
+  '&.cm-focused .cm-cursor': { borderLeftColor: '#38bdf8' },
   '&.cm-focused .cm-selectionBackground, ::selection': {
     backgroundColor: 'color-mix(in srgb, #0ea5e9 20%, transparent)',
     color: 'inherit',
@@ -146,22 +146,59 @@ const plikTheme = EditorView.theme({
   '.cm-selectionBackground': {
     backgroundColor: 'color-mix(in srgb, #0ea5e9 15%, transparent)',
   },
-  '.cm-foldGutter': {
-    color: '#475569',
-  },
+  '.cm-foldGutter': { color: '#475569' },
   '.cm-tooltip': {
     backgroundColor: '#1e293b',
     border: '1px solid #334155',
     color: '#e2e8f0',
   },
-  '.cm-placeholder': {
-    color: '#64748b',
-    fontStyle: 'italic',
-  },
-  '.cm-scroller': {
-    overflow: 'auto',
-  },
+  '.cm-placeholder': { color: '#64748b', fontStyle: 'italic' },
 })
+
+// Light theme overrides
+const plikLightOverrides = EditorView.theme({
+  '.cm-content': { caretColor: '#0369a1' },
+  '&.cm-focused .cm-content': { caretColor: '#0369a1' },
+  '.cm-gutters': {
+    backgroundColor: '#f1f5f9',
+    color: '#94a3b8',
+    border: 'none',
+    borderRight: '1px solid #e2e8f0',
+  },
+  '.cm-activeLineGutter': {
+    backgroundColor: '#e2e8f0',
+    color: '#475569',
+  },
+  '.cm-activeLine': {
+    backgroundColor: 'color-mix(in srgb, #e2e8f0 60%, transparent)',
+  },
+  '&.cm-focused .cm-cursor': { borderLeftColor: '#0369a1' },
+  '&.cm-focused .cm-selectionBackground, ::selection': {
+    backgroundColor: 'color-mix(in srgb, #0ea5e9 15%, transparent)',
+    color: 'inherit',
+  },
+  '.cm-selectionBackground': {
+    backgroundColor: 'color-mix(in srgb, #0ea5e9 10%, transparent)',
+  },
+  '.cm-foldGutter': { color: '#94a3b8' },
+  '.cm-tooltip': {
+    backgroundColor: '#ffffff',
+    border: '1px solid #e2e8f0',
+    color: '#1e293b',
+  },
+  '.cm-placeholder': { color: '#94a3b8', fontStyle: 'italic' },
+})
+
+function isDarkTheme() {
+  return document.documentElement.dataset.theme !== 'light'
+}
+
+function getThemeExtensions() {
+  if (isDarkTheme()) {
+    return [oneDark, plikDarkOverrides]
+  }
+  return [plikLightOverrides]
+}
 
 async function createEditor() {
   if (!editorContainer.value) return
@@ -175,8 +212,8 @@ async function createEditor() {
     bracketMatching(),
     foldGutter(),
     indentOnInput(),
-    oneDark,
-    plikTheme,
+    plikBaseTheme,
+    themeCompartment.of(getThemeExtensions()),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     EditorView.lineWrapping,
   ]
@@ -320,11 +357,23 @@ onMounted(async () => {
       detectLanguageFromContent(props.modelValue)
     }, 500)
   }
+
+  // Watch for theme changes and reconfigure editor
+  themeObserver = new MutationObserver(() => {
+    if (view) {
+      view.dispatch({ effects: themeCompartment.reconfigure(getThemeExtensions()) })
+    }
+  })
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme'],
+  })
 })
 
 onBeforeUnmount(() => {
   if (detectionTimeout) clearTimeout(detectionTimeout)
   if (feedbackResetTimeout) clearTimeout(feedbackResetTimeout)
+  if (themeObserver) { themeObserver.disconnect(); themeObserver = null }
   destroyEditor()
 })
 </script>
@@ -390,7 +439,7 @@ onBeforeUnmount(() => {
               d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <span class="truncate">{{ jsonError }}</span>
-      <button class="ml-auto text-danger-400 hover:text-white shrink-0" @click="jsonError = null">
+      <button class="ml-auto text-danger-400 hover:text-surface-100 shrink-0" @click="jsonError = null">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>

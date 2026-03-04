@@ -147,7 +147,7 @@ async function handleOidcLogin() {
           <button v-if="config.googleAuthentication"
                   @click="googleLogin"
                   class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-surface-600
-                         bg-surface-700/50 text-surface-200 hover:bg-surface-600/50 hover:text-white
+                         bg-surface-700/50 text-surface-200 hover:bg-surface-600/50 hover:text-surface-100
                          transition-all text-sm font-medium">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -161,7 +161,7 @@ async function handleOidcLogin() {
           <button v-if="config.ovhAuthentication"
                   @click="ovhLogin"
                   class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-surface-600
-                         bg-surface-700/50 text-surface-200 hover:bg-surface-600/50 hover:text-white
+                         bg-surface-700/50 text-surface-200 hover:bg-surface-600/50 hover:text-surface-100
                          transition-all text-sm font-medium">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M0 12l5-8h14l-5 8 5 8H5z" fill="#0050D4"/>
@@ -172,7 +172,7 @@ async function handleOidcLogin() {
           <button v-if="config.oidcAuthentication"
                   @click="handleOidcLogin"
                   class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-surface-600
-                         bg-surface-700/50 text-surface-200 hover:bg-surface-600/50 hover:text-white
+                         bg-surface-700/50 text-surface-200 hover:bg-surface-600/50 hover:text-surface-100
                          transition-all text-sm font-medium">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

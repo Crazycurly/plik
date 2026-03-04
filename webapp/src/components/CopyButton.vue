@@ -39,7 +39,7 @@ async function copy() {
     :class="[
       copied
         ? 'bg-success-500/20 text-success-500'
-        : 'bg-surface-700/50 text-surface-300 hover:bg-surface-600/50 hover:text-white',
+        : 'bg-surface-700/50 text-surface-300 hover:bg-surface-600/50 hover:text-surface-100',
       size === 'sm' ? 'px-2 py-1.5 text-xs' : 'px-3 py-2 text-sm',
     ]"
     :title="copied ? 'Copied!' : 'Copy to clipboard'"

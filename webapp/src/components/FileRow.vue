@@ -100,7 +100,7 @@ function fileUrl() {
           <div class="text-sm text-surface-100 cursor-text outline-none
                       overflow-hidden text-ellipsis whitespace-nowrap
                       focus:overflow-x-auto focus:text-clip focus:whitespace-normal
-                      hover:text-white focus:ring-1 focus:ring-accent-500/50 rounded px-1 -mx-1"
+                      hover:text-surface-100 focus:ring-1 focus:ring-accent-500/50 rounded px-1 -mx-1"
                contenteditable="true"
                @blur="onNameInput"
                @keydown="onNameKeydown"
@@ -206,7 +206,7 @@ function fileUrl() {
 
         <!-- QR Code button (download mode) -->
         <button v-if="mode === 'download' && isDownloadable"
-                class="btn bg-surface-700/50 text-surface-400 hover:text-white px-2 py-1.5 text-xs"
+                class="btn bg-surface-700/50 text-surface-400 hover:text-surface-100 px-2 py-1.5 text-xs"
                 title="Show QR code"
                 @click="emit('show-qr', file)">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

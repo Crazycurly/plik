@@ -9,6 +9,7 @@ import { reactive } from 'vue'
 export const settings = reactive({
     name: '',
     logo: '',
+    theme: 'auto',
     backgroundImage: '',
     backgroundColor: '',
     overlayOpacity: 0,
@@ -54,9 +55,33 @@ function injectJS(src) {
 }
 
 /**
+ * Resolve and apply the theme.
+ * - "dark" / "light" → set directly
+ * - "auto" → follow OS preference via prefers-color-scheme
+ */
+function applyTheme(value) {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+
+    function resolve() {
+        const resolved = value === 'auto'
+            ? (mq.matches ? 'dark' : 'light')
+            : value
+        document.documentElement.dataset.theme = resolved
+    }
+
+    resolve()
+
+    // Live-switch when the user toggles OS dark mode (only for "auto")
+    if (value === 'auto') {
+        mq.addEventListener('change', resolve)
+    }
+}
+
+/**
  * Load webapp settings from /settings.json before Vue mounts.
  * - Fetches and parses the JSONC file
  * - Merges values into the reactive settings object
+ * - Applies theme (before Vue mounts → zero flash)
  * - Sets document.title from settings.name
  * - Conditionally injects custom CSS/JS if paths are configured
  */
@@ -71,6 +96,9 @@ export async function loadSettings() {
     } catch {
         // Silently fall back to defaults
     }
+
+    // Apply theme before anything renders
+    applyTheme(settings.theme)
 
     // Set page title (stays empty if no custom settings — white-label safe)
     document.title = settings.name

@@ -622,7 +622,7 @@ watch(activeFiles, (files) => {
                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span class="text-sm text-danger-500">{{ uploadError }}</span>
-            <button class="ml-auto text-surface-400 hover:text-white" @click="uploadError = null">
+            <button class="ml-auto text-surface-400 hover:text-surface-100" @click="uploadError = null">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -689,7 +689,7 @@ watch(activeFiles, (files) => {
                 <!-- Prev/Next navigation (only when multiple viewable files) -->
                 <template v-if="viewableFiles.length > 1">
                   <button class="p-1 transition-colors"
-                          :class="hasPrev ? 'text-surface-400 hover:text-white' : 'text-surface-700 cursor-default'"
+                          :class="hasPrev ? 'text-surface-400 hover:text-surface-100' : 'text-surface-700 cursor-default'"
                           :disabled="!hasPrev"
                           title="Previous file (←)"
                           @click="viewPrev">
@@ -699,7 +699,7 @@ watch(activeFiles, (files) => {
                   </button>
                   <span class="text-xs text-surface-500 tabular-nums min-w-8 text-center">{{ viewerIndex + 1 }}/{{ viewableFiles.length }}</span>
                   <button class="p-1 transition-colors"
-                          :class="hasNext ? 'text-surface-400 hover:text-white' : 'text-surface-700 cursor-default'"
+                          :class="hasNext ? 'text-surface-400 hover:text-surface-100' : 'text-surface-700 cursor-default'"
                           :disabled="!hasNext"
                           title="Next file (→)"
                           @click="viewNext">
@@ -708,7 +708,7 @@ watch(activeFiles, (files) => {
                     </svg>
                   </button>
                 </template>
-                <button class="p-1 text-surface-400 hover:text-white transition-colors"
+                <button class="p-1 text-surface-400 hover:text-surface-100 transition-colors"
                         title="Close viewer (Esc)"
                         @click="closeViewer">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -890,7 +890,7 @@ watch(activeFiles, (files) => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-          <h3 class="text-lg font-medium text-white">Enter Passphrase</h3>
+          <h3 class="text-lg font-medium text-surface-100">Enter Passphrase</h3>
         </div>
         <p class="text-sm text-surface-400">This upload is end-to-end encrypted. Enter the passphrase to decrypt files.</p>
         <input type="text"

@@ -25,6 +25,9 @@ Edit `settings.json` to change the app name, background, and overlay. The file u
   // Path to a logo image (e.g. "/img/logo.png"). When set, replaces the text logo.
   "logo": "",
 
+  // Theme: "dark", "light", or "auto" (follows user's OS preference)
+  "theme": "auto",
+
   // Background image path (e.g. "/img/background.jpg")
   "backgroundImage": "",
 

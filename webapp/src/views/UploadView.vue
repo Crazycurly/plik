@@ -340,7 +340,7 @@ async function doUpload() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span class="text-sm text-danger-500">{{ uploadError }}</span>
-          <button class="ml-auto text-surface-400 hover:text-white" @click="uploadError = null">
+          <button class="ml-auto text-surface-400 hover:text-surface-100" @click="uploadError = null">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -380,7 +380,7 @@ async function doUpload() {
               </svg>
               <span class="text-sm font-medium text-surface-200">Text Upload</span>
             </div>
-            <button class="text-surface-400 hover:text-white transition-colors"
+            <button class="text-surface-400 hover:text-surface-100 transition-colors"
                     @click="textMode = false; textContent = ''; pasteTab = 'code'">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -416,7 +416,7 @@ async function doUpload() {
             />
             <div class="flex justify-end gap-2">
               <button class="btn border border-surface-600 bg-surface-700/50 text-surface-300 hover:bg-surface-600/50
-                             hover:text-white px-4 py-1.5 text-sm transition-all"
+                             hover:text-surface-100 px-4 py-1.5 text-sm transition-all"
                       @click="textMode = false; textContent = ''; pasteTab = 'code'">
                 Cancel
               </button>
@@ -426,7 +426,7 @@ async function doUpload() {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                Add as File
+                Add
               </button>
             </div>
           </div>

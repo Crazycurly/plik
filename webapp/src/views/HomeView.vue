@@ -430,7 +430,7 @@ onMounted(() => {
           <button @click="showStats"
                   :class="display === 'stats'
                     ? 'bg-accent-500/10 text-accent-400 border-l-2 border-accent-400'
-                    : 'text-surface-300 hover:text-white hover:bg-surface-700/50 border-l-2 border-transparent'"
+                    : 'text-surface-300 hover:text-surface-100 hover:bg-surface-700/50 border-l-2 border-transparent'"
                   class="w-full py-2.5 rounded-lg flex items-center gap-3 px-3 text-sm transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -442,7 +442,7 @@ onMounted(() => {
           <button @click="showUploads"
                   :class="display === 'uploads'
                     ? 'bg-accent-500/10 text-accent-400 border-l-2 border-accent-400'
-                    : 'text-surface-300 hover:text-white hover:bg-surface-700/50 border-l-2 border-transparent'"
+                    : 'text-surface-300 hover:text-surface-100 hover:bg-surface-700/50 border-l-2 border-transparent'"
                   class="w-full py-2.5 rounded-lg flex items-center gap-3 px-3 text-sm transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -454,7 +454,7 @@ onMounted(() => {
           <button @click="showTokens"
                   :class="display === 'tokens'
                     ? 'bg-accent-500/10 text-accent-400 border-l-2 border-accent-400'
-                    : 'text-surface-300 hover:text-white hover:bg-surface-700/50 border-l-2 border-transparent'"
+                    : 'text-surface-300 hover:text-surface-100 hover:bg-surface-700/50 border-l-2 border-transparent'"
                   class="w-full py-2.5 rounded-lg flex items-center gap-3 px-3 text-sm transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -468,7 +468,7 @@ onMounted(() => {
         <div class="glass-card p-2 space-y-1">
           <button @click="handleLogout"
                   class="w-full py-2.5 rounded-lg flex items-center gap-3 px-3 text-sm
-                         text-surface-300 hover:text-white hover:bg-surface-700/50 transition-colors">
+                         text-surface-300 hover:text-surface-100 hover:bg-surface-700/50 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -479,7 +479,7 @@ onMounted(() => {
           <button v-if="auth.user?.provider === 'local'"
                   @click="openEditAccount"
                   class="w-full py-2.5 rounded-lg flex items-center gap-3 px-3 text-sm
-                         text-surface-300 hover:text-white hover:bg-surface-700/50 transition-colors">
+                         text-surface-300 hover:text-surface-100 hover:bg-surface-700/50 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -580,7 +580,7 @@ onMounted(() => {
               </svg>
               Token: <span class="font-mono text-accent-400">{{ tokenFilter }}</span>
             </div>
-            <button @click="clearTokenFilter" class="text-surface-400 hover:text-white transition-colors">
+            <button @click="clearTokenFilter" class="text-surface-400 hover:text-surface-100 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -621,7 +621,7 @@ onMounted(() => {
           <!-- Load more -->
           <div v-if="uploadsCursor" class="mt-4">
             <button @click="loadUploads(true)"
-                    class="w-full glass-card p-3 text-sm text-surface-400 hover:text-white
+                    class="w-full glass-card p-3 text-sm text-surface-400 hover:text-surface-100
                            hover:bg-surface-700/30 transition-colors text-center"
                     :disabled="uploadsLoading">
               {{ uploadsLoading ? 'Loading...' : 'Load more uploads' }}
@@ -695,7 +695,7 @@ onMounted(() => {
           <!-- Load more -->
           <div v-if="tokensCursor" class="mt-4">
             <button @click="loadTokens(true)"
-                    class="w-full glass-card p-3 text-sm text-surface-400 hover:text-white
+                    class="w-full glass-card p-3 text-sm text-surface-400 hover:text-surface-100
                            hover:bg-surface-700/30 transition-colors text-center"
                     :disabled="tokensLoading">
               {{ tokensLoading ? 'Loading...' : 'Load more tokens' }}
