@@ -21,6 +21,8 @@ import {
     isTextFile,
     isMarkdownFile,
     isImageFile,
+    isVideoFile,
+    isAudioFile,
     isViewableFile,
     MAX_VIEWABLE_SIZE,
     getUploadUrl,
@@ -547,6 +549,62 @@ describe('isImageFile', () => {
     })
 })
 
+// ── isVideoFile ──
+
+describe('isVideoFile', () => {
+    it('returns true for video/mp4', () => {
+        expect(isVideoFile({ fileType: 'video/mp4' })).toBe(true)
+    })
+
+    it('returns true for video/webm', () => {
+        expect(isVideoFile({ fileType: 'video/webm' })).toBe(true)
+    })
+
+    it('returns true for video/ogg', () => {
+        expect(isVideoFile({ fileType: 'video/ogg' })).toBe(true)
+    })
+
+    it('returns false for text/plain', () => {
+        expect(isVideoFile({ fileType: 'text/plain' })).toBe(false)
+    })
+
+    it('returns false for application/octet-stream', () => {
+        expect(isVideoFile({ fileType: 'application/octet-stream' })).toBe(false)
+    })
+
+    it('returns false when fileType is missing', () => {
+        expect(isVideoFile({})).toBe(false)
+    })
+})
+
+// ── isAudioFile ──
+
+describe('isAudioFile', () => {
+    it('returns true for audio/mpeg', () => {
+        expect(isAudioFile({ fileType: 'audio/mpeg' })).toBe(true)
+    })
+
+    it('returns true for audio/ogg', () => {
+        expect(isAudioFile({ fileType: 'audio/ogg' })).toBe(true)
+    })
+
+    it('returns true for audio/wav', () => {
+        expect(isAudioFile({ fileType: 'audio/wav' })).toBe(true)
+    })
+
+    it('returns false for text/plain', () => {
+        expect(isAudioFile({ fileType: 'text/plain' })).toBe(false)
+    })
+
+    it('returns false for application/octet-stream', () => {
+        expect(isAudioFile({ fileType: 'application/octet-stream' })).toBe(false)
+    })
+
+    it('returns false when fileType is missing', () => {
+        expect(isAudioFile({})).toBe(false)
+    })
+})
+
 // ── isViewableFile ──
 
 describe('isViewableFile', () => {
@@ -568,6 +626,14 @@ describe('isViewableFile', () => {
 
     it('returns true for large images (no size limit)', () => {
         expect(isViewableFile({ fileType: 'image/png', fileSize: 50 * 1024 * 1024 })).toBe(true)
+    })
+
+    it('returns true for video files', () => {
+        expect(isViewableFile({ fileType: 'video/mp4' })).toBe(true)
+    })
+
+    it('returns true for audio files', () => {
+        expect(isViewableFile({ fileType: 'audio/mpeg' })).toBe(true)
     })
 })
 

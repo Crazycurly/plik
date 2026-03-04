@@ -701,14 +701,26 @@ Default tab for markdown files in the download viewer is **Preview**; in the pas
 When viewing an image file (`image/*` MIME type), the file viewer renders an `<img>` tag directly from the server URL — no content fetching or text decoding required.
 
 - **`isImageFile(file)`** in `utils.js` checks that the MIME type starts with `image/`
-- **`isViewableFile(file)`** combines `isTextFile(file) || isImageFile(file)` — used by `FileRow` for the View button and the auto-view watcher
+- **`isViewableFile(file)`** combines `isTextFile(file) || isImageFile(file) || isVideoFile(file) || isAudioFile(file)` — used by `FileRow` for the View button and the auto-view watcher
 - No file size limit for images (browsers handle large images natively)
 - The viewer header shows a landscape-photo icon (instead of the code angle-brackets icon) for image files
 - E2E encrypted images are not supported in the inline viewer (same limitation as text viewer)
 
+### Video & Audio Playback
+
+Video (`video/*`) and audio (`audio/*`) files are played inline using native HTML5 `<video>` and `<audio>` elements.
+
+- **`isVideoFile(file)`** / **`isAudioFile(file)`** in `utils.js` check MIME type prefixes
+- No file size limit — browsers handle streaming playback natively via range requests
+- The `src` attribute is set directly on `<video>`/`<audio>` (NOT via `<source>` children, which causes browsers to make multiple probe requests)
+- `preload="metadata"` lets the browser fetch duration/dimensions without downloading the full file
+- The viewer header shows a film icon for video and a music-note icon for audio
+- The Copy button is hidden for video/audio (content isn't text)
+- E2E encrypted media is not supported in the inline player (same limitation as images)
+
 ### Viewer Navigation
 
-When an upload contains multiple viewable files (text or image), the viewer shows prev/next navigation:
+When an upload contains multiple viewable files (text, image, video, or audio), the viewer shows prev/next navigation:
 
 - **Arrow buttons** (‹ ›) with a position indicator (`2/5`) appear in the viewer header
 - **Keyboard shortcuts**: `ArrowLeft` / `ArrowRight` to navigate, `Escape` to close
