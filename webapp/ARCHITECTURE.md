@@ -426,7 +426,11 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 
 **Custom asset injection**: `loadSettings()` conditionally injects `<link>` and `<script>` tags if `customCSS`/`customJS` paths are set. Injection happens before Vue mounts (inside the `Promise.all` in `main.js`), so there's no flash of unstyled content.
 
-**Theme system**: Themes are standalone CSS files in `webapp/public/themes/` that override the design tokens defined in `style.css`'s `@theme` block. The built-in `dark` theme is compiled into `style.css` (zero HTTP cost). All other themes (including `light`) are lazy-loaded from `/themes/{name}.css` before `data-theme` is set. A `loadedThemes` Set prevents duplicate `<link>` injection on OS theme toggle. Flash prevention uses inline `<style>` in `index.html` to hide the page with `visibility: hidden` + `background: transparent !important` until the theme is resolved. Custom themes can be created by copying `themes/TEMPLATE.css`.
+**Theme system**: Themes are standalone CSS files in `webapp/public/themes/` that override the design tokens defined in `style.css`'s `@theme` block. The built-in `dark` theme is compiled into `style.css` (zero HTTP cost). All other themes (including `light`) are lazy-loaded from `/themes/{name}.css` before `data-theme` is set. A `loadedThemes` Set prevents duplicate `<link>` injection on OS theme toggle. Flash prevention uses inline `<style>` in `index.html` to hide the page with `visibility: hidden` + `background: transparent !important` until the theme is resolved.
+
+Built-in themes: `solarized-dark`, `solarized-light`, `nord`, `nord-light`, `catppuccin-mocha`, `catppuccin-latte`, `matrix`, `bewiwi`. Dark themes may use outlined buttons (transparent bg + colored border with 40% opacity, brightening to 60% on hover) — see `TEMPLATE.css` for the pattern. Custom themes can be created by copying `themes/TEMPLATE.css`.
+
+**Dark theme refinements**: The default dark theme uses semi-transparent button fills (`color-mix` at 85% for primary, 75% for danger) to reduce visual harshness. Body text defaults to `surface-200` (not `surface-100`) for reduced eye strain; `surface-100`/`surface-50` are reserved for headings and hover highlights. CodeEditor uses a single unified theme with CSS custom properties (`--color-surface-*`, `--color-accent-*`) so all themes get correct editor styling automatically — no per-theme CodeMirror overrides needed.
 
 **CSS hook**: Logo `<span>` elements in `AppHeader.vue` have the class `plik-logo-text` for targeting via custom CSS.
 

@@ -1,0 +1,122 @@
+/*
+ * Plik — Nord Light Theme (Snow Storm)
+ * Based on Arctic Ice Studio's Nord palette
+ * https://www.nordtheme.com/
+ */
+[data-theme="nord-light"] {
+    color-scheme: light;
+
+    /* ── Surface Scale (inverted: dark text → light background) ── */
+    --color-surface-50: #2e3440;
+    /* nord0  — emphasized headings */
+    --color-surface-100: #3b4252;
+    /* nord1  — primary text */
+    --color-surface-200: #434c5e;
+    /* nord2  — secondary text */
+    --color-surface-300: #4c566a;
+    /* nord3  — tertiary text */
+    --color-surface-400: #616e88;
+    /* blend  — muted text */
+    --color-surface-500: #7b88a1;
+    /* blend  — subtle labels */
+    --color-surface-600: #9aa5b8;
+    /* blend  — hint text */
+    --color-surface-700: #d8dee9;
+    /* nord4  — dividers */
+    --color-surface-800: #e5e9f0;
+    /* nord5  — elevated panels */
+    --color-surface-900: #eceff4;
+    /* nord6  — page background */
+    --color-surface-950: #eceff4;
+    /* nord6  — deepest background */
+
+    /* ── Accent (Nord Frost) ── */
+    --color-accent-400: #5e81ac;
+    /* nord10 — links, active nav, logo */
+    --color-accent-500: #5e81ac;
+    /* nord10 — primary buttons */
+    --color-accent-600: #4c6d94;
+    /* darker — pressed accent */
+
+    /* ── Danger / Success (Nord Aurora) ── */
+    --color-danger-500: #bf616a;
+    --color-danger-600: #a5545c;
+    --color-success-500: #a3be8c;
+    --color-success-600: #8faa78;
+
+    /* ── Semantic ── */
+    --color-on-accent: #eceff4;
+}
+
+/* ── Component Overrides (light theme needs opaque surfaces) ── */
+[data-theme="nord-light"] .toggle-switch {
+    background-color: #b0bac5;
+}
+
+[data-theme="nord-light"] .toggle-switch[data-active="true"] {
+    background-color: #5e81ac;
+}
+
+[data-theme="nord-light"] .glass-card {
+    background-color: #e5e9f0;
+    border-color: #d0d6e1;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.08);
+}
+
+[data-theme="nord-light"] .btn-primary {
+    background-color: color-mix(in srgb, #5e81ac 12%, transparent);
+    color: #5e81ac;
+    box-shadow: none;
+}
+
+[data-theme="nord-light"] .btn-primary:hover {
+    background-color: color-mix(in srgb, #5e81ac 20%, transparent);
+}
+
+[data-theme="nord-light"] .btn-success {
+    background-color: color-mix(in srgb, #a3be8c 15%, transparent);
+    color: #7a9a5e;
+    box-shadow: none;
+}
+
+[data-theme="nord-light"] .btn-success:hover {
+    background-color: color-mix(in srgb, #a3be8c 25%, transparent);
+}
+
+[data-theme="nord-light"] .btn-danger {
+    background-color: color-mix(in srgb, #bf616a 12%, transparent);
+    color: #bf616a;
+    box-shadow: none;
+}
+
+[data-theme="nord-light"] .btn-danger:hover {
+    background-color: color-mix(in srgb, #bf616a 20%, transparent);
+}
+
+[data-theme="nord-light"] .btn-ghost {
+    color: #4c566a;
+}
+
+[data-theme="nord-light"] .btn-ghost:hover {
+    color: #5e81ac;
+    background-color: color-mix(in srgb, #5e81ac 8%, transparent);
+}
+
+[data-theme="nord-light"] .sidebar-section {
+    background-color: #e5e9f0;
+    border-color: #d0d6e1;
+}
+
+[data-theme="nord-light"] .file-row {
+    background-color: #e5e9f0;
+    border-color: #d0d6e1;
+}
+
+[data-theme="nord-light"] .file-row:hover {
+    background-color: #dde1ec;
+}
+
+[data-theme="nord-light"] .input-field {
+    background-color: #e5e9f0;
+    border-color: #d0d6e1;
+}

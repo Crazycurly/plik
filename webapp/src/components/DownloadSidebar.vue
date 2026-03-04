@@ -108,7 +108,7 @@ const canAddFiles = computed(() => props.upload.admin && !props.upload.stream)
       <!-- Passphrase display (E2EE only) -->
       <div v-if="upload.e2ee" class="mb-3">
         <label class="text-xs text-surface-500 mb-1 block">Passphrase</label>
-        <div class="flex items-center gap-2 p-2 rounded bg-surface-800/50 min-w-0 overflow-hidden">
+        <div class="flex items-center gap-2 p-2 rounded bg-surface-800/50 border border-surface-700 min-w-0 overflow-hidden">
           <span v-if="passphrase" class="text-xs text-accent-400 font-mono truncate flex-1">{{ passphrase }}</span>
           <span v-else class="text-xs text-surface-500 italic flex-1">Not set</span>
           <button class="text-surface-400 hover:text-accent-400 transition-colors shrink-0"
@@ -145,7 +145,7 @@ const canAddFiles = computed(() => props.upload.admin && !props.upload.stream)
         </svg>
         {{ shareSuccess ? 'Shared!' : 'Share' }}
       </button>
-      <div v-else class="flex items-center gap-2 p-2 rounded bg-surface-800/50 min-w-0 overflow-hidden">
+      <div v-else class="flex items-center gap-2 p-2 rounded bg-surface-800/50 border border-surface-700 min-w-0 overflow-hidden">
         <span class="text-xs text-surface-300 truncate flex-1">{{ shareUrl }}</span>
         <CopyButton :text="shareUrl" size="sm" />
       </div>
@@ -165,7 +165,7 @@ const canAddFiles = computed(() => props.upload.admin && !props.upload.stream)
           </div>
         </div>
       </div>
-      <div class="flex items-center gap-2 p-2 rounded bg-surface-800/50 min-w-0 overflow-hidden">
+      <div class="flex items-center gap-2 p-2 rounded bg-surface-800/50 border border-surface-700 min-w-0 overflow-hidden">
         <span class="text-xs text-surface-300 truncate flex-1">{{ adminUrl }}</span>
         <CopyButton :text="adminUrl" size="sm" />
       </div>

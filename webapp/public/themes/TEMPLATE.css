@@ -105,7 +105,7 @@
  */
 
 /*
- * Buttons (light themes often want pastel tints)
+ * Buttons — FILLED variant (light themes often want pastel tints)
  *
  * [data-theme="THEME_NAME"] .btn-primary {
  *   background-color: color-mix(in srgb, var(--color-accent-500) 12%, transparent);
@@ -114,6 +114,33 @@
  * }
  * [data-theme="THEME_NAME"] .btn-primary:hover {
  *   background-color: color-mix(in srgb, var(--color-accent-500) 20%, transparent);
+ * }
+ */
+
+/*
+ * Buttons — OUTLINED variant (transparent bg, colored border + text)
+ * Great for dark themes that want a sleeker, more minimal look.
+ *
+ * [data-theme="THEME_NAME"] .btn-primary {
+ *   background-color: transparent;
+ *   color: var(--color-accent-500);
+ *   border: 1px solid var(--color-accent-500);
+ *   box-shadow: none;
+ * }
+ * [data-theme="THEME_NAME"] .btn-primary:hover {
+ *   background-color: color-mix(in srgb, var(--color-accent-500) 12%, transparent);
+ * }
+ * [data-theme="THEME_NAME"] .btn-success {
+ *   background-color: transparent;
+ *   color: #22c55e;
+ *   border: 1px solid #22c55e;
+ *   box-shadow: none;
+ * }
+ * [data-theme="THEME_NAME"] .btn-danger {
+ *   background-color: transparent;
+ *   color: #ef4444;
+ *   border: 1px solid #ef4444;
+ *   box-shadow: none;
  * }
  */
 

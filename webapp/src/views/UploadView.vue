@@ -362,7 +362,7 @@ async function doUpload() {
               <textarea
                 v-model="commentText"
                 class="w-full bg-transparent border border-surface-700 rounded-lg p-3 text-sm text-surface-200
-                       placeholder-surface-500 font-mono resize-y focus:outline-none focus:border-accent-500/50
+                       placeholder-surface-500 font-mono resize-y focus:outline-none focus:border-accent-400/50
                        transition-colors min-h-[120px]"
                 :placeholder="isFeatureForced('comments') ? 'Write a comment... (required, Markdown supported)' : 'Write a comment... (Markdown supported)'"
               />
@@ -437,7 +437,7 @@ async function doUpload() {
              class="glass-card p-8 flex flex-col items-center justify-center gap-4 cursor-pointer
                     transition-all duration-200 group"
              :class="isDragging
-               ? 'border-accent-500 bg-accent-500/10 scale-[1.01]'
+               ? 'border-accent-400 bg-accent-500/10 scale-[1.01]'
                : 'hover:bg-surface-700/30'"
              @click="triggerFileSelect">
           <div class="w-16 h-16 rounded-full flex items-center justify-center transition-colors duration-200"
@@ -497,7 +497,7 @@ async function doUpload() {
 
         <!-- Upload Button -->
         <div v-if="hasFiles && !isUploading" class="flex justify-end">
-          <button class="btn-success px-8 py-3 text-base" @click="doUpload">
+          <button class="btn-primary px-8 py-3 text-base" @click="doUpload">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -508,7 +508,7 @@ async function doUpload() {
 
         <!-- Uploading Spinner (while createUpload is in progress) -->
         <div v-if="isUploading" class="flex items-center justify-center py-4">
-          <div class="animate-spin rounded-full h-6 w-6 border-2 border-accent-500 border-t-transparent" />
+          <div class="animate-spin rounded-full h-6 w-6 border-2 border-accent-400 border-t-transparent" />
           <span class="ml-3 text-sm text-surface-400">Creating upload...</span>
         </div>
       </div>

@@ -111,93 +111,56 @@ function prettifyJson() {
   showFeedback('prettify')
 }
 
-// Shared CodeMirror style overrides (font, sizing)
+// Shared CodeMirror style overrides (font, sizing, gutters)
 const plikBaseTheme = EditorView.theme({
   '&': { fontSize: '13px', backgroundColor: 'transparent' },
   '.cm-content': {
     fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
     minHeight: '120px',
+    caretColor: 'var(--color-accent-400)',
   },
+  '&.cm-focused .cm-content': { caretColor: 'var(--color-accent-400)' },
   '.cm-scroller': { overflow: 'auto' },
-})
-
-// Dark theme overrides
-const plikDarkOverrides = EditorView.theme({
-  '.cm-content': { caretColor: '#38bdf8' },
-  '&.cm-focused .cm-content': { caretColor: '#38bdf8' },
   '.cm-gutters': {
-    backgroundColor: 'color-mix(in srgb, #1e293b 40%, transparent)',
-    color: '#475569',
+    backgroundColor: 'color-mix(in srgb, var(--color-surface-800) 40%, transparent)',
+    color: 'var(--color-surface-500)',
     border: 'none',
-    borderRight: '1px solid color-mix(in srgb, #334155 50%, transparent)',
+    borderRight: '1px solid color-mix(in srgb, var(--color-surface-700) 50%, transparent)',
   },
   '.cm-activeLineGutter': {
-    backgroundColor: 'color-mix(in srgb, #334155 40%, transparent)',
-    color: '#94a3b8',
+    backgroundColor: 'color-mix(in srgb, var(--color-surface-700) 40%, transparent)',
+    color: 'var(--color-surface-300)',
   },
   '.cm-activeLine': {
-    backgroundColor: 'color-mix(in srgb, #334155 25%, transparent)',
+    backgroundColor: 'color-mix(in srgb, var(--color-surface-700) 25%, transparent)',
   },
-  '&.cm-focused .cm-cursor': { borderLeftColor: '#38bdf8' },
+  '&.cm-focused .cm-cursor': { borderLeftColor: 'var(--color-accent-400)' },
   '&.cm-focused .cm-selectionBackground, ::selection': {
-    backgroundColor: 'color-mix(in srgb, #0ea5e9 20%, transparent)',
+    backgroundColor: 'color-mix(in srgb, var(--color-accent-500) 20%, transparent)',
     color: 'inherit',
   },
   '.cm-selectionBackground': {
-    backgroundColor: 'color-mix(in srgb, #0ea5e9 15%, transparent)',
+    backgroundColor: 'color-mix(in srgb, var(--color-accent-500) 15%, transparent)',
   },
-  '.cm-foldGutter': { color: '#475569' },
+  '.cm-foldGutter': { color: 'var(--color-surface-500)' },
   '.cm-tooltip': {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    color: '#e2e8f0',
+    backgroundColor: 'var(--color-surface-800)',
+    border: '1px solid var(--color-surface-700)',
+    color: 'var(--color-surface-100)',
   },
-  '.cm-placeholder': { color: '#64748b', fontStyle: 'italic' },
-})
-
-// Light theme overrides
-const plikLightOverrides = EditorView.theme({
-  '.cm-content': { caretColor: '#0369a1' },
-  '&.cm-focused .cm-content': { caretColor: '#0369a1' },
-  '.cm-gutters': {
-    backgroundColor: '#f1f5f9',
-    color: '#94a3b8',
-    border: 'none',
-    borderRight: '1px solid #e2e8f0',
-  },
-  '.cm-activeLineGutter': {
-    backgroundColor: '#e2e8f0',
-    color: '#475569',
-  },
-  '.cm-activeLine': {
-    backgroundColor: 'color-mix(in srgb, #e2e8f0 60%, transparent)',
-  },
-  '&.cm-focused .cm-cursor': { borderLeftColor: '#0369a1' },
-  '&.cm-focused .cm-selectionBackground, ::selection': {
-    backgroundColor: 'color-mix(in srgb, #0ea5e9 15%, transparent)',
-    color: 'inherit',
-  },
-  '.cm-selectionBackground': {
-    backgroundColor: 'color-mix(in srgb, #0ea5e9 10%, transparent)',
-  },
-  '.cm-foldGutter': { color: '#94a3b8' },
-  '.cm-tooltip': {
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
-    color: '#1e293b',
-  },
-  '.cm-placeholder': { color: '#94a3b8', fontStyle: 'italic' },
+  '.cm-placeholder': { color: 'var(--color-surface-500)', fontStyle: 'italic' },
 })
 
 function isDarkTheme() {
-  return document.documentElement.dataset.theme !== 'light'
+  const cs = getComputedStyle(document.documentElement).colorScheme
+  return cs !== 'light'
 }
 
 function getThemeExtensions() {
   if (isDarkTheme()) {
-    return [oneDark, plikDarkOverrides]
+    return [oneDark]
   }
-  return [plikLightOverrides]
+  return []
 }
 
 async function createEditor() {

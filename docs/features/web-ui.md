@@ -63,7 +63,20 @@ docker run -p 8080:8080 \
 
 ## Custom Themes
 
-Plik ships with `dark` (default) and `light` themes. You can create your own:
+Plik ships with `dark` (default) and `light` themes, plus eight community-inspired themes:
+
+| Theme | Type | Based on |
+|-------|------|----------|
+| `solarized-dark` | Dark | [Solarized](https://ethanschoonover.com/solarized/) |
+| `solarized-light` | Light | [Solarized](https://ethanschoonover.com/solarized/) |
+| `nord` | Dark | [Nord](https://www.nordtheme.com/) |
+| `nord-light` | Light | [Nord](https://www.nordtheme.com/) |
+| `catppuccin-mocha` | Dark | [Catppuccin](https://catppuccin.com/) |
+| `catppuccin-latte` | Light | [Catppuccin](https://catppuccin.com/) |
+| `matrix` | Dark | The Matrix — neon green on black |
+| `bewiwi` | Dark | Bold primary colors — pure RGB fun |
+
+You can also create your own:
 
 1. Copy `themes/TEMPLATE.css` to `themes/my-theme.css`
 2. Replace `THEME_NAME` with `my-theme` in the CSS selectors
