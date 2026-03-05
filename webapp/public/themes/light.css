@@ -8,7 +8,7 @@
     color-scheme: light;
 
     /* ── Surface Scale (dark text → light background) ── */
-    --color-surface-50: #2d3748;
+    --color-surface-50: #3d4654;
     /* Emphasized headings, bold stats */
     --color-surface-100: #334155;
     /* Primary body text */
@@ -22,14 +22,14 @@
     /* Subtle labels, timestamps */
     --color-surface-600: #9ca3af;
     /* Hint text below inputs */
-    --color-surface-700: #e2e8f0;
-    /* Subtle dividers */
-    --color-surface-800: #f1f5f9;
-    /* Lightly tinted panels */
+    --color-surface-700: #d1d5db;
+    /* Borders & subtle dividers */
+    --color-surface-800: #f9f9f9;
+    /* Cards, panels, inputs */
     --color-surface-900: #f5f5f5;
-    /* Page background */
+    /* Header background */
     --color-surface-950: #f5f5f5;
-    /* Deepest background */
+    /* Page background */
 
     /* ── Accent Palette ── */
     --color-accent-400: #3b8fc2;
@@ -44,6 +44,32 @@
     /* Text on accent-colored backgrounds */
 }
 
+/* ── Panels & Cards (solid backgrounds, no glassmorphism) ── */
+[data-theme="light"] .glass-card,
+[data-theme="light"] .sidebar-section,
+[data-theme="light"] .file-row,
+[data-theme="light"] .input-field {
+    background-color: var(--color-surface-800);
+    border-color: var(--color-surface-700);
+    backdrop-filter: none;
+}
+
+[data-theme="light"] .glass-card {
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.08);
+}
+
+[data-theme="light"] .sidebar-section {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+}
+
+[data-theme="light"] .file-row {
+    box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.06);
+}
+
+[data-theme="light"] .file-row:hover {
+    background-color: #f0f1f3;
+}
+
 /* ── Toggle Switch ── */
 [data-theme="light"] .toggle-switch {
     background-color: #cbd5e1;
@@ -52,13 +78,6 @@
 
 [data-theme="light"] .toggle-switch[data-active="true"] {
     background-color: #3b8fc2;
-}
-
-/* ── Cards & Panels ── */
-[data-theme="light"] .glass-card {
-    background-color: #f6f7f9;
-    border-color: #d1d5db;
-    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.08);
 }
 
 /* ── Buttons (pastel tints instead of solid fills) ── */
@@ -99,26 +118,4 @@
 [data-theme="light"] .btn-ghost:hover {
     color: var(--color-accent-500);
     background-color: color-mix(in srgb, var(--color-accent-500) 8%, transparent);
-}
-
-/* ── Sidebar, File Rows, Inputs ── */
-[data-theme="light"] .sidebar-section {
-    background-color: #f6f7f9;
-    border-color: #d1d5db;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.06);
-}
-
-[data-theme="light"] .file-row {
-    background-color: #f6f7f9;
-    border-color: #d1d5db;
-    box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.06);
-}
-
-[data-theme="light"] .file-row:hover {
-    background-color: #f0f1f3;
-}
-
-[data-theme="light"] .input-field {
-    background-color: #f6f7f9;
-    border-color: #d1d5db;
 }
