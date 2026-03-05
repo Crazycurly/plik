@@ -8,8 +8,10 @@
  *      (e.g. "my-theme.css")
  *   2. Replace "THEME_NAME" below with your theme name
  *      (must match the filename without .css)
- *   3. Set "theme": "my-theme" in settings.json
- *   4. Customize the colors below
+ *   3. Add your theme name to the "themes" array in settings.json
+ *      (e.g. "themes": ["*", "my-theme"] to keep all built-ins + yours)
+ *   4. Set "theme": "my-theme" in settings.json (or let users pick it)
+ *   5. Customize the colors below
  *
  * COLOR SCALE CONVENTION:
  *   The surface scale goes from 50 (strongest text) to 950

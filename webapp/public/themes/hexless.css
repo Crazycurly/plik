@@ -1,9 +1,9 @@
 /*
- * Plik — Bewiwi Theme
+ * Plik — Hexless Theme
  * Bold primary colors only — pure red, blue, green, yellow.
  * No subtlety. No pastels. Just vibes.
  */
-[data-theme="bewiwi"] {
+[data-theme="hexless"] {
     color-scheme: dark;
 
     /* ── Surface Scale ── */
@@ -43,71 +43,71 @@
 }
 
 /* ── Component Overrides ── */
-[data-theme="bewiwi"] .glass-card {
+[data-theme="hexless"] .glass-card {
     background-color: #000066;
     border-color: #0000ff;
     box-shadow: 4px 4px 0px #ff0000, -2px -2px 0px #00ff00;
 }
 
-[data-theme="bewiwi"] .sidebar-section {
+[data-theme="hexless"] .sidebar-section {
     background-color: #000066;
     border-color: #ff0000;
     box-shadow: 3px 3px 0px #0000ff;
 }
 
-[data-theme="bewiwi"] .file-row {
+[data-theme="hexless"] .file-row {
     border-color: #0000ff;
 }
 
-[data-theme="bewiwi"] .file-row:hover {
+[data-theme="hexless"] .file-row:hover {
     background-color: #000088;
     border-color: #ff0000;
 }
 
-[data-theme="bewiwi"] .input-field {
+[data-theme="hexless"] .input-field {
     background-color: #000033;
     border-color: #00ff00;
 }
 
-[data-theme="bewiwi"] .toggle-switch {
+[data-theme="hexless"] .toggle-switch {
     background-color: #880000;
 }
 
-[data-theme="bewiwi"] .toggle-switch[data-active="true"] {
+[data-theme="hexless"] .toggle-switch[data-active="true"] {
     background-color: #00ff00;
     box-shadow: 0 0 10px #00ff00;
 }
 
 /* Outlined / inverted buttons — colored border + text, transparent fill */
-[data-theme="bewiwi"] .btn-primary {
+[data-theme="hexless"] .btn-primary {
     background-color: transparent;
     color: #0000ff;
     border: 2px solid #0000ff;
     box-shadow: 3px 3px 0px #ff0000;
 }
 
-[data-theme="bewiwi"] .btn-primary:hover {
+[data-theme="hexless"] .btn-primary:hover {
     background-color: rgba(0, 0, 255, 0.15);
 }
 
-[data-theme="bewiwi"] .btn-success {
+[data-theme="hexless"] .btn-success {
     background-color: transparent;
     color: #00ff00;
     border: 2px solid #00ff00;
     box-shadow: 3px 3px 0px #0000ff;
 }
 
-[data-theme="bewiwi"] .btn-success:hover {
+[data-theme="hexless"] .btn-success:hover {
     background-color: rgba(0, 255, 0, 0.15);
 }
 
-[data-theme="bewiwi"] .btn-danger {
+[data-theme="hexless"] .btn-danger {
     background-color: transparent;
     color: #ff0000;
     border: 2px solid #ff0000;
     box-shadow: 3px 3px 0px #000088;
 }
 
-[data-theme="bewiwi"] .btn-danger:hover {
+[data-theme="hexless"] .btn-danger:hover {
     background-color: rgba(255, 0, 0, 0.15);
 }

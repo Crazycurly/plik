@@ -1,28 +1,8 @@
 import { test, expect } from './fixtures.js'
 
-/**
- * Helper: intercept settings.json with the given themes config.
- */
-async function withThemes(page, themes, extra = {}) {
-    await page.route('**/settings.json', async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({
-                name: 'Plik',
-                theme: 'auto',
-                themes,
-                ...extra,
-            }),
-        })
-    })
-}
-
-
-
 test.describe('Theme Picker — visibility', () => {
-    test('picker is visible when multiple themes are available (default: all built-ins)', async ({ page }) => {
-        await withThemes(page, [])  // empty = all built-ins
+    test('picker is visible when multiple themes are available (default: all built-ins)', async ({ page, withThemes }) => {
+        await withThemes(["*"])  // wildcard = all built-ins
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -30,8 +10,8 @@ test.describe('Theme Picker — visibility', () => {
         await expect(picker).toBeVisible()
     })
 
-    test('picker is hidden when only one theme is configured', async ({ page }) => {
-        await withThemes(page, ['dark'])
+    test('picker is hidden when only one theme is configured', async ({ page, withThemes }) => {
+        await withThemes(['dark'])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -39,8 +19,8 @@ test.describe('Theme Picker — visibility', () => {
         await expect(picker).toHaveCount(0)
     })
 
-    test('picker is hidden when themes is an empty-equivalent single entry', async ({ page }) => {
-        await withThemes(page, ['auto'])
+    test('picker is hidden when themes is an empty-equivalent single entry', async ({ page, withThemes }) => {
+        await withThemes(['auto'])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -48,8 +28,8 @@ test.describe('Theme Picker — visibility', () => {
         await expect(picker).toHaveCount(0)
     })
 
-    test('picker shows when exactly two themes configured', async ({ page }) => {
-        await withThemes(page, ['dark', 'light'])
+    test('picker shows when exactly two themes configured', async ({ page, withThemes }) => {
+        await withThemes(['dark', 'light'])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -59,8 +39,8 @@ test.describe('Theme Picker — visibility', () => {
 })
 
 test.describe('Theme Picker — dropdown', () => {
-    test('clicking opens dropdown with theme options', async ({ page }) => {
-        await withThemes(page, ['dark', 'light', 'nord'])
+    test('clicking opens dropdown with theme options', async ({ page, withThemes }) => {
+        await withThemes(['dark', 'light', 'nord'])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -79,8 +59,8 @@ test.describe('Theme Picker — dropdown', () => {
         await expect(page.locator('#theme-option-matrix')).toHaveCount(0)
     })
 
-    test('clicking outside closes the dropdown', async ({ page }) => {
-        await withThemes(page, [])
+    test('clicking outside closes the dropdown', async ({ page, withThemes }) => {
+        await withThemes(["*"])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -94,8 +74,8 @@ test.describe('Theme Picker — dropdown', () => {
         await expect(page.locator('#theme-option-dark')).toHaveCount(0)
     })
 
-    test('selecting a theme closes the dropdown', async ({ page }) => {
-        await withThemes(page, [])
+    test('selecting a theme closes the dropdown', async ({ page, withThemes }) => {
+        await withThemes(["*"])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -108,8 +88,8 @@ test.describe('Theme Picker — dropdown', () => {
 })
 
 test.describe('Theme Picker — theme application', () => {
-    test('selecting a theme applies it via data-theme', async ({ page }) => {
-        await withThemes(page, [])
+    test('selecting a theme applies it via data-theme', async ({ page, withThemes }) => {
+        await withThemes(["*"])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -120,8 +100,8 @@ test.describe('Theme Picker — theme application', () => {
         expect(theme).toBe('light')
     })
 
-    test('selected theme injects the CSS file', async ({ page }) => {
-        await withThemes(page, ['dark', 'light', 'nord'])
+    test('selected theme injects the CSS file', async ({ page, withThemes }) => {
+        await withThemes(['dark', 'light', 'nord'])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -140,8 +120,8 @@ test.describe('Theme Picker — theme application', () => {
         await expect(link).toHaveCount(1)
     })
 
-    test('active theme shows checkmark', async ({ page }) => {
-        await withThemes(page, [])
+    test('active theme shows checkmark', async ({ page, withThemes }) => {
+        await withThemes(["*"])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -157,8 +137,8 @@ test.describe('Theme Picker — theme application', () => {
 })
 
 test.describe('Theme Picker — localStorage persistence', () => {
-    test('selected theme persists across page reload', async ({ page }) => {
-        await withThemes(page, [])
+    test('selected theme persists across page reload', async ({ page, withThemes }) => {
+        await withThemes(["*"])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -178,22 +158,34 @@ test.describe('Theme Picker — localStorage persistence', () => {
         expect(theme).toBe('light')
     })
 
-    test('localStorage theme overrides settings.json default', async ({ page }) => {
+    test('localStorage theme overrides settings.json default', async ({ page, withThemes }) => {
         // Pre-seed localStorage before any navigation
         await page.addInitScript(() => localStorage.setItem('plik-theme', 'nord'))
 
-        await withThemes(page, [])
+        await withThemes(["*"])
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
         // data-theme should be 'nord' from localStorage despite settings.json default being 'auto'
         await expect(page.locator('html')).toHaveAttribute('data-theme', 'nord')
     })
+
+    test('stale localStorage is ignored when theme is not in available list', async ({ page, withThemes }) => {
+        // Pre-seed localStorage with a theme not in the restricted list
+        await page.addInitScript(() => localStorage.setItem('plik-theme', 'auto'))
+
+        await withThemes(['nord'])
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Should fall back to the only available theme, not the stale 'auto'
+        await expect(page.locator('html')).toHaveAttribute('data-theme', 'nord')
+    })
 })
 
 test.describe('Theme Picker — custom theme objects', () => {
-    test('supports object entries with custom labels', async ({ page }) => {
-        await withThemes(page, [
+    test('supports object entries with custom labels', async ({ page, withThemes }) => {
+        await withThemes([
             'dark',
             { name: 'nord', label: 'Arctic Night' },
         ])
@@ -210,8 +202,8 @@ test.describe('Theme Picker — custom theme objects', () => {
 })
 
 test.describe('Theme Picker — layout', () => {
-    test('has "Theme" text label in the button', async ({ page }) => {
-        await withThemes(page, [])
+    test('has "Theme" text label in the button', async ({ page, withThemes }) => {
+        await withThemes(["*"])
         // Use wider viewport so the desktop nav is visible
         await page.setViewportSize({ width: 1280, height: 720 })
         await page.goto('/')
@@ -220,5 +212,72 @@ test.describe('Theme Picker — layout', () => {
         const picker = page.locator('#theme-picker-toggle')
         await expect(picker).toBeVisible()
         await expect(picker).toContainText('Theme')
+    })
+})
+
+test.describe('Theme Picker — defaultDarkTheme / defaultLightTheme', () => {
+    test('auto resolves to defaultDarkTheme when OS prefers dark', async ({ page, withThemes }) => {
+        await page.emulateMedia({ colorScheme: 'dark' })
+        await withThemes(["*"], { defaultDarkTheme: 'solarized-dark' })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        await expect(page.locator('html')).toHaveAttribute('data-theme', 'solarized-dark')
+    })
+
+    test('auto resolves to defaultLightTheme when OS prefers light', async ({ page, withThemes }) => {
+        await page.emulateMedia({ colorScheme: 'light' })
+        await withThemes(["*"], { defaultLightTheme: 'solarized-light' })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        await expect(page.locator('html')).toHaveAttribute('data-theme', 'solarized-light')
+    })
+
+    test('custom default theme injects its CSS file', async ({ page, withThemes }) => {
+        await page.emulateMedia({ colorScheme: 'dark' })
+        await withThemes(["*"], { defaultDarkTheme: 'nord' })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        await expect(page.locator('html')).toHaveAttribute('data-theme', 'nord')
+        const link = page.locator('link[href*="nord.css"]')
+        await expect(link).toHaveCount(1)
+    })
+
+    test('missing defaults fall back to dark/light', async ({ page, withThemes }) => {
+        // Default settings (no defaultDarkTheme/defaultLightTheme specified)
+        await page.emulateMedia({ colorScheme: 'dark' })
+        await withThemes(["*"])
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+        // Switch OS preference to light and reload
+        await page.emulateMedia({ colorScheme: 'light' })
+        await page.reload({ waitUntil: 'networkidle' })
+
+        await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+    })
+})
+
+test.describe('Theme Picker — wildcard themes', () => {
+    test('"*" expands to all built-in themes plus custom entries', async ({ page, withThemes }) => {
+        await withThemes(['*', { name: 'acme', label: 'Acme Corp' }])
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        await page.locator('#theme-picker-toggle').click()
+
+        // Built-in themes should be present
+        await expect(page.locator('#theme-option-auto')).toBeVisible()
+        await expect(page.locator('#theme-option-dark')).toBeVisible()
+        await expect(page.locator('#theme-option-light')).toBeVisible()
+        await expect(page.locator('#theme-option-nord')).toBeVisible()
+
+        // Custom theme should also appear
+        await expect(page.locator('#theme-option-acme')).toBeVisible()
+        await expect(page.locator('#theme-option-acme')).toContainText('Acme Corp')
     })
 })

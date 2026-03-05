@@ -188,7 +188,9 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
 
         <!-- Theme separator + picker (mobile) -->
         <div class="border-t border-surface-700/50 my-1"></div>
-        <ThemePicker>
+        <ThemePicker
+            button-class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-surface-200
+                          hover:bg-surface-700/50 hover:text-surface-100 transition-colors w-full">
           <span>Theme</span>
         </ThemePicker>
         <div class="border-t border-surface-700/50 my-1"></div>

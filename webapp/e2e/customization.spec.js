@@ -13,21 +13,14 @@ test.describe('Customization — settings.json', () => {
         await expect(page).toHaveTitle('Plik')
     })
 
-    test('custom name via settings.json override', async ({ page }) => {
-        // Intercept /settings.json and return custom settings
-        await page.route('**/settings.json', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    name: 'MyFileShare',
-                    backgroundImage: '',
-                    backgroundColor: '',
-                    overlayOpacity: 0.2,
-                    customCSS: '',
-                    customJS: '',
-                }),
-            })
+    test('custom name via settings.json override', async ({ page, withSettings }) => {
+        await withSettings({
+            name: 'MyFileShare',
+            backgroundImage: '',
+            backgroundColor: '',
+            overlayOpacity: 0.2,
+            customCSS: '',
+            customJS: '',
         })
 
         await page.goto('/')
@@ -41,11 +34,8 @@ test.describe('Customization — settings.json', () => {
         await expect(page).toHaveTitle('MyFileShare')
     })
 
-    test('missing settings.json falls back to empty name (white-label safe)', async ({ page }) => {
-        // Intercept settings.json with a 404
-        await page.route('**/settings.json', async (route) => {
-            await route.fulfill({ status: 404, body: '' })
-        })
+    test('missing settings.json falls back to empty name (white-label safe)', async ({ page, withSettings }) => {
+        await withSettings(null)
 
         await page.goto('/')
         await page.waitForLoadState('networkidle')
@@ -79,15 +69,9 @@ test.describe('Customization — theme', () => {
         expect(theme).toBe('light')
     })
 
-    test('explicit dark override ignores OS light preference', async ({ page }) => {
+    test('explicit dark override ignores OS light preference', async ({ page, withSettings }) => {
         await page.emulateMedia({ colorScheme: 'light' })
-        await page.route('**/settings.json', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({ name: 'Plik', theme: 'dark' }),
-            })
-        })
+        await withSettings({ name: 'Plik', theme: 'dark' })
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -95,15 +79,9 @@ test.describe('Customization — theme', () => {
         expect(theme).toBe('dark')
     })
 
-    test('explicit light override ignores OS dark preference', async ({ page }) => {
+    test('explicit light override ignores OS dark preference', async ({ page, withSettings }) => {
         await page.emulateMedia({ colorScheme: 'dark' })
-        await page.route('**/settings.json', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({ name: 'Plik', theme: 'light' }),
-            })
-        })
+        await withSettings({ name: 'Plik', theme: 'light' })
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -111,14 +89,8 @@ test.describe('Customization — theme', () => {
         expect(theme).toBe('light')
     })
 
-    test('custom theme loads CSS file and sets data-theme', async ({ page }) => {
-        await page.route('**/settings.json', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({ name: 'Plik', theme: 'solarized-dark' }),
-            })
-        })
+    test('custom theme loads CSS file and sets data-theme', async ({ page, withSettings }) => {
+        await withSettings({ name: 'Plik', theme: 'solarized-dark' })
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
@@ -131,20 +103,16 @@ test.describe('Customization — theme', () => {
         await expect(link).toHaveCount(1)
     })
 
-    test('non-existent theme falls back gracefully', async ({ page }) => {
-        await page.route('**/settings.json', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({ name: 'Plik', theme: 'nonexistent' }),
-            })
-        })
+    test('non-existent theme falls back gracefully', async ({ page, withSettings }) => {
+        await withSettings({ name: 'Plik', theme: 'nonexistent' })
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
-        // data-theme should still be set (CSS 404 is handled gracefully)
+        // The theme system validates against available themes, so "nonexistent"
+        // falls back to the first available theme (auto → resolves to dark/light).
         const theme = await page.evaluate(() => document.documentElement.dataset.theme)
-        expect(theme).toBe('nonexistent')
+        expect(theme).not.toBe('nonexistent')
+        expect(['dark', 'light']).toContain(theme)
 
         // Page should still be visible and functional
         await expect(page.locator('#app')).toBeVisible()
@@ -164,17 +132,8 @@ test.describe('Customization — logo', () => {
         await expect(logo).toBeVisible()
     })
 
-    test('custom logo image via settings.json override', async ({ page }) => {
-        await page.route('**/settings.json', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    name: 'MyApp',
-                    logo: '/img/test-logo.png',
-                }),
-            })
-        })
+    test('custom logo image via settings.json override', async ({ page, withSettings }) => {
+        await withSettings({ name: 'MyApp', logo: '/img/test-logo.png' })
 
         // Serve a 1x1 transparent PNG so the <img> loads
         await page.route('**/img/test-logo.png', async (route) => {
@@ -207,19 +166,8 @@ test.describe('Customization — logo', () => {
 })
 
 test.describe('Customization — custom CSS', () => {
-    test('custom CSS is injected when customCSS is set', async ({ page }) => {
-        // Intercept settings.json to enable custom CSS
-        await page.route('**/settings.json', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    name: 'Plik',
-                    customCSS: '/css/test-custom.css',
-                    customJS: '',
-                }),
-            })
-        })
+    test('custom CSS is injected when customCSS is set', async ({ page, withSettings }) => {
+        await withSettings({ name: 'Plik', customCSS: '/css/test-custom.css', customJS: '' })
 
         // Serve the custom CSS that sets a distinctive background color
         await page.route('**/css/test-custom.css', async (route) => {
@@ -255,19 +203,8 @@ test.describe('Customization — custom CSS', () => {
 })
 
 test.describe('Customization — custom JS', () => {
-    test('custom JS is injected when customJS is set', async ({ page }) => {
-        // Intercept settings.json to enable custom JS
-        await page.route('**/settings.json', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    name: 'Plik',
-                    customCSS: '',
-                    customJS: '/js/test-custom.js',
-                }),
-            })
-        })
+    test('custom JS is injected when customJS is set', async ({ page, withSettings }) => {
+        await withSettings({ name: 'Plik', customCSS: '', customJS: '/js/test-custom.js' })
 
         // Serve a custom JS that sets a global marker
         await page.route('**/js/test-custom.js', async (route) => {

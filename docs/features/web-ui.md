@@ -15,7 +15,7 @@ Place or volume-mount files into the webapp root (`server/webapp/dist/`, or `/ho
 
 ### Settings
 
-Edit `settings.json` to change the app name, background, and overlay. The file uses JSONC (supports `//` comments):
+Edit `settings.json` to change the app name, theme, background, and more. The file uses JSONC (supports `//` comments):
 
 ```jsonc
 {
@@ -28,6 +28,16 @@ Edit `settings.json` to change the app name, background, and overlay. The file u
   // Theme: "dark", "light", "auto" (OS preference), or a custom theme name
   // matching a CSS file in the themes/ directory (e.g. "solarized-dark")
   "theme": "auto",
+
+  // Available themes in the picker ("*" = all built-in themes, [] = dark only)
+  // Examples: ["dark", "light"] or ["dark", "catppuccin-mocha", "nord"]
+  "themes": ["*"],
+
+  // Theme used by "auto" when the OS prefers dark mode (default: "dark")
+  "defaultDarkTheme": "dark",
+
+  // Theme used by "auto" when the OS prefers light mode (default: "light")
+  "defaultLightTheme": "light",
 
   // Background image path (e.g. "/img/background.jpg")
   "backgroundImage": "",
@@ -74,14 +84,15 @@ Plik ships with `dark` (default) and `light` themes, plus eight community-inspir
 | `catppuccin-mocha` | Dark | [Catppuccin](https://catppuccin.com/) |
 | `catppuccin-latte` | Light | [Catppuccin](https://catppuccin.com/) |
 | `matrix` | Dark | The Matrix — neon green on black |
-| `bewiwi` | Dark | Bold primary colors — pure RGB fun |
+| `hexless` | Dark | Bold primary colors — pure RGB fun |
 
 You can also create your own:
 
 1. Copy `themes/TEMPLATE.css` to `themes/my-theme.css`
 2. Replace `THEME_NAME` with `my-theme` in the CSS selectors
 3. Customize the color values — each token is documented in the template
-4. Set `"theme": "my-theme"` in `settings.json`
+4. Add `"my-theme"` to the `themes` array in `settings.json` (e.g. `["*", "my-theme"]`)
+5. Set `"theme": "my-theme"` in `settings.json`, or let users pick it from the theme picker
 
 Theme files are lazy-loaded on startup and cached by the browser.
 
@@ -92,17 +103,35 @@ Users can switch themes via the palette icon in the header navigation bar. The s
 To control which themes appear in the picker, set the `themes` array in `settings.json`:
 
 ```jsonc
-// All built-in themes available (default when empty)
+// All built-in themes available (default)
+"themes": ["*"]
+
+// No theme picker (dark only)
 "themes": []
 
-// Only allow specific themes
-"themes": ["dark", "light", "catppuccin-mocha"]
+// Only allow one specific theme (disables the picker)
+"themes": ["my-corp"]
 
-// Include a custom theme with a display label
-"themes": ["dark", "light", { "name": "company", "label": "Acme Corp" }]
+// Only allow specific themes
+"themes": ["auto", {"name": "acme-light", "label": "Acme Light"}, {"name": "acme-dark", "label": "Acme Dark"}]
+
+// All built-in themes + your custom ones ("*" expands to all built-ins)
+"themes": ["*", {"name": "custom-light", "label": "Custom Light"}, {"name": "custom-dark", "label": "Custom Dark"}]
 ```
 
 When only one theme is configured, the picker is hidden automatically.
+
+#### Custom Auto Defaults
+
+By default, "auto" mode resolves to the built-in `dark` and `light` themes based on the user's OS preference. You can override which themes "auto" uses:
+
+```jsonc
+// Use Solarized as the default dark/light pair
+"defaultDarkTheme": "custom-dark",
+"defaultLightTheme": "custom-light"
+```
+
+This is especially useful when deploying custom themes — users who select "auto" will automatically get your preferred dark/light pair.
 
 ### Docker
 

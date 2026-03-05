@@ -2,6 +2,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getAvailableThemes, currentTheme, setUserTheme } from '../settings.js'
 
+const props = defineProps({
+    buttonClass: {
+        type: String,
+        default: 'btn-ghost text-sm',
+    },
+})
+
 const open = ref(false)
 const pickerRef = ref(null)
 
@@ -28,12 +35,11 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside, true))
 </script>
 
 <template>
-  <div v-if="showPicker" ref="pickerRef" class="relative">
-    <!-- Trigger button (desktop: icon only, mobile: icon + text via slot) -->
+  <div v-if="showPicker" ref="pickerRef" class="relative w-full">
+    <!-- Trigger button -->
     <button
         id="theme-picker-toggle"
-        class="btn-ghost text-sm"
-        :class="{ 'bg-surface-700/50 text-surface-100': open }"
+        :class="[buttonClass, { 'bg-surface-700/50 text-surface-100': open }]"
         @click.stop="toggle"
         title="Switch theme">
       <!-- Palette icon -->

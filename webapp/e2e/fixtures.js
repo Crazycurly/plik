@@ -73,6 +73,70 @@ export const test = base.extend({
     },
 
     /**
+     * Intercepts /settings.json with the given overrides.
+     * Pass an object to merge with defaults, or `null` to simulate a 404.
+     * Must be called BEFORE page.goto().
+     *
+     * Usage:
+     *   test('my test', async ({ page, withSettings }) => {
+     *       await withSettings({ name: 'MyApp', theme: 'nord' })
+     *       await page.goto('/')
+     *   })
+     *   // 404:
+     *   test('no settings', async ({ page, withSettings }) => {
+     *       await withSettings(null)
+     *       await page.goto('/')
+     *   })
+     */
+    withSettings: async ({ page }, use) => {
+        async function withSettings(overrides) {
+            await page.route('**/settings.json', async (route) => {
+                if (overrides === null) {
+                    await route.fulfill({ status: 404, body: '' })
+                } else {
+                    await route.fulfill({
+                        status: 200,
+                        contentType: 'application/json',
+                        body: JSON.stringify(overrides),
+                    })
+                }
+            })
+        }
+        await use(withSettings)
+    },
+
+    /**
+     * Convenience wrapper: intercepts settings.json with theme picker config.
+     * Merges `{ name: 'Plik', theme: 'auto', themes }` with optional extras.
+     * Must be called BEFORE page.goto().
+     *
+     * Usage:
+     *   test('my test', async ({ page, withThemes }) => {
+     *       await withThemes(['dark', 'light', 'nord'])
+     *       await page.goto('/')
+     *   })
+     *   // With extra settings:
+     *   await withThemes(["*"], { defaultDarkTheme: 'solarized-dark' })
+     */
+    withThemes: async ({ page }, use) => {
+        async function withThemes(themes, extra = {}) {
+            await page.route('**/settings.json', async (route) => {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({
+                        name: 'Plik',
+                        theme: 'auto',
+                        themes,
+                        ...extra,
+                    }),
+                })
+            })
+        }
+        await use(withThemes)
+    },
+
+    /**
      * Provides a page that is already authenticated as the admin user.
      * Login is done via the API (faster than filling the form).
      */

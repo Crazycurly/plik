@@ -16,7 +16,7 @@ const BUILTIN_THEMES = [
     { name: 'solarized-dark', label: 'Solarized Dark' },
     { name: 'solarized-light', label: 'Solarized Light' },
     { name: 'matrix', label: 'Matrix' },
-    { name: 'bewiwi', label: 'Bewiwi' },
+    { name: 'hexless', label: 'Hexless' },
 ]
 
 const STORAGE_KEY = 'plik-theme'
@@ -27,7 +27,9 @@ export const settings = reactive({
     name: '',
     logo: '',
     theme: 'auto',
-    themes: [],
+    themes: ['*'],
+    defaultDarkTheme: 'dark',
+    defaultLightTheme: 'light',
     backgroundImage: '',
     backgroundColor: '',
     overlayOpacity: 0,
@@ -97,7 +99,7 @@ export async function applyTheme(value) {
 
     async function resolve() {
         const name = value === 'auto'
-            ? (mq.matches ? 'dark' : 'light')
+            ? (mq.matches ? settings.defaultDarkTheme : settings.defaultLightTheme)
             : value
 
         // "dark" is the compiled-in default — no external CSS needed.
@@ -125,36 +127,61 @@ export async function applyTheme(value) {
 
 /**
  * Get the list of available themes for the picker.
- * If settings.themes is empty, returns all built-in themes.
- * Otherwise, returns only the themes listed in settings.themes.
+ * - `["*"]`    → expands to all built-in themes (default)
+ * - `[]`       → empty list (no picker, dark only)
+ * - Otherwise  → only the listed themes
  */
 export function getAvailableThemes() {
-    if (!settings.themes || settings.themes.length === 0) {
-        return BUILTIN_THEMES
-    }
-
-    return settings.themes.map(entry => {
-        if (typeof entry === 'string') {
-            // Look up built-in metadata
+    const result = []
+    for (const entry of settings.themes) {
+        if (entry === '*') {
+            // Expand wildcard to all built-ins not already in the result
+            for (const bt of BUILTIN_THEMES) {
+                if (!result.some(r => r.name === bt.name)) {
+                    result.push(bt)
+                }
+            }
+        } else if (typeof entry === 'string') {
             const builtin = BUILTIN_THEMES.find(t => t.name === entry)
-            return builtin || { name: entry, label: entry }
+            result.push(builtin || { name: entry, label: entry })
+        } else {
+            result.push({ name: entry.name, label: entry.label || entry.name })
         }
-        // Object with name + label
-        return { name: entry.name, label: entry.label || entry.name }
-    })
+    }
+    return result
 }
 
 /**
  * Get the user's preferred theme from localStorage, falling back to settings default.
+ * Validates the stored theme against the available themes list — if the stored
+ * theme is not in the list, it is ignored (prevents stale localStorage from
+ * overriding a restricted theme configuration).
+ * Also validates settings.theme — if it's not available, falls back to the
+ * first available theme (handles single-theme deployments).
  */
 export function getUserTheme() {
+    const available = getAvailableThemes()
+
     try {
         const stored = localStorage.getItem(STORAGE_KEY)
-        if (stored) return stored
+        if (stored && available.some(t => t.name === stored)) {
+            return stored
+        }
+        if (stored) {
+            // Stored theme is not available — clear stale value
+            localStorage.removeItem(STORAGE_KEY)
+        }
     } catch {
         // localStorage unavailable
     }
-    return settings.theme
+
+    // Validate the settings default against available themes
+    if (available.some(t => t.name === settings.theme)) {
+        return settings.theme
+    }
+
+    // Neither stored nor default is valid — use first available theme
+    return available.length > 0 ? available[0].name : 'dark'
 }
 
 /**
