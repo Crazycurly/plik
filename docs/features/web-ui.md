@@ -98,7 +98,7 @@ Theme files are lazy-loaded on startup and cached by the browser.
 
 ### Theme Picker
 
-Users can switch themes via the palette icon in the header navigation bar. The selected theme is stored in the browser's localStorage and persists across page reloads.
+Users can switch themes via the palette icon in the header navigation bar. The selected theme is stored in the browser's localStorage and persists across page reloads. For authenticated users, the theme preference is also saved to their account — it follows them across devices and browsers automatically.
 
 To control which themes appear in the picker, set the `themes` array in `settings.json`:
 
@@ -110,7 +110,7 @@ To control which themes appear in the picker, set the `themes` array in `setting
 "themes": []
 
 // Only allow one specific theme (disables the picker)
-"themes": ["my-corp"]
+"themes": ["acme"]
 
 // Only allow specific themes
 "themes": ["auto", {"name": "acme-light", "label": "Acme Light"}, {"name": "acme-dark", "label": "Acme Dark"}]

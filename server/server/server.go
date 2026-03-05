@@ -401,6 +401,7 @@ func (ps *PlikServer) getHTTPHandler() (handler http.Handler) {
 	router.Handle("/auth/logout", stdChain.Then(handlers.Logout)).Methods("GET")
 
 	router.Handle("/me", authenticatedChain.Then(handlers.UserInfo)).Methods("GET")
+	router.Handle("/me", authenticatedChain.Then(handlers.PatchMe)).Methods("PATCH")
 	router.Handle("/me", authenticatedChain.Then(handlers.DeleteAccount)).Methods("DELETE")
 	router.Handle("/me/token", authenticatedChain.Append(middleware.Paginate).Then(handlers.GetUserTokens)).Methods("GET")
 	router.Handle("/me/token", authenticatedChain.Then(handlers.CreateToken)).Methods("POST")

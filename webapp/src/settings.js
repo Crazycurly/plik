@@ -186,8 +186,12 @@ export function getUserTheme() {
 
 /**
  * Set the user's theme preference — writes to localStorage and applies immediately.
+ * When logged in, also persists to the server (fire-and-forget).
+ * @param {string} name - theme name
+ * @param {object} opts
+ * @param {boolean} opts.skipSync - if true, skip server persistence (used when applying server value)
  */
-export async function setUserTheme(name) {
+export async function setUserTheme(name, { skipSync = false } = {}) {
     try {
         localStorage.setItem(STORAGE_KEY, name)
     } catch {
@@ -195,6 +199,25 @@ export async function setUserTheme(name) {
     }
     currentTheme.value = name
     await applyTheme(name)
+
+    // Persist to backend if logged in (fire-and-forget)
+    if (!skipSync) {
+        // Lazy import to avoid circular dependency (authStore imports settings)
+        const { auth } = await import('./authStore.js')
+        if (auth.user) {
+            const { patchMe } = await import('./api.js')
+            patchMe({ theme: name }).catch(() => { })
+        }
+    }
+}
+
+/**
+ * Apply the user's server-side theme on login/session restore.
+ * No-op if the user hasn't set a theme server-side (theme is empty).
+ */
+export function syncThemeFromUser(user) {
+    if (!user?.theme) return
+    setUserTheme(user.theme, { skipSync: true })
 }
 
 /**

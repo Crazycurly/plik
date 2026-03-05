@@ -107,6 +107,7 @@ func TestUpdateUser(t *testing.T) {
 		MaxUserSize: 1234,
 		MaxTTL:      1234,
 		IsAdmin:     true,
+		Theme:       "nord",
 	}
 
 	params := *userOK
@@ -119,6 +120,7 @@ func TestUpdateUser(t *testing.T) {
 	params.MaxUserSize = 0
 	params.MaxTTL = 0
 	params.IsAdmin = false
+	params.Theme = "catppuccin-mocha"
 
 	user := *userOK
 	err := UpdateUser(&user, &params)
@@ -134,6 +136,7 @@ func TestUpdateUser(t *testing.T) {
 	require.Equal(t, params.MaxUserSize, user.MaxUserSize)
 	require.Equal(t, params.MaxTTL, user.MaxTTL)
 	require.Equal(t, params.IsAdmin, user.IsAdmin)
+	require.Equal(t, userOK.Theme, user.Theme) // Theme is NOT copied by UpdateUser (managed via PATCH /me)
 
 	params = *userOK
 	params.Password = "newpassword"

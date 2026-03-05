@@ -48,7 +48,7 @@ Core types used throughout the server:
 |------|---------|
 | `upload.go` | `Upload` struct — container for files with TTL, options, password, E2EE scheme |
 | `file.go` | `File` struct + status constants (`missing`/`uploading`/`uploaded`/`removed`/`deleted`) |
-| `user.go` | `User` struct + provider constants (`local`/`google`/`ovh`/`oidc`) |
+| `user.go` | `User` struct + provider constants (`local`/`google`/`ovh`/`oidc`), includes `Theme` field for webapp theme preference |
 | `token.go` | `Token` struct — UUID-based upload tokens |
 | `cli_auth_session.go` | `CLIAuthSession` struct — ephemeral device auth sessions for CLI login |
 | `config.go` | `Configuration` struct — TOML parsing + env var override |
@@ -231,7 +231,7 @@ Each handler file contains one or more `http.Handler` functions.
 | `ovh.go` | `OvhLogin`, `OvhCallback` | OVH OAuth |
 | `oidc.go` | `OIDCLogin`, `OIDCCallback` | OpenID Connect |
 | `cli_auth.go` | `CLIAuthInit`, `CLIAuthApprove`, `CLIAuthPoll` | CLI device auth flow |
-| `me.go` | `UserInfo`, `DeleteAccount`, `GetUserStatistics` | Current user |
+| `me.go` | `UserInfo`, `PatchMe`, `DeleteAccount`, `GetUserStatistics` | Current user |
 | `token.go` | `GetUserTokens`, `CreateToken`, `RevokeToken` | Token management |
 | `user.go` | `GetUsers`, `CreateUser`, `UpdateUser` | User management |
 | `admin.go` | `GetServerStatistics`, `GetUploads`, `RemoveUserUploads`, `GetUserUploads` | Admin endpoints |

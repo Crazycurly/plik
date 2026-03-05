@@ -26,6 +26,7 @@ type User struct {
 	Name           string `json:"name,omitempty"`
 	Email          string `json:"email,omitempty"`
 	ProfilePicture string `json:"profilePicture,omitempty"` // URL of the user's avatar from the OAuth provider (Google, OIDC)
+	Theme          string `json:"theme,omitempty"`          // User's preferred theme (synced from webapp, empty = not set)
 	IsAdmin        bool   `json:"admin"`
 
 	MaxFileSize int64 `json:"maxFileSize"`
