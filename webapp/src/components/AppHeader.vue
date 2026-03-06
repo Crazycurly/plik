@@ -1,10 +1,12 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { config, isFeatureEnabled } from '../config.js'
 import { auth, clearImpersonate } from '../authStore.js'
-import { settings } from '../settings.js'
+import { settings, getAvailableThemes } from '../settings.js'
 import ThemePicker from './ThemePicker.vue'
+
+const showThemePicker = computed(() => getAvailableThemes().length > 1)
 
 const route = useRoute()
 const mobileOpen = ref(false)
@@ -77,10 +79,12 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
         </a>
 
         <!-- Separator + Theme picker -->
-        <div class="w-px h-5 bg-surface-700/50 mx-1"></div>
-        <ThemePicker>
-          <span>Theme</span>
-        </ThemePicker>
+        <template v-if="showThemePicker">
+          <div class="w-px h-5 bg-surface-700/50 mx-1"></div>
+          <ThemePicker>
+            <span>Theme</span>
+          </ThemePicker>
+        </template>
 
         <!-- Separator before auth -->
         <div v-if="isFeatureEnabled('authentication')"
@@ -187,13 +191,15 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
         </a>
 
         <!-- Theme separator + picker (mobile) -->
-        <div class="border-t border-surface-700/50 my-1"></div>
-        <ThemePicker
-            button-class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-surface-200
-                          hover:bg-surface-700/50 hover:text-surface-100 transition-colors w-full">
-          <span>Theme</span>
-        </ThemePicker>
-        <div class="border-t border-surface-700/50 my-1"></div>
+        <template v-if="showThemePicker">
+          <div class="border-t border-surface-700/50 my-1"></div>
+          <ThemePicker
+              button-class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-surface-200
+                            hover:bg-surface-700/50 hover:text-surface-100 transition-colors w-full">
+            <span>Theme</span>
+          </ThemePicker>
+        </template>
+        <div v-if="showThemePicker || isFeatureEnabled('authentication')" class="border-t border-surface-700/50 my-1"></div>
 
         <router-link v-if="auth.user"
                      to="/home"
