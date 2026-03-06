@@ -178,28 +178,56 @@ func (b *Backend) newPutObjectOptions(contentType string) minio.PutObjectOptions
 
 // RemoveFile implementation for S3 Data Backend
 func (b *Backend) RemoveFile(file *common.File) (err error) {
-	// Try removing the new object name format first ({uploadID}.{fileID})
-	objectName := b.getObjectName(file.UploadID, file.ID)
-	err = b.client.RemoveObject(context.TODO(), b.config.Bucket, objectName, minio.RemoveObjectOptions{})
+	// Build stat options with server side encryption if configured
+	statOpts := minio.StatObjectOptions{}
+	statOpts.ServerSideEncryption, err = b.getServerSideEncryption(file)
 	if err != nil {
-		errResponse := minio.ToErrorResponse(err)
-		if errResponse.Code != "NoSuchKey" {
-			return fmt.Errorf("unable to remove s3 object %s : %s", objectName, err)
-		}
+		return err
+	}
 
-		// Fall back to legacy object name format ({fileID}) for backward compatibility
-		legacyName := b.getObjectNameLegacy(file.ID)
-		err = b.client.RemoveObject(context.TODO(), b.config.Bucket, legacyName, minio.RemoveObjectOptions{})
-		if err != nil {
-			errResponse = minio.ToErrorResponse(err)
-			if errResponse.Code == "NoSuchKey" {
-				return nil
-			}
-			return fmt.Errorf("unable to remove s3 object %s : %s", legacyName, err)
-		}
+	// Try new object name format first ({uploadID}.{fileID})
+	objectName := b.getObjectName(file.UploadID, file.ID)
+	removed, err := b.removeObject(objectName, statOpts)
+	if err != nil {
+		return fmt.Errorf("unable to remove s3 object %s : %s", objectName, err)
+	}
+	if removed {
+		return nil
+	}
+
+	// Fall back to legacy object name format ({fileID}) for backward compatibility
+	legacyName := b.getObjectNameLegacy(file.ID)
+	_, err = b.removeObject(legacyName, statOpts)
+	if err != nil {
+		return fmt.Errorf("unable to remove s3 object %s : %s", legacyName, err)
 	}
 
 	return nil
+}
+
+// removeObject checks if an object exists via StatObject, then removes it.
+// S3's DeleteObject API returns success even for non-existent objects,
+// so we must check existence first to know whether the object was actually found.
+// The VersionID from StatObject is passed to RemoveObject to ensure permanent
+// deletion on versioned buckets (otherwise only a delete marker is created).
+// Returns (true, nil) if removed, (false, nil) if not found, (false, err) on error.
+func (b *Backend) removeObject(objectName string, statOpts minio.StatObjectOptions) (removed bool, err error) {
+	info, err := b.client.StatObject(context.TODO(), b.config.Bucket, objectName, statOpts)
+	if err != nil {
+		errResponse := minio.ToErrorResponse(err)
+		if errResponse.Code == "NoSuchKey" {
+			return false, nil
+		}
+		return false, err
+	}
+
+	removeOpts := minio.RemoveObjectOptions{VersionID: info.VersionID}
+	err = b.client.RemoveObject(context.TODO(), b.config.Bucket, objectName, removeOpts)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (b *Backend) getObjectName(uploadID, fileID string) string {

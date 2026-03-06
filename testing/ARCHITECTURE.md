@@ -45,6 +45,14 @@ DOCKER_VERSION="XXX" testing/test_backends.sh minio  # Specific docker image ver
 
 The actual test code lives in `plik/z*_e2e_*_test.go`. The `testing/` scripts provide the Docker infrastructure to run those same tests against real backends instead of the default in-memory backend. See [plik/ARCHITECTURE.md — E2E Test Suite](../plik/ARCHITECTURE.md#e2e-test-suite) for details on the test infrastructure, server bootstrapping, and what each test file covers.
 
+### Per-Backend Storage-Level Tests
+
+Each cloud data backend also has integration tests in its own package (`server/data/s3/`, `server/data/gcs/`, `server/data/swift/`) that verify objects are truly removed from the underlying storage after `RemoveFile`. These tests use `t.Skip` when `PLIKD_CONFIG` is not set or doesn't point to the matching backend. They run automatically during `make test` (skipping), and can be triggered with a real backend via:
+
+```bash
+PLIKD_CONFIG=testing/minio/plikd.cfg go test ./server/data/s3/... -v -race
+```
+
 ### Backend Coverage
 
 | Backend | Tests | Type |
