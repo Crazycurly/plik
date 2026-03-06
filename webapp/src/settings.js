@@ -213,11 +213,16 @@ export async function setUserTheme(name, { skipSync = false } = {}) {
 
 /**
  * Apply the user's server-side theme on login/session restore.
- * No-op if the user hasn't set a theme server-side (theme is empty).
+ * No-op if the user hasn't set a theme server-side (theme is empty)
+ * or if the stored theme is not in the available themes list (stale DB value
+ * from a theme that was later removed from settings.json).
  */
 export function syncThemeFromUser(user) {
     if (!user?.theme) return
-    setUserTheme(user.theme, { skipSync: true })
+    const available = getAvailableThemes()
+    if (available.some(t => t.name === user.theme)) {
+        setUserTheme(user.theme, { skipSync: true })
+    }
 }
 
 /**

@@ -281,3 +281,30 @@ test.describe('Theme Picker — wildcard themes', () => {
         await expect(page.locator('#theme-option-acme')).toContainText('Acme Corp')
     })
 })
+
+test.describe('Theme Picker — stale DB theme', () => {
+    test('user theme from DB is ignored when not in available themes list', async ({ authenticatedPage: page, withThemes }) => {
+        // Set the user's theme to 'nord' via PATCH /me
+        await page.evaluate(async () => {
+            const xsrfMatch = document.cookie.match(/(?:^|;\s*)plik-xsrf=([^;]+)/)
+            const xsrf = xsrfMatch ? xsrfMatch[1] : ''
+            const headers = { 'Content-Type': 'application/json' }
+            if (xsrf) headers['X-XSRFToken'] = xsrf
+
+            await fetch('/me', {
+                method: 'PATCH',
+                credentials: 'same-origin',
+                headers,
+                body: JSON.stringify({ theme: 'nord' }),
+            })
+        })
+
+        // Now restrict available themes to only 'dark' — 'nord' is NOT in the list
+        await withThemes(['light'])
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // The stale DB theme ('nord') should be ignored — 'dark' should be applied
+        await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+    })
+})
