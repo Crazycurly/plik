@@ -107,7 +107,7 @@ do
     fi
 	if [ -f "changelog/$gitTag" ]; then
 		# '%at': author date, UNIX timestamp
-		release_date=$(git show -s --pretty="format:%at" "refs/tags/$gitTag")
+		release_date=$(git show -s --pretty="format:%at" "refs/tags/$gitTag"|tail -n 1)
 		release_json="{\"name\": \"$gitTag\", \"date\": $release_date}"
 		releases+=("$release_json")
 	fi
