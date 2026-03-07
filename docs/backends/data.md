@@ -30,6 +30,11 @@ DataBackend = "s3"
     SendContentMd5 = false  # Use Content-MD5 instead of x-amz-checksum-* headers (for strict S3-compatible APIs like B2)
 ```
 
+### Bucket Versioning
+
+> [!WARNING]
+> Plik permanently deletes files from the S3 bucket, even if bucket versioning is enabled. Consider disabling versioning on your Plik bucket to avoid accumulating unnecessary delete markers.
+
 ### Server-Side Encryption
 
 | Mode | Description |
