@@ -28,8 +28,12 @@ func RestrictDownloadDomain(config *common.Configuration) func(http.Handler) htt
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-			// No download domain configured → pass through
-			if config.GetDownloadDomain() == nil {
+			// No download domain separation configured → pass through.
+			// Both PlikDomain and DownloadDomain must be set for download domain
+			// restriction to take effect. If only DownloadDomain is set (no PlikDomain),
+			// there is no domain to redirect non-file requests to, so we pass through
+			// for backward compatibility with pre-1.4 deployments.
+			if config.GetDownloadDomain() == nil || config.GetPlikDomain() == nil {
 				next.ServeHTTP(resp, req)
 				return
 			}

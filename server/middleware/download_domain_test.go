@@ -129,7 +129,7 @@ func TestRestrictDownloadDomain_RedirectPreservesPath(t *testing.T) {
 	require.Equal(t, "https://plik.root.gg/upload/abc123?foo=bar", rr.Header().Get("Location"))
 }
 
-func TestRestrictDownloadDomain_ForbiddenWithoutPlikDomain(t *testing.T) {
+func TestRestrictDownloadDomain_OnlyDownloadDomain_PassesThrough(t *testing.T) {
 	config := common.NewConfiguration()
 	config.DownloadDomain = "https://dl.plik.root.gg"
 	require.NoError(t, config.Initialize())
@@ -137,14 +137,14 @@ func TestRestrictDownloadDomain_ForbiddenWithoutPlikDomain(t *testing.T) {
 	handler, called := newTestHandler()
 	middleware := RestrictDownloadDomain(config)(handler)
 
+	// Non-file request on download domain WITHOUT PlikDomain set → pass through (backward compat)
 	req := httptest.NewRequest("GET", "/config", nil)
 	req.Host = "dl.plik.root.gg"
 	rr := httptest.NewRecorder()
 	middleware.ServeHTTP(rr, req)
 
-	require.False(t, *called, "non-file endpoint should not pass through on download domain")
-	require.Equal(t, http.StatusForbidden, rr.Code)
-	require.Contains(t, rr.Body.String(), "file downloads")
+	require.True(t, *called, "should pass through when PlikDomain is not set (backward compat)")
+	require.Equal(t, http.StatusOK, rr.Code)
 }
 
 func TestRestrictDownloadDomain_Alias(t *testing.T) {
