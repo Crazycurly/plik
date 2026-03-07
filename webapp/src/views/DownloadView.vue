@@ -13,6 +13,8 @@ import FileRow from '../components/FileRow.vue'
 import CopyButton from '../components/CopyButton.vue'
 import QrCodeDialog from '../components/QrCodeDialog.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import ErrorState from '../components/ErrorState.vue'
+import ErrorBanner from '../components/ErrorBanner.vue'
 import { defineAsyncComponent } from 'vue'
 const CodeEditor = defineAsyncComponent(() => import('../components/CodeEditor.vue'))
 
@@ -606,32 +608,12 @@ watch(activeFiles, (files) => {
         </div>
 
         <!-- Error -->
-        <div v-else-if="error"
-             class="glass-card border-danger-500/50 p-6 text-center animate-fade-in">
-          <svg class="w-12 h-12 text-danger-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p class="text-danger-500 font-medium">{{ error }}</p>
-          <button class="btn-ghost mt-4" @click="fetchUpload">Try again</button>
-        </div>
+        <ErrorState v-else-if="error" :message="error" @retry="fetchUpload" />
 
         <!-- Upload Content -->
         <template v-else-if="upload">
           <!-- Inline Error Banner (for errors during file upload) -->
-          <div v-if="uploadError"
-               class="glass-card border-danger-500/50 p-4 flex items-center gap-3 animate-fade-in">
-            <svg class="w-5 h-5 text-danger-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="text-sm text-danger-500">{{ uploadError }}</span>
-            <button class="ml-auto text-surface-400 hover:text-surface-100" @click="uploadError = null">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          <ErrorBanner v-if="uploadError" :message="uploadError" @dismiss="uploadError = null" />
           <!-- Comment -->
           <div v-if="upload.comments" class="glass-card p-4 animate-fade-in">
             <div class="flex items-center gap-2 mb-2">

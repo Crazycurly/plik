@@ -3,7 +3,7 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { auth, impersonate as doImpersonate, clearImpersonate } from '../authStore.js'
 import { config } from '../config.js'
-import { showError } from '../notification.js'
+import ErrorBanner from '../components/ErrorBanner.vue'
 import UploadControls from '../components/UploadControls.vue'
 import {
     getServerStats, getAdminUsers, getAdminUploads, searchUsers,
@@ -84,6 +84,7 @@ const editSaving = ref(false)
 
 // ── Confirm dialog ──
 const confirm = ref(null)
+const error = ref(null)
 
 // ── Helpers ──
 
@@ -96,7 +97,7 @@ async function loadStats() {
     try {
         stats.value = await getServerStats()
     } catch (err) {
-        showError('Could not load server stats')
+        error.value = 'Could not load server stats'
     } finally {
         statsLoading.value = false
     }
@@ -123,7 +124,7 @@ async function loadUsers(more = false) {
         usersCursor.value = data.after || null
         usersTotal.value = data.total ?? null
     } catch (err) {
-        showError('Could not load users')
+        error.value = 'Could not load users'
     } finally {
         usersLoading.value = false
     }
@@ -229,7 +230,7 @@ async function loadUploads(more = false) {
         uploadsCursor.value = data.after || null
         uploadsTotal.value = data.total ?? null
     } catch (err) {
-        showError('Could not load uploads')
+        error.value = 'Could not load uploads'
     } finally {
         uploadsLoading.value = false
     }
@@ -257,7 +258,7 @@ async function viewUserInUsersTab(userId) {
                 .finally(() => nextTick(() => { internalNav = false }))
         }
     } catch {
-        showError('Could not find user')
+        error.value = 'Could not find user'
     }
 }
 
@@ -375,7 +376,7 @@ function handleDeleteUser(user) {
                 await apiDeleteUser(user.id)
                 users.value = users.value.filter(u => u.id !== user.id)
             } catch (err) {
-                showError('Could not delete user')
+                error.value = 'Could not delete user'
             }
             confirm.value = null
         }
@@ -390,7 +391,7 @@ function handleDeleteUpload(upload) {
                 await removeUpload(upload.id, upload.uploadToken)
                 uploads.value = uploads.value.filter(u => u.id !== upload.id)
             } catch (err) {
-                showError('Could not delete upload')
+                error.value = 'Could not delete upload'
             }
             confirm.value = null
         }
@@ -518,7 +519,7 @@ onMounted(async () => {
     try {
         version.value = await getVersion()
     } catch (err) {
-        showError('Could not load version info')
+        error.value = 'Could not load version info'
     }
 
     // Initialize from URL
@@ -628,6 +629,9 @@ onMounted(async () => {
 
       <!-- ═══════ Main Content ═══════ -->
       <main class="flex-1 min-w-0">
+
+        <!-- Error Banner -->
+        <ErrorBanner v-if="error" :message="error" @dismiss="error = null" class="mb-4" />
 
         <!-- ─── Stats View ─── -->
         <template v-if="display === 'stats'">

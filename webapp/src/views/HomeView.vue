@@ -3,7 +3,7 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { auth, logout } from '../authStore.js'
 import { config, isFeatureEnabled } from '../config.js'
-import { showError } from '../notification.js'
+import ErrorBanner from '../components/ErrorBanner.vue'
 import UploadControls from '../components/UploadControls.vue'
 import {
     getUserUploads, deleteUserUploads, removeUpload,
@@ -58,6 +58,7 @@ const showEditAccount = ref(false)
 const editForm = ref({})
 const editSaving = ref(false)
 const editError = ref('')
+const error = ref(null)
 
 // ── Helpers ──
 
@@ -72,7 +73,7 @@ async function loadUserStats() {
     try {
         userStats.value = await getUserStatistics()
     } catch (e) {
-        showError('Failed to load user stats')
+        error.value = 'Failed to load user stats'
     } finally {
         statsLoading.value = false
     }
@@ -125,7 +126,7 @@ async function loadUploads(more = false) {
         uploadsCursor.value = data.after || null
         uploadsTotal.value = data.total ?? null
     } catch (err) {
-        showError('Could not load uploads')
+        error.value = 'Could not load uploads'
     } finally {
         uploadsLoading.value = false
     }
@@ -139,7 +140,7 @@ async function handleDeleteUpload(upload) {
                 await removeUpload(upload.id, upload.uploadToken)
                 uploads.value = uploads.value.filter(u => u.id !== upload.id)
             } catch (err) {
-                showError('Could not delete upload')
+                error.value = 'Could not delete upload'
             }
             confirm.value = null
         }
@@ -156,7 +157,7 @@ async function handleDeleteAllUploads() {
                 uploads.value = []
                 uploadsCursor.value = null
             } catch (err) {
-                showError('Could not delete uploads')
+                error.value = 'Could not delete uploads'
             }
             confirm.value = null
         }
@@ -224,7 +225,7 @@ async function loadTokens(more = false) {
         }
         tokensCursor.value = data.after || null
     } catch (err) {
-        showError('Could not load tokens')
+        error.value = 'Could not load tokens'
     } finally {
         tokensLoading.value = false
     }
@@ -236,7 +237,7 @@ async function handleCreateToken() {
         tokens.value = [token, ...tokens.value]
         newTokenComment.value = ''
     } catch (err) {
-        showError('Could not create token')
+        error.value = 'Could not create token'
     }
 }
 
@@ -248,7 +249,7 @@ async function handleRevokeToken(token) {
                 await revokeToken(token.token)
                 tokens.value = tokens.value.filter(t => t.token !== token.token)
             } catch (err) {
-                showError('Could not revoke token')
+                error.value = 'Could not revoke token'
             }
             confirm.value = null
         }
@@ -270,7 +271,7 @@ async function handleDeleteAccount() {
                 auth.user = null
                 router.push('/')
             } catch (err) {
-                showError('Could not delete account')
+                error.value = 'Could not delete account'
             }
             confirm.value = null
         }
@@ -513,6 +514,9 @@ onMounted(() => {
 
       <!-- ═══════ Main Content ═══════ -->
       <main class="flex-1 min-w-0">
+
+        <!-- Error Banner -->
+        <ErrorBanner v-if="error" :message="error" @dismiss="error = null" class="mb-4" />
 
         <!-- ─── Stats View ─── -->
         <template v-if="display === 'stats'">

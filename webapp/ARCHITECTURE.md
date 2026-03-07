@@ -226,7 +226,12 @@ try { return JSON.parse(text) } catch { return text }
 
 ### Error display
 
-Errors from `fetchUpload` are displayed inline (not redirecting). This shows the actual server message like `"upload feafea not found"` instead of a generic error.
+All views use the same reusable error components for consistent look and feel:
+
+| Component | Purpose | Display |
+|-----------|---------|--------|
+| `ErrorState` | Full-page error when content can't be loaded (e.g. upload not found) | Centered glass-card with danger icon, message, and retry button — replaces content area |
+| `ErrorBanner` | Inline error for API failures while content remains visible | Horizontal glass-card with danger icon, message, and dismiss ✕ button — sits atop content |
 
 ### Separated error states in DownloadView
 
@@ -234,8 +239,8 @@ DownloadView uses **two separate error refs** to avoid upload errors from hiding
 
 | Ref | Purpose | Display |
 |-----|---------|---------|
-| `error` | Page-level failures (e.g., `fetchUpload` fails, upload not found) | Full-page error state via `v-else-if="error"` — replaces entire content |
-| `uploadError` | Non-file operational errors (reserved for future use) | Dismissible inline banner within the upload content area |
+| `error` | Page-level failures (e.g., `fetchUpload` fails, upload not found) | Full-page error state via `ErrorState` component (`v-else-if="error"`) — replaces entire content |
+| `uploadError` | Non-file operational errors (reserved for future use) | Dismissible inline `ErrorBanner` within the upload content area |
 
 > **Why two refs**: The template uses `v-if="loading"` / `v-else-if="error"` / `v-else-if="upload"` branching. If file upload errors set `error`, the `v-else-if="error"` branch takes over and hides the sidebar + file list. The `uploadError` ref keeps errors in the `v-else-if="upload"` block so the user retains context.
 
@@ -514,20 +519,25 @@ App.vue
 │   ├── UploadView.vue     — file staging, settings, upload execution
 │   │   ├── UploadSidebar  — upload settings (one-shot, stream, TTL, E2EE, etc.) with (?) help tooltips
 │   │   ├── FileRow        — individual file display
+│   │   ├── ErrorBanner    — inline dismissible error banner
 │   │   └── CodeEditor     — text paste mode with syntax highlighting
 │   └── DownloadView.vue   — file list, admin actions
 │       ├── DownloadSidebar — upload info (E2EE badge), share (passphrase + toggle), admin URL, actions
 │       ├── FileRow         — file link (preview), caret (details), download/QR/copy/view/remove
+│       ├── ErrorState      — full-page error state (not found, network error)
+│       ├── ErrorBanner     — inline dismissible error banner
 │       ├── CodeEditor      — inline file viewer (read-only)
 │       ├── QrCodeDialog    — QR code modal
 │       ├── CopyButton      — clipboard copy with feedback
 │       └── ConfirmDialog   — confirmation modal
 ├── LoginView.vue          — local login form + OAuth/OIDC buttons
 ├── HomeView.vue           — user dashboard (uploads/tokens/account)
+│   ├── ErrorBanner        — inline dismissible error banner
 │   ├── CopyButton         — clipboard copy for tokens
 │   ├── EditUserModal      — shared edit-user modal (quotas, name, email, password)
 │   └── UploadCard         — shared upload card (files, tokens, actions)
 ├── AdminView.vue          — admin panel (stats/users/uploads)
+│   ├── ErrorBanner        — inline dismissible error banner
 │   ├── EditUserModal      — shared edit-user modal (quotas always shown)
 │   └── UploadCard         — shared upload card (with user column)
 ├── ClientsView.vue        — CLI client downloads (from embedded build info)
@@ -549,6 +559,8 @@ Reactive notification singleton for surfacing user-facing errors and success mes
 - `showError(msg)` / `showSuccess(msg)` — set the notification and start a 5-second auto-dismiss timer
 - `dismiss()` — clears immediately
 - `NotificationBanner.vue` — mounted in `App.vue`, renders the notification as a fixed toast below the header
+
+> **Note**: HomeView and AdminView use the reusable `ErrorBanner` component for persistent inline API-error display instead of `showError()` toasts. The notification store is still used by other parts of the app for ephemeral success/error messages.
 
 ### LoginView (`/#/login`)
 
@@ -885,7 +897,7 @@ For full details on the Docker multi-stage build and release packaging, see [rel
 
 11. **`webapp/dist/` is gitignored** — never commit build artifacts. The CI/Docker build produces them fresh.
 
-12. **DownloadView has two error refs** — `error` (page-level) and `uploadError` (inline banner). Setting file upload errors on `error` hides the entire upload content due to template branching. Always use `uploadError` for file transfer failures.
+12. **DownloadView has two error refs** — `error` (page-level, rendered via `ErrorState`) and `uploadError` (inline `ErrorBanner`). Setting file upload errors on `error` hides the entire upload content due to template branching. Always use `uploadError` for file transfer failures. HomeView and AdminView use a single `error` ref rendered via `ErrorBanner` at the top of `<main>`.
 
 13. **Filenames are capped at 1024 characters** — enforced in `UploadView.addFiles()`, `FileRow.onNameInput/onNameKeydown/onNamePaste`. The server also validates this, so both layers must agree.
 
