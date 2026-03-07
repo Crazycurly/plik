@@ -83,6 +83,7 @@ const hasFiles = computed(() => files.value.length > 0)
 const textMode = ref(false)
 const textContent = ref('')
 const textFilename = ref('paste.txt')
+const userEditedFilename = ref(false)
 const pasteTab = ref('code') // 'code' | 'preview'
 const isPasteMarkdown = computed(() => isMarkdownFile({ fileName: textFilename.value, fileType: 'text/plain' }))
 const renderedPasteContent = computed(() => {
@@ -91,15 +92,19 @@ const renderedPasteContent = computed(() => {
   return renderMarkdown(textContent.value)
 })
 
+function onFilenameInput() {
+  userEditedFilename.value = true
+}
+
 function onLanguageDetected({ extension }) {
   if (!extension) return
+  if (userEditedFilename.value) return
 
   const current = textFilename.value
   // Only auto-set extension when using the default name
   if (!current || current.startsWith('paste.')) {
     textFilename.value = `paste.${extension}`
   }
-  // Don't overwrite user-chosen filenames
 }
 
 function addTextAsFile() {
@@ -190,6 +195,7 @@ function onPaste(e) {
       e.preventDefault()
       textContent.value = text
       textFilename.value = 'paste.txt'
+      userEditedFilename.value = false
       textMode.value = true
     }
   }
@@ -392,6 +398,7 @@ async function doUpload() {
               <label class="text-xs text-surface-400 shrink-0">Filename</label>
               <input type="text"
                      v-model="textFilename"
+                     @input="onFilenameInput"
                      class="input-field text-sm flex-1 font-mono"
                      placeholder="paste.txt" />
             </div>
@@ -465,7 +472,7 @@ async function doUpload() {
               </button>
               <span class="text-surface-600 text-xs">·</span>
               <button v-if="isFeatureEnabled('text')" class="text-xs text-surface-400 hover:text-accent-400 transition-colors"
-                      @click.stop="textMode = true">
+                      @click.stop="textMode = true; userEditedFilename = false">
                 Paste text
               </button>
             </div>
