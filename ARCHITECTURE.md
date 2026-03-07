@@ -116,7 +116,7 @@ These run before any chain middleware via `router.Use()`:
 
 | Middleware | Purpose |
 |-----------|---------|
-| `RestrictDownloadDomain` | Blocks non-file routes on the download domain (redirects to PlikDomain or 403) |
+| `RestrictDownloadDomain` | Blocks non-file routes on the download domain when PlikDomain is also set (redirects to PlikDomain) |
 
 #### File Chain Middleware
 

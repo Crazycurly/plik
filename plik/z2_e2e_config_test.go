@@ -267,8 +267,8 @@ func TestValidDownloadDomain(t *testing.T) {
 	err := startWithClient(ps, pc)
 	require.NoError(t, err, "unable to start plik server")
 
-	// Create upload before setting download domain — the RestrictDownloadDomain
-	// middleware blocks non-file requests (like POST /upload) on the download domain
+	// Create upload before setting download domain — when both PlikDomain and
+	// DownloadDomain are set, the middleware blocks non-file requests on the download domain
 	_, file, err := pc.UploadReader("filename", bytes.NewBufferString("data"))
 	require.NoError(t, err, "unable to create upload")
 
@@ -289,8 +289,8 @@ func TestDownloadDomainAlias(t *testing.T) {
 	err := startWithClient(ps, pc)
 	require.NoError(t, err, "unable to start plik server")
 
-	// Create upload before setting download domain — the RestrictDownloadDomain
-	// middleware blocks non-file requests (like POST /upload) on the download domain
+	// Create upload before setting download domain — when both PlikDomain and
+	// DownloadDomain are set, the middleware blocks non-file requests on the download domain
 	_, file, err := pc.UploadReader("filename", bytes.NewBufferString("data"))
 	require.NoError(t, err, "unable to create upload")
 
@@ -326,6 +326,23 @@ func TestInvalidDownloadDomain(t *testing.T) {
 	require.Contains(t, err.Error(), "Invalid download domain")
 }
 
+func TestDownloadDomainOnlyPassesThrough(t *testing.T) {
+	ps, pc := newPlikServerAndClient()
+	defer shutdown(ps)
+
+	err := startWithClient(ps, pc)
+	require.NoError(t, err, "unable to start plik server")
+
+	// Set only DownloadDomain (no PlikDomain) — backward compat: no UI/API blocking
+	ps.GetConfig().DownloadDomain = fmt.Sprintf("http://%s:%d", ps.GetConfig().ListenAddress, ps.GetConfig().ListenPort)
+	err = ps.GetConfig().Initialize()
+	require.NoError(t, err, "unable to initialize config")
+
+	// GET /version (API endpoint) should pass through when PlikDomain is not set
+	_, err = pc.GetServerVersion()
+	require.NoError(t, err, "API should be accessible when only DownloadDomain is set (backward compat)")
+}
+
 func TestDownloadDomainBlocksWebapp(t *testing.T) {
 	ps, pc := newPlikServerAndClient()
 	defer shutdown(ps)
@@ -333,28 +350,33 @@ func TestDownloadDomainBlocksWebapp(t *testing.T) {
 	err := startWithClient(ps, pc)
 	require.NoError(t, err, "unable to start plik server")
 
-	// Set download domain to the server's listen address (no PlikDomain → 403)
+	// Set both PlikDomain and DownloadDomain — blocking only activates when both are configured
+	ps.GetConfig().PlikDomain = "https://plik.root.gg"
 	ps.GetConfig().DownloadDomain = fmt.Sprintf("http://%s:%d", ps.GetConfig().ListenAddress, ps.GetConfig().ListenPort)
 	err = ps.GetConfig().Initialize()
 	require.NoError(t, err, "unable to initialize config")
 
-	// GET / (webapp root) should be blocked on the download domain
+	// GET / (webapp root) should be blocked on the download domain → redirect to PlikDomain
 	req, err := http.NewRequest("GET", pc.URL+"/", &bytes.Buffer{})
 	require.NoError(t, err, "unable to create request")
 
-	resp, err := pc.HTTPClient.Do(req)
+	// Don't follow redirects — we want to assert the 302
+	noRedirectClient := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse }}
+	resp, err := noRedirectClient.Do(req)
 	require.NoError(t, err, "unable to make request")
 	resp.Body.Close()
-	require.Equal(t, http.StatusForbidden, resp.StatusCode, "webapp root should be blocked on download domain")
+	require.Equal(t, http.StatusFound, resp.StatusCode, "webapp root should be redirected on download domain")
+	require.Equal(t, "https://plik.root.gg/", resp.Header.Get("Location"), "should redirect to PlikDomain")
 
-	// GET /version (API endpoint) should also be blocked
+	// GET /version (API endpoint) should also be redirected
 	req, err = http.NewRequest("GET", pc.URL+"/version", &bytes.Buffer{})
 	require.NoError(t, err, "unable to create request")
 
-	resp, err = pc.HTTPClient.Do(req)
+	resp, err = noRedirectClient.Do(req)
 	require.NoError(t, err, "unable to make request")
 	resp.Body.Close()
-	require.Equal(t, http.StatusForbidden, resp.StatusCode, "API endpoint should be blocked on download domain")
+	require.Equal(t, http.StatusFound, resp.StatusCode, "API endpoint should be redirected on download domain")
+	require.Equal(t, "https://plik.root.gg/version", resp.Header.Get("Location"), "should redirect to PlikDomain")
 }
 
 func TestDownloadDomainArchive(t *testing.T) {

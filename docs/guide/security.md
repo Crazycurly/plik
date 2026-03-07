@@ -98,8 +98,7 @@ Setting `PlikDomain` alone does **not** enforce any domain check on file downloa
 
 **`DownloadDomain`** — The domain that serves uploaded files. When set:
 - File/archive download requests are rejected unless the `Host` header matches the download domain (or an alias)
-- Non-file requests (webapp UI, API) on the download domain are **blocked** to prevent security issues (see below)
-- Set `PlikDomain` too to enable CORS and redirect behavior
+- Non-file requests (webapp UI, API) on the download domain are **blocked** when `PlikDomain` is also set (see below)
 
 **`DownloadDomainAlias`** — Additional hostnames accepted for file downloads. Useful when:
 - Accessing the server via `localhost` during development
@@ -107,19 +106,23 @@ Setting `PlikDomain` alone does **not** enforce any domain check on file downloa
 
 ### Security: UI Restriction on Download Domain
 
-When `DownloadDomain` is configured, Plik **blocks** the webapp UI and API endpoints from being served on the download domain. This is critical because:
+When **both** `PlikDomain` and `DownloadDomain` are configured, Plik **blocks** the webapp UI and API endpoints from being served on the download domain. This is critical because:
 
 - An attacker could share a link like `https://dl.plik.root.gg/` — the user sees the familiar Plik UI but on the download domain
 - If the user logs in on this domain, their session cookie is exposed to uploaded content
 - Uploaded JavaScript could make authenticated API calls on behalf of the user
 
-**How it works:**
+::: warning Only DownloadDomain set (no PlikDomain)
+If only `DownloadDomain` is set without `PlikDomain`, the UI/API restriction is **disabled** — all requests pass through normally. This preserves backward compatibility with pre-1.4 deployments. A warning is logged at startup in this case.
+:::
+
+**How it works (when both domains are set):**
 
 | Request type | Download domain behavior |
 |---|---|
 | File/stream/archive | ✅ Served normally |
 | `/health` | ✅ Served normally (for load balancer probes) |
-| Everything else (UI, API) | 🔄 Redirect to `PlikDomain` (or 403 if not set) |
+| Everything else (UI, API) | 🔄 Redirect to `PlikDomain` |
 
 ::: tip Ideal setup — use both domains
 For the best security and user experience, configure **both** `PlikDomain` and `DownloadDomain`:
@@ -135,7 +138,6 @@ This gives you:
 - **CORS support**: the file viewer and E2EE decrypt work cross-origin
 - **Reliable OAuth**: redirect URLs use PlikDomain instead of the fragile Referer header
 
-Without `PlikDomain`, non-file requests on the download domain return **403 Forbidden** instead of redirecting.
 :::
 
 ::: info How CORS works here
