@@ -76,6 +76,7 @@ Features can be set to one of four states:
 | `FeatureOneShot` | `enabled` | Files deleted after first download |
 | `FeatureRemovable` | `enabled` | Anyone can delete files |
 | `FeatureStream` | `enabled` | Direct uploader-to-downloader streaming |
+| `StreamTimeoutStr` | `5m` | Max wait for a streaming download to start before releasing the upload goroutine (`0` = no timeout) |
 | `FeaturePassword` | `enabled` | Password-protected uploads |
 | `FeatureComments` | `enabled` | Markdown comments on uploads |
 | `FeatureSetTTL` | `enabled` | Custom TTL setting |

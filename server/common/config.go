@@ -58,6 +58,8 @@ type Configuration struct {
 	DownloadDomainAlias []string `json:"downloadDomainAlias"`
 	EnhancedWebSecurity bool     `json:"-"`
 	SessionTimeout      string   `json:"-"`
+	StreamTimeoutStr    string   `json:"-"`
+	StreamTimeout       int      `json:"streamTimeout"`
 	AbuseContact        string   `json:"abuseContact"`
 	WebappDirectory     string   `json:"-"`
 	ClientsDirectory    string   `json:"-"`
@@ -134,9 +136,10 @@ func NewConfiguration() (config *Configuration) {
 	config.MetricsPort = 0
 	config.EnhancedWebSecurity = false
 	config.SessionTimeout = "365d"
+	config.StreamTimeoutStr = "5m"
 
 	config.MaxFileSize = 10000000000 // 10GB
-	config.MaxUserSize = -1          // Default max size per user ( -1 for unlimited)
+	config.MaxUserSize = -1          // Default max size per user (-1 for unlimited)
 	config.MaxFilePerUpload = 1000
 
 	config.DefaultTTL = 2592000 // 30 days
@@ -311,6 +314,16 @@ func (config *Configuration) Initialize() (err error) {
 		return fmt.Errorf("invalid negative or zero value for SessionTimeout")
 	}
 
+	if config.StreamTimeoutStr != "" {
+		config.StreamTimeout, err = ParseTTL(config.StreamTimeoutStr)
+		if err != nil {
+			return fmt.Errorf("unable to parse StreamTimeout : %s", err)
+		}
+		if config.StreamTimeout < 0 {
+			return fmt.Errorf("invalid negative value for StreamTimeout")
+		}
+	}
+
 	return nil
 }
 
@@ -474,6 +487,11 @@ func (config *Configuration) GetSessionTimeout() int {
 	return config.sessionTimeout
 }
 
+// GetStreamTimeout return parsed stream timeout in seconds (0 = disabled)
+func (config *Configuration) GetStreamTimeout() int {
+	return config.StreamTimeout
+}
+
 func (config *Configuration) String() string {
 	str := ""
 	if config.PlikDomain != "" {
@@ -504,6 +522,11 @@ func (config *Configuration) String() string {
 	str += fmt.Sprintf("One shot upload : %s\n", config.FeatureOneShot)
 	str += fmt.Sprintf("Removable upload : %s\n", config.FeatureRemovable)
 	str += fmt.Sprintf("Streaming upload : %s\n", config.FeatureStream)
+	if config.StreamTimeout > 0 {
+		str += fmt.Sprintf("Stream timeout : %s\n", config.StreamTimeoutStr)
+	} else {
+		str += "Stream timeout : disabled\n"
+	}
 	str += fmt.Sprintf("Upload password : %s\n", config.FeaturePassword)
 	str += fmt.Sprintf("Upload comments : %s\n", config.FeatureComments)
 	str += fmt.Sprintf("Upload set TTL : %s\n", config.FeatureSetTTL)

@@ -5,6 +5,7 @@ import { getUpload, removeUpload, removeFile as apiRemoveFile, uploadFile, getFi
 import { generateRef, isMarkdownFile, isImageFile, isVideoFile, isAudioFile, isViewableFile } from '../utils.js'
 import { fetchAndDecrypt } from '../crypto.js'
 import { getToken, setToken } from '../tokenStore.js'
+import { config } from '../config.js'
 import { consumePendingFiles } from '../pendingUploadStore.js'
 import { renderMarkdown } from '../markdown.js'
 import DownloadSidebar from '../components/DownloadSidebar.vue'
@@ -194,6 +195,15 @@ const canRemoveFiles = computed(() =>
   upload.value?.removable || upload.value?.admin
 )
 
+const streamTimeoutLabel = computed(() => {
+  const s = config.streamTimeout
+  if (s <= 0) return ''
+  if (s >= 86400) return `${Math.round(s / 86400)} day${Math.round(s / 86400) > 1 ? 's' : ''}`
+  if (s >= 3600) return `${Math.round(s / 3600)} hour${Math.round(s / 3600) > 1 ? 's' : ''}`
+  if (s >= 60) return `${Math.round(s / 60)} minute${Math.round(s / 60) > 1 ? 's' : ''}`
+  return `${s} second${s > 1 ? 's' : ''}`
+})
+
 async function fetchUpload() {
   loading.value = true
   error.value = null
@@ -292,14 +302,25 @@ async function cancelFileUpload(file) {
     isAddingFiles.value = false
   }
 
-  // Give the server time to clean up the aborted file (uploading → removed → deleted)
-  await new Promise(resolve => setTimeout(resolve, 200))
+  // For streaming uploads the server goroutine stays blocked waiting for a
+  // downloader even after the XHR is aborted. Explicitly delete the file so
+  // it transitions to 'removed'/'deleted' and disappears from the file list.
+  if (upload.value.stream && file.id) {
+    try {
+      await apiRemoveFile(
+        { id: props.id, stream: true, uploadToken: uploadToken.value },
+        file,
+      )
+    } catch (err) { console.warn('Failed to remove streaming file:', err) }
+  }
+
   await fetchUpload()
 }
 
 async function cancelAllUploads() {
   uploadsCancelled = true
-  for (const file of pendingFiles.value) {
+  const filesToClean = [...pendingFiles.value]
+  for (const file of filesToClean) {
     if (file.abort) {
       file.abort()
     }
@@ -307,8 +328,18 @@ async function cancelAllUploads() {
   pendingFiles.value = []
   isAddingFiles.value = false
 
-  // Give the server time to clean up aborted files before refreshing
-  await new Promise(resolve => setTimeout(resolve, 200))
+  // For streaming uploads, explicitly remove cancelled files from the server
+  if (upload.value.stream) {
+    await Promise.allSettled(
+      filesToClean
+        .filter(f => f.id)
+        .map(f => apiRemoveFile(
+          { id: props.id, stream: true, uploadToken: uploadToken.value },
+          f,
+        ))
+    )
+  }
+
   await fetchUpload()
 }
 
@@ -354,11 +385,21 @@ function uploadFileEntry(fileEntry) {
     if (serverFile) Object.assign(serverFile, result)
     // Remove from pending panel immediately
     pendingFiles.value = pendingFiles.value.filter(f => f.reference !== fileEntry.reference)
-  }).catch((err) => {
+  }).catch(async (err) => {
     if (!err.cancelled) {
       fileEntry.status = 'error'
       fileEntry.error = err.message || 'Upload failed'
     }
+    // Refresh server state so we know which files are still retryable
+    await fetchUpload()
+    // Remove pending files whose server status is no longer retryable
+    // (e.g. cancelled by someone else, already downloaded, etc.)
+    pendingFiles.value = pendingFiles.value.filter(f => {
+      if (f.status !== 'error' || !f.id) return true
+      const serverFile = upload.value?.files?.find(sf => sf.id === f.id)
+      // Keep if server says missing (retryable) or file not found (keep error visible)
+      return !serverFile || serverFile.status === 'missing'
+    })
   })
 }
 
@@ -639,6 +680,23 @@ watch(activeFiles, (files) => {
             </div>
           </div>
 
+          <!-- Streaming Indicator -->
+          <div v-if="upload.stream" class="glass-card p-3 flex items-center gap-3 animate-fade-in border-accent-400/30">
+            <svg class="w-5 h-5 text-accent-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <div>
+              <span class="text-sm text-accent-400 font-medium">Streaming Upload</span>
+              <p class="text-xs text-surface-400 mt-0.5">
+                Files are streamed directly from the uploader to the downloader — share the upload link or individual file links to start the transfer.
+              </p>
+              <p v-if="config.streamTimeout > 0" class="text-xs text-surface-400 mt-0.5">
+                You have {{ streamTimeoutLabel }} to start downloading the files.
+              </p>
+            </div>
+          </div>
+
           <!-- Decrypting Spinner -->
           <div v-if="isDecrypting" class="flex items-center justify-center py-4">
             <div class="animate-spin rounded-full h-6 w-6 border-2 border-accent-400 border-t-transparent" />
@@ -754,7 +812,7 @@ watch(activeFiles, (files) => {
           <div v-if="activeFiles.length" class="space-y-2">
             <div class="flex items-center justify-between px-1">
               <h3 class="text-sm font-medium text-surface-400">
-                <template v-if="isAddingFiles">
+                <template v-if="isAddingFiles && !upload.stream">
                   {{ activeFiles.length }}/{{ totalFiles }} file{{ totalFiles > 1 ? 's' : '' }} uploaded
                 </template>
                 <template v-else>

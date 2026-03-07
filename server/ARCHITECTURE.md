@@ -111,7 +111,7 @@ type Backend interface {
 | `data/s3` | Amazon S3 / MinIO | Supports SSE-C/S3 encryption. |
 | `data/swift` | OpenStack Swift | |
 | `data/gcs` | Google Cloud Storage | |
-| `data/stream` | In-memory pipe | Blocks uploader until downloader connects — nothing stored. |
+| `data/stream` | In-memory pipe | Blocks uploader until downloader connects — nothing stored. Configurable `StreamTimeoutStr` releases blocked goroutines. On error, file resets to `missing` (retryable). `RemoveFile` closes the pipe to unblock cancelled uploads. |
 | `data/testing` | In-memory map | For tests only |
 
 ---

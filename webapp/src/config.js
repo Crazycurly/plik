@@ -12,6 +12,7 @@ export const config = reactive({
     maxFileSize: 0,
     maxUserSize: 0,
     maxFilePerUpload: 1000,
+    streamTimeout: 0,
     defaultTTL: 0,
     maxTTL: 0,
 

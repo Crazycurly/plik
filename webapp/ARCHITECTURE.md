@@ -433,6 +433,8 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 
 **Footer priority**: `settings.footer` > `config.abuseContact` (`plikd.cfg`) > none. When only `AbuseContact` is set, the footer renders a default "For abuse contact &lt;mailto&gt;" template.
 
+**Streaming upload UX**: The download view shows a "Streaming Upload" info banner (`v-if="upload.stream"`) with an optional timeout notice derived from `config.streamTimeout` (seconds). Cancel for streaming uploads explicitly calls `apiRemoveFile()` after aborting the XHR, because the server goroutine stays blocked in `io.Copy` waiting for a downloader and won't clean up on its own. On any error (timeout, network drop), the server resets the file to `missing` so the existing Retry button works — the `uploadFileEntry` catch block calls `fetchUpload()` and removes non-retryable files from the pending list. The file-uploaded counter (`X/Y files uploaded`) is hidden for streaming uploads since files aren't truly "uploaded" in the traditional sense.
+
 **White-label safety**: The JS defaults are all empty (name = `''`). Only the shipped `settings.json` provides `"Plik"`. If the file is missing or fails to load, no branding leaks.
 
 **Custom asset injection**: `loadSettings()` conditionally injects `<link>` and `<script>` tags if `customCSS`/`customJS` paths are set. Injection happens before Vue mounts (inside the `Promise.all` in `main.js`), so there's no flash of unstyled content.

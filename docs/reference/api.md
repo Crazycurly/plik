@@ -27,6 +27,7 @@ Authentication: session cookie or `X-PlikToken` header.
 | `GET` | `/file/{uploadID}/{fileID}/{filename}` | Download file |
 | `HEAD` | `/file/{uploadID}/{fileID}/{filename}` | File metadata |
 | `POST` | `/stream/{uploadID}/{fileID}/{filename}` | Stream upload |
+| `DELETE` | `/stream/{uploadID}/{fileID}/{filename}` | Cancel stream upload |
 | `GET` | `/stream/{uploadID}/{fileID}/{filename}` | Stream download |
 | `GET` | `/archive/{uploadID}/{filename}` | Download all files as zip |
 

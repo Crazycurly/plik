@@ -5,10 +5,14 @@ Stream mode enables direct file transfer from uploader to downloader — nothing
 ## How It Works
 
 1. The uploader sends a file via the UI or CLI or API with stream mode enabled
-2. The upload request **blocks** until a downloader connects
+2. The upload request **blocks** until a downloader connects (or a timeout expires)
 3. Data flows directly from uploader → server → downloader
 4. Once the transfer is complete, both connections close
 5. No data is persisted on disk
+
+::: tip
+Transfers can be very large (terabytes) and last for days — the timeout only applies to the initial wait for a downloader, not the transfer itself.
+:::
 
 ## Usage
 
@@ -17,6 +21,10 @@ Stream mode enables direct file transfer from uploader to downloader — nothing
 ```bash
 plik --stream myfile.txt
 ```
+
+### Web UI
+
+Toggle the **Streaming** switch before uploading. The download page will show a "Streaming Upload" banner with the timeout countdown (if configured).
 
 ### API
 
@@ -35,6 +43,33 @@ POST /upload
 ::: tip
 For stream mode, you need to know the file ID before the upload starts (since it will block). Pass a `files` array in the upload creation request to get file IDs assigned upfront.
 :::
+
+## Timeout
+
+By default, the server waits **5 minutes** for a downloader to connect. If no download starts within that period, the upload is interrupted — but the file returns to a retryable state.
+
+The download link remains valid. Click **Retry** in the UI (or re-POST via the API) to restart the wait.
+
+| Behavior | Description |
+|----------|-------------|
+| Timeout fires | Upload goroutine is released, pipe is closed |
+| Download starts before timeout | Timer is cancelled, transfer proceeds normally |
+| Timeout set to `0` | No timeout — upload blocks indefinitely |
+
+### Configuration
+
+Set `StreamTimeoutStr` in `plikd.cfg` (or via the `PLIKD_STREAM_TIMEOUT_STR` environment variable):
+
+```toml
+# Max wait for a streaming download to start (0 = no timeout)
+StreamTimeoutStr = "5m"
+```
+
+Accepted duration formats: `30s`, `5m`, `1h`, `1d`, `1w`.
+
+## Cancelling
+
+Cancelling a streaming upload (via the web UI or a `DELETE /stream/{uploadID}/{fileID}/{filename}` API call) immediately closes the server-side pipe and releases the blocked upload goroutine. The cancelled file disappears from the file list.
 
 ## Multi-Instance Deployment
 
@@ -81,3 +116,4 @@ server {
 This configuration:
 - Routes `/stream/` requests to a consistent upstream based on the file ID hash
 - Routes all other requests with standard load balancing
+
