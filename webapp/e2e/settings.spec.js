@@ -297,19 +297,19 @@ test.describe('Abuse contact footer', () => {
 // ── Header Feature Flags ──────────────────────────────────────────────────
 
 test.describe('Header feature flags', () => {
-    test('CLI Client link visible by default', async ({ page }) => {
+    test('CLI link visible by default', async ({ page }) => {
         await page.goto('/')
+        // The header should show the CLI link when "clients" feature is enabled (default)
         await page.waitForLoadState('networkidle')
-
-        await expect(page.getByText('CLI Client').first()).toBeVisible({ timeout: 5_000 })
+        await expect(page.getByText('CLI', { exact: true }).first()).toBeVisible({ timeout: 5_000 })
     })
 
-    test('CLI Client link hidden when disabled', async ({ page, withConfig }) => {
+    test('CLI link hidden when disabled', async ({ page, withConfig }) => {
         await withConfig({ feature_clients: 'disabled' })
         await page.goto('/')
         await page.waitForLoadState('networkidle')
-
-        await expect(page.getByText('CLI Client')).not.toBeVisible()
+        // Should not be visible when clients feature is disabled
+        await expect(page.getByText('CLI', { exact: true })).not.toBeVisible()
     })
 
     test('Documentation and GitHub links visible by default', async ({ page }) => {

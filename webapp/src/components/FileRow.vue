@@ -97,10 +97,10 @@ function fileUrl() {
       <div class="flex-1 min-w-0">
         <!-- Editable name (upload mode) -->
         <div v-if="mode === 'upload'" class="inline-flex items-center gap-1 min-w-0 w-full">
-          <div class="text-sm text-surface-100 cursor-text outline-none
+          <div class="text-sm text-surface-200 cursor-text outline-none
                       overflow-hidden text-ellipsis whitespace-nowrap
                       focus:overflow-x-auto focus:text-clip focus:whitespace-normal
-                      hover:text-white focus:ring-1 focus:ring-accent-500/50 rounded px-1 -mx-1"
+                      hover:text-surface-200 focus:ring-1 focus:ring-accent-500/50 rounded px-1 -mx-1"
                contenteditable="true"
                @blur="onNameInput"
                @keydown="onNameKeydown"
@@ -128,23 +128,23 @@ function fileUrl() {
           </button>
           <a v-if="isDownloadable && !isE2ee"
              :href="fileUrl()"
-             class="text-sm text-surface-100 hover:text-accent-400 transition-colors truncate"
+             class="text-sm text-surface-200 hover:text-accent-400 transition-colors truncate"
              target="_blank"
              rel="noopener noreferrer">
             {{ file.fileName }}
           </a>
           <button v-else-if="isDownloadable && isE2ee"
-                  class="text-sm text-surface-100 hover:text-accent-400 transition-colors truncate text-left"
+                  class="text-sm text-surface-200 hover:text-accent-400 transition-colors truncate text-left"
                   @click="emit('decrypt-download', file)">
             {{ file.fileName }}
           </button>
-          <span v-else class="text-sm text-surface-100 truncate">
+          <span v-else class="text-sm text-surface-200 truncate">
             {{ file.fileName }}
           </span>
         </div>
 
         <!-- Static name -->
-        <div v-else class="text-sm text-surface-100 truncate">
+        <div v-else class="text-sm text-surface-200 truncate">
           {{ file.fileName }}
         </div>
 
@@ -206,7 +206,7 @@ function fileUrl() {
 
         <!-- QR Code button (download mode) -->
         <button v-if="mode === 'download' && isDownloadable"
-                class="btn bg-surface-700/50 text-surface-400 hover:text-white px-2 py-1.5 text-xs"
+                class="btn bg-surface-700/50 text-surface-400 hover:text-surface-100 px-2 py-1.5 text-xs"
                 title="Show QR code"
                 @click="emit('show-qr', file)">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

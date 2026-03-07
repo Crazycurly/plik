@@ -114,6 +114,10 @@ export function deleteAccount() {
     return apiCall(`${base}/me`, 'DELETE')
 }
 
+export function patchMe(fields) {
+    return apiCall(`${base}/me`, 'PATCH', fields)
+}
+
 export function getUserStatistics() {
     return apiCall(`${base}/me/stats`)
 }

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -9,6 +11,65 @@ import (
 	"github.com/root-gg/plik/server/common"
 	"github.com/root-gg/plik/server/context"
 )
+
+// PatchMe partially updates the authenticated user's self-editable fields.
+// Only fields present in the JSON body are updated — absent fields are untouched.
+// Admin-only fields (IsAdmin, MaxFileSize, MaxUserSize, MaxTTL) cannot be set via this endpoint.
+func PatchMe(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
+	user := ctx.GetUser()
+	if user == nil {
+		ctx.Unauthorized("missing user, please login first")
+		return
+	}
+
+	// Read request body
+	defer func() { _ = req.Body.Close() }()
+	req.Body = http.MaxBytesReader(resp, req.Body, 1048576)
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		ctx.BadRequest("unable to read request body : %s", err)
+		return
+	}
+
+	if len(body) == 0 {
+		ctx.BadRequest("missing request body")
+		return
+	}
+
+	// Parse as map to detect which fields were provided
+	var patch map[string]json.RawMessage
+	if err := json.Unmarshal(body, &patch); err != nil {
+		ctx.BadRequest("unable to deserialize request body : %s", err)
+		return
+	}
+
+	// Apply only provided self-editable fields
+	if raw, ok := patch["theme"]; ok {
+		if err := json.Unmarshal(raw, &user.Theme); err != nil {
+			ctx.BadRequest("invalid theme value : %s", err)
+			return
+		}
+	}
+	if raw, ok := patch["name"]; ok {
+		if err := json.Unmarshal(raw, &user.Name); err != nil {
+			ctx.BadRequest("invalid name value : %s", err)
+			return
+		}
+	}
+	if raw, ok := patch["email"]; ok {
+		if err := json.Unmarshal(raw, &user.Email); err != nil {
+			ctx.BadRequest("invalid email value : %s", err)
+			return
+		}
+	}
+
+	if err := ctx.GetMetadataBackend().UpdateUser(user); err != nil {
+		ctx.InternalServerError("unable to update user : %s", err)
+		return
+	}
+
+	common.WriteJSONResponse(resp, user)
+}
 
 // UserInfo return user information ( name / email / ... )
 func UserInfo(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {

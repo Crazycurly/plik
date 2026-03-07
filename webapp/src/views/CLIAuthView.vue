@@ -54,8 +54,8 @@ async function approve() {
                   d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
           </svg>
         </div>
-        <h1 class="text-xl font-semibold text-white">CLI Login</h1>
-        <p class="text-sm text-white/60">
+        <h1 class="text-xl font-semibold text-surface-50">CLI Login</h1>
+        <p class="text-sm text-surface-400">
           Authorize your CLI client to access Plik as <strong class="text-accent-400">{{ auth.user?.login || auth.user?.name }}</strong>
         </p>
       </div>
@@ -64,30 +64,28 @@ async function approve() {
       <template v-if="status === 'pending' || status === 'approving'">
         <div class="space-y-4">
           <div>
-            <label class="block text-xs text-white/50 mb-1.5 text-left">Verification Code</label>
+            <label class="block text-xs text-surface-500 mb-1.5 text-left">Verification Code</label>
             <input v-model="code"
                    type="text"
                    placeholder="XXXX-XXXX"
-                   class="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white text-center text-2xl font-mono tracking-widest placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-accent-500/50"
+                   class="input-field text-center text-2xl font-mono tracking-widest"
                    :disabled="status === 'approving'"
                    @keydown.enter="approve" />
           </div>
 
           <div>
-            <label class="block text-xs text-white/50 mb-1.5 text-left">Token Description</label>
+            <label class="block text-xs text-surface-500 mb-1.5 text-left">Token Description</label>
             <input v-model="comment"
                    type="text"
                    placeholder="CLI login"
-                   class="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-accent-500/50"
+                   class="input-field text-sm"
                    :disabled="status === 'approving'"
                    @keydown.enter="approve" />
           </div>
 
           <button @click="approve"
                   :disabled="!code.trim() || status === 'approving'"
-                  class="w-full py-3 rounded-lg font-medium transition-all duration-200
-                         bg-accent-500 hover:bg-accent-600 text-white
-                         disabled:opacity-40 disabled:cursor-not-allowed">
+                  class="btn-primary w-full py-3">
             <template v-if="status === 'approving'">
               <span class="inline-flex items-center gap-2">
                 <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -113,7 +111,7 @@ async function approve() {
             </svg>
           </div>
           <h2 class="text-lg font-medium text-emerald-400">CLI Authorized!</h2>
-          <p class="text-sm text-white/60">
+          <p class="text-sm text-surface-400">
             Your CLI client has been authenticated. You can close this page and return to your terminal.
           </p>
           <button @click="router.push('/')"
@@ -132,7 +130,7 @@ async function approve() {
             </svg>
           </div>
           <h2 class="text-lg font-medium text-red-400">Authorization Failed</h2>
-          <p class="text-sm text-white/60">{{ error }}</p>
+          <p class="text-sm text-surface-400">{{ error }}</p>
           <button @click="status = 'pending'; error = ''"
                   class="text-sm text-accent-400 hover:text-accent-300 underline underline-offset-2 transition-colors">
             Try again

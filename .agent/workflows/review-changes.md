@@ -84,6 +84,14 @@ For every modified file, evaluate against ALL of the following checklist:
 - [ ] Are options/flags documented consistently with `--help` output?
 - [ ] Are there broken or outdated screenshots/examples?
 
+#### CSS / Theming (if webapp styles were changed)
+- [ ] Do changes use design tokens (`surface-*`, `accent-*`) instead of hardcoded colors?
+- [ ] Do new/modified components look correct in both dark and light themes?
+- [ ] Is there no theme flash (FODT) when loading with empty cache?
+- [ ] Are theme-specific overrides in the correct place (theme CSS file, not `style.css`)?
+- [ ] Are new UI elements accessible (sufficient contrast, focus states, hover states)?
+- [ ] Is the user experience consistent across views (Home, Admin, Download)?
+
 ### 3. Cross-check with project context
 
 - Read the relevant ARCHITECTURE.md file(s) for the changed packages

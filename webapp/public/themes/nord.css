@@ -1,0 +1,108 @@
+/*
+ * Plik — Nord Theme (Polar Night)
+ * Based on Arctic Ice Studio's Nord palette
+ * https://www.nordtheme.com/
+ */
+[data-theme="nord"] {
+    color-scheme: dark;
+
+    /* ── Surface Scale ── */
+    --color-surface-50: #eceff4;
+    /* nord6   — Snow Storm — emphasized text */
+    --color-surface-100: #e5e9f0;
+    /* nord5   — primary text */
+    --color-surface-200: #d8dee9;
+    /* nord4   — secondary text */
+    --color-surface-300: #b0bac5;
+    /* blend   — tertiary text */
+    --color-surface-400: #7b88a1;
+    /* blend   — muted text */
+    --color-surface-500: #616e88;
+    /* blend   — subtle labels */
+    --color-surface-600: #4c566a;
+    /* nord3   — hint text */
+    --color-surface-700: #434c5e;
+    /* nord2   — dividers */
+    --color-surface-800: #3b4252;
+    /* nord1   — elevated panels */
+    --color-surface-900: #2e3440;
+    /* nord0   — page background */
+    --color-surface-950: #272c36;
+    /* darker  — deepest background */
+
+    /* ── Accent (Nord Frost) ── */
+    --color-accent-400: #88c0d0;
+    /* nord8  — Frost — links, active nav, logo */
+    --color-accent-500: #81a1c1;
+    /* nord9  — primary buttons */
+    --color-accent-600: #5e81ac;
+    /* nord10 — pressed accent */
+
+    /* ── Danger / Success (Nord Aurora) ── */
+    --color-danger-500: #bf616a;
+    /* aurora red — softer, muted */
+    --color-danger-600: #a5545c;
+    --color-success-500: #a3be8c;
+    /* aurora green */
+    --color-success-600: #8faa78;
+
+    /* ── Semantic ── */
+    --color-on-accent: #2e3440;
+}
+
+/* ── Component Overrides ── */
+[data-theme="nord"] .glass-card {
+    background-color: rgba(59, 66, 82, 0.92);
+    border-color: #434c5e;
+}
+
+[data-theme="nord"] .sidebar-section {
+    background-color: rgba(59, 66, 82, 0.85);
+    border-color: #434c5e;
+}
+
+[data-theme="nord"] .file-row {
+    border-color: #434c5e;
+}
+
+[data-theme="nord"] .input-field {
+    background-color: #3b4252;
+    border-color: #434c5e;
+}
+
+/* Outlined / inverted buttons — frost border + text, transparent fill */
+[data-theme="nord"] .btn-primary {
+    background-color: transparent;
+    color: #81a1c1;
+    border: 1px solid rgba(129, 161, 193, 0.4);
+    box-shadow: none;
+}
+
+[data-theme="nord"] .btn-primary:hover {
+    background-color: rgba(129, 161, 193, 0.12);
+    border-color: rgba(129, 161, 193, 0.6);
+}
+
+[data-theme="nord"] .btn-success {
+    background-color: transparent;
+    color: #a3be8c;
+    border: 1px solid rgba(163, 190, 140, 0.4);
+    box-shadow: none;
+}
+
+[data-theme="nord"] .btn-success:hover {
+    background-color: rgba(163, 190, 140, 0.12);
+    border-color: rgba(163, 190, 140, 0.6);
+}
+
+[data-theme="nord"] .btn-danger {
+    background-color: transparent;
+    color: #bf616a;
+    border: 1px solid rgba(191, 97, 106, 0.4);
+    box-shadow: none;
+}
+
+[data-theme="nord"] .btn-danger:hover {
+    background-color: rgba(191, 97, 106, 0.12);
+    border-color: rgba(191, 97, 106, 0.6);
+}

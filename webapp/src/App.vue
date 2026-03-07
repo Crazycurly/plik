@@ -2,29 +2,29 @@
 import { computed } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import NotificationBanner from './components/NotificationBanner.vue'
-import { branding } from './branding.js'
+import { settings } from './settings.js'
 import { config } from './config.js'
 
 const bgStyle = computed(() => {
     const style = {}
-    if (branding.backgroundImage) {
-        style.backgroundImage = `url(${branding.backgroundImage})`
+    if (settings.backgroundImage) {
+        style.backgroundImage = `url(${settings.backgroundImage})`
         style.backgroundSize = 'cover'
         style.backgroundPosition = 'center center'
         style.backgroundAttachment = 'fixed'
         style.backgroundRepeat = 'no-repeat'
     }
-    if (branding.backgroundColor) {
-        style.backgroundColor = branding.backgroundColor
+    if (settings.backgroundColor) {
+        style.backgroundColor = settings.backgroundColor
     }
     return style
 })
 
 const overlayStyle = computed(() => ({
-    backgroundColor: `rgba(0, 0, 0, ${branding.overlayOpacity ?? 0.55})`,
+    backgroundColor: `rgba(0, 0, 0, ${settings.overlayOpacity ?? 0.55})`,
 }))
 
-const hasBackground = computed(() => !!branding.backgroundImage)
+const hasBackground = computed(() => !!settings.backgroundImage)
 </script>
 
 <template>

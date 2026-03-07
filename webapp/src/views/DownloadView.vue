@@ -597,7 +597,7 @@ watch(activeFiles, (files) => {
       <div class="space-y-4">
         <!-- Loading -->
         <div v-if="loading" class="flex flex-col items-center justify-center py-16">
-          <div class="animate-spin rounded-full h-8 w-8 border-2 border-accent-500 border-t-transparent" />
+          <div class="animate-spin rounded-full h-8 w-8 border-2 border-accent-400 border-t-transparent" />
           <span class="mt-4 text-sm text-surface-400">Loading upload...</span>
         </div>
 
@@ -622,7 +622,7 @@ watch(activeFiles, (files) => {
                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span class="text-sm text-danger-500">{{ uploadError }}</span>
-            <button class="ml-auto text-surface-400 hover:text-white" @click="uploadError = null">
+            <button class="ml-auto text-surface-400 hover:text-surface-100" @click="uploadError = null">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -641,7 +641,7 @@ watch(activeFiles, (files) => {
           </div>
 
           <!-- E2EE Indicator -->
-          <div v-if="isE2EE" class="glass-card p-3 flex items-center gap-3 animate-fade-in border-accent-500/30">
+          <div v-if="isE2EE" class="glass-card p-3 flex items-center gap-3 animate-fade-in border-accent-400/30">
             <svg class="w-5 h-5 text-accent-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -654,7 +654,7 @@ watch(activeFiles, (files) => {
 
           <!-- Decrypting Spinner -->
           <div v-if="isDecrypting" class="flex items-center justify-center py-4">
-            <div class="animate-spin rounded-full h-6 w-6 border-2 border-accent-500 border-t-transparent" />
+            <div class="animate-spin rounded-full h-6 w-6 border-2 border-accent-400 border-t-transparent" />
             <span class="ml-3 text-sm text-surface-400">Decrypting...</span>
           </div>
 
@@ -689,7 +689,7 @@ watch(activeFiles, (files) => {
                 <!-- Prev/Next navigation (only when multiple viewable files) -->
                 <template v-if="viewableFiles.length > 1">
                   <button class="p-1 transition-colors"
-                          :class="hasPrev ? 'text-surface-400 hover:text-white' : 'text-surface-700 cursor-default'"
+                          :class="hasPrev ? 'text-surface-400 hover:text-surface-100' : 'text-surface-700 cursor-default'"
                           :disabled="!hasPrev"
                           title="Previous file (←)"
                           @click="viewPrev">
@@ -699,7 +699,7 @@ watch(activeFiles, (files) => {
                   </button>
                   <span class="text-xs text-surface-500 tabular-nums min-w-8 text-center">{{ viewerIndex + 1 }}/{{ viewableFiles.length }}</span>
                   <button class="p-1 transition-colors"
-                          :class="hasNext ? 'text-surface-400 hover:text-white' : 'text-surface-700 cursor-default'"
+                          :class="hasNext ? 'text-surface-400 hover:text-surface-100' : 'text-surface-700 cursor-default'"
                           :disabled="!hasNext"
                           title="Next file (→)"
                           @click="viewNext">
@@ -708,7 +708,7 @@ watch(activeFiles, (files) => {
                     </svg>
                   </button>
                 </template>
-                <button class="p-1 text-surface-400 hover:text-white transition-colors"
+                <button class="p-1 text-surface-400 hover:text-surface-100 transition-colors"
                         title="Close viewer (Esc)"
                         @click="closeViewer">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -731,7 +731,7 @@ watch(activeFiles, (files) => {
               </div>
             </MarkdownTabs>
             <div v-if="viewingLoading" class="flex items-center justify-center py-8">
-              <div class="animate-spin rounded-full h-6 w-6 border-2 border-accent-500 border-t-transparent" />
+              <div class="animate-spin rounded-full h-6 w-6 border-2 border-accent-400 border-t-transparent" />
               <span class="ml-3 text-sm text-surface-400">Loading file content...</span>
             </div>
             <div v-else-if="viewingError" class="p-4 text-sm text-danger-500">{{ viewingError }}</div>
@@ -846,7 +846,7 @@ watch(activeFiles, (files) => {
 
           <!-- Upload progress indicator -->
           <div v-if="isAddingFiles && pendingFiles.some(f => f.status === 'uploading' || f.status === 'toUpload')" class="flex items-center justify-center py-2">
-            <div class="animate-spin rounded-full h-4 w-4 border-2 border-accent-500 border-t-transparent" />
+            <div class="animate-spin rounded-full h-4 w-4 border-2 border-accent-400 border-t-transparent" />
             <span class="ml-2 text-xs text-surface-400">Uploading files...</span>
           </div>
 
@@ -890,7 +890,7 @@ watch(activeFiles, (files) => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-          <h3 class="text-lg font-medium text-white">Enter Passphrase</h3>
+          <h3 class="text-lg font-medium text-surface-100">Enter Passphrase</h3>
         </div>
         <p class="text-sm text-surface-400">This upload is end-to-end encrypted. Enter the passphrase to decrypt files.</p>
         <input type="text"

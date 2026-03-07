@@ -12,25 +12,27 @@
   --color-surface-700: #334155;
   --color-surface-800: #1e293b;
   --color-surface-900: #0f172a;
-  --color-surface-950: #020617;
+  --color-surface-950: #0e121f;
 
-  --color-accent-400: #38bdf8;
-  --color-accent-500: #0ea5e9;
-  --color-accent-600: #0284c7;
+  --color-accent-400: #22a8e2;
+  --color-accent-500: #0a86c0;
+  --color-accent-600: #0770a5;
 
   --color-success-500: #22c55e;
   --color-success-600: #16a34a;
 
-  --color-danger-500: #ef4444;
-  --color-danger-600: #dc2626;
+  --color-danger-500: #c03030;
+  --color-danger-600: #a32828;
 
   --color-warning-500: #f59e0b;
+
+  --color-on-accent: #ffffff;
 }
 
 /* ── Base Styles ── */
 @layer base {
   body {
-    @apply bg-surface-950 text-surface-100 antialiased;
+    @apply bg-surface-950 text-surface-200 antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
   }
@@ -203,7 +205,7 @@
   transition: all 0.2s ease-out;
   cursor: pointer;
   background-color: var(--color-accent-500);
-  color: white;
+  color: var(--color-on-accent);
   box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-accent-500) 20%, transparent);
 
   &:hover {
@@ -233,7 +235,7 @@
   transition: all 0.2s ease-out;
   cursor: pointer;
   background-color: var(--color-success-500);
-  color: white;
+  color: var(--color-on-accent);
   box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-success-500) 20%, transparent);
 
   &:hover {
@@ -263,7 +265,7 @@
   transition: all 0.2s ease-out;
   cursor: pointer;
   background-color: var(--color-danger-500);
-  color: white;
+  color: var(--color-on-accent);
   box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--color-danger-500) 20%, transparent);
 
   &:hover {
@@ -295,7 +297,7 @@
   color: var(--color-surface-300);
 
   &:hover {
-    color: white;
+    color: var(--color-surface-50);
     background-color: color-mix(in srgb, var(--color-surface-700) 50%, transparent);
   }
 }
@@ -312,7 +314,7 @@
   cursor: pointer;
 
   &[data-active="true"] {
-    background-color: var(--color-accent-500);
+    background-color: var(--color-accent-400);
   }
 
   &:disabled {
@@ -326,7 +328,7 @@
   height: 1rem;
   width: 1rem;
   border-radius: 9999px;
-  background-color: white;
+  background-color: var(--color-on-accent);
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   transform: translateX(0.25rem);
   transition: transform 0.2s ease-in-out;
@@ -498,7 +500,7 @@
 
 .progress-fill {
   height: 100%;
-  background-color: var(--color-accent-500);
+  background-color: var(--color-accent-400);
   border-radius: 9999px;
   transition: width 0.3s ease-out;
 }
@@ -519,4 +521,13 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-surface-500);
+}
+
+/* ── Dark theme: softer button fills ── */
+[data-theme="dark"] .btn-primary {
+  background-color: color-mix(in srgb, var(--color-accent-500) 85%, transparent);
+}
+
+[data-theme="dark"] .btn-danger {
+  background-color: color-mix(in srgb, var(--color-danger-500) 75%, transparent);
 }

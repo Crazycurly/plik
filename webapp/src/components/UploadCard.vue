@@ -46,7 +46,7 @@ const emit = defineEmits(['delete', 'filter-token', 'filter-user'])
              :key="file.id"
              class="flex items-center justify-between gap-2">
           <a :href="getFileURL(upload.id, file.id, file.fileName, upload.stream)"
-             class="text-surface-300 hover:text-white transition-colors truncate">
+             class="text-surface-300 hover:text-accent-400 transition-colors truncate">
             {{ file.fileName }}
           </a>
           <span class="text-surface-500 shrink-0">{{ humanReadableSize(file.fileSize) }}</span>

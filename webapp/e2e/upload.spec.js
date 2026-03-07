@@ -69,7 +69,7 @@ test.describe('Upload flow', () => {
         await editor.fill('console.log("hello")')
 
         // Add as file
-        await page.getByRole('button', { name: /Add as File/i }).click()
+        await page.getByRole('button', { name: /^Add$/i }).click()
 
         // File should appear in the pending list
         await expect(page.getByText(/paste\.\w+/)).toBeVisible()
@@ -106,7 +106,7 @@ test.describe('Upload flow', () => {
         await expect(editor).toContainText(pastedText)
 
         // Add as file and upload
-        await page.getByRole('button', { name: /Add as File/i }).click()
+        await page.getByRole('button', { name: /^Add$/i }).click()
         await expect(page.getByText(/paste\.txt/)).toBeVisible()
 
         await page.getByRole('button', { name: 'Upload', exact: true }).click()

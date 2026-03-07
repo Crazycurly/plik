@@ -578,7 +578,7 @@ onMounted(async () => {
           <button @click="showStatsView"
                   :class="display === 'stats'
                     ? 'bg-accent-500/10 text-accent-400 border-l-2 border-accent-400'
-                    : 'text-surface-300 hover:text-white hover:bg-surface-700/50 border-l-2 border-transparent'"
+                    : 'text-surface-300 hover:text-surface-100 hover:bg-surface-700/50 border-l-2 border-transparent'"
                   class="w-full py-2.5 rounded-lg flex items-center gap-3 px-3 text-sm transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -590,7 +590,7 @@ onMounted(async () => {
           <button @click="showUploadsView"
                   :class="display === 'uploads'
                     ? 'bg-accent-500/10 text-accent-400 border-l-2 border-accent-400'
-                    : 'text-surface-300 hover:text-white hover:bg-surface-700/50 border-l-2 border-transparent'"
+                    : 'text-surface-300 hover:text-surface-100 hover:bg-surface-700/50 border-l-2 border-transparent'"
                   class="w-full py-2.5 rounded-lg flex items-center gap-3 px-3 text-sm transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -602,7 +602,7 @@ onMounted(async () => {
           <button @click="showUsersView"
                   :class="display === 'users'
                     ? 'bg-accent-500/10 text-accent-400 border-l-2 border-accent-400'
-                    : 'text-surface-300 hover:text-white hover:bg-surface-700/50 border-l-2 border-transparent'"
+                    : 'text-surface-300 hover:text-surface-100 hover:bg-surface-700/50 border-l-2 border-transparent'"
                   class="w-full py-2.5 rounded-lg flex items-center gap-3 px-3 text-sm transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -616,7 +616,7 @@ onMounted(async () => {
         <div class="glass-card p-2">
           <button @click="openCreateUser"
                   class="w-full py-2.5 rounded-lg flex items-center gap-3 px-3 text-sm
-                         text-surface-300 hover:text-white hover:bg-surface-700/50 transition-colors">
+                         text-surface-300 hover:text-surface-100 hover:bg-surface-700/50 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -700,17 +700,15 @@ onMounted(async () => {
                    @keydown.escape="closeSearch"
                    type="text"
                    placeholder="Search users by login, name, or email…"
-                   class="w-full bg-surface-800/60 border border-surface-600/50 rounded-xl
-                          px-4 py-2.5 text-sm text-surface-200 placeholder-surface-500
-                          focus:outline-none focus:border-accent-400/50 focus:ring-1 focus:ring-accent-400/30
-                          transition-colors" />
+                   class="input-field rounded-xl!
+                          px-4! py-2.5!" />
             <!-- Search dropdown -->
             <div v-if="usersSearchOpen"
-                 class="absolute z-20 top-full mt-1 w-full bg-surface-800 border border-surface-600/50
-                        rounded-xl shadow-xl overflow-hidden">
+                 class="absolute z-20 top-full mt-1 w-full glass-card
+                        overflow-hidden">
               <button v-for="u in usersSearchResults" :key="u.id"
                       @click="selectSearchResult(u)"
-                      class="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-700/60
+                      class="w-full text-left px-4 py-2.5 text-sm hover:bg-accent-500/10
                              transition-colors flex items-center gap-3">
                 <span class="text-accent-400 font-mono text-xs truncate max-w-[120px]"
                       :title="u.id">{{ u.login || u.id }}</span>
@@ -852,7 +850,7 @@ onMounted(async () => {
           <!-- Load more -->
           <div v-if="usersCursor" class="mt-4">
             <button @click="loadUsers(true)"
-                    class="w-full glass-card p-3 text-sm text-surface-400 hover:text-white
+                    class="w-full glass-card p-3 text-sm text-surface-400 hover:text-surface-100
                            hover:bg-surface-700/30 transition-colors text-center"
                     :disabled="usersLoading">
               {{ usersLoading ? 'Loading...' : 'Load more users' }}
@@ -884,7 +882,7 @@ onMounted(async () => {
               <button @click="viewUserInUsersTab(uploadsUserFilter)"
                       class="text-surface-400 hover:text-accent-400 transition-colors"
                       title="View user in users tab">🔍</button>
-              <button @click="clearUserFilter" class="text-surface-500 hover:text-white">×</button>
+              <button @click="clearUserFilter" class="text-surface-500 hover:text-surface-100">×</button>
             </div>
             <div v-if="uploadsTokenFilter" class="flex items-center gap-1.5 text-surface-300">
               <svg class="w-3.5 h-3.5 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -892,7 +890,7 @@ onMounted(async () => {
                       d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
               token: <span class="font-mono text-accent-400">{{ uploadsTokenFilter.substring(0, 12) }}...</span>
-              <button @click="clearTokenFilter" class="text-surface-500 hover:text-white">×</button>
+              <button @click="clearTokenFilter" class="text-surface-500 hover:text-surface-100">×</button>
             </div>
           </div>
 
@@ -920,7 +918,7 @@ onMounted(async () => {
           <!-- Load more -->
           <div v-if="uploadsCursor" class="mt-4">
             <button @click="loadUploads(true)"
-                    class="w-full glass-card p-3 text-sm text-surface-400 hover:text-white
+                    class="w-full glass-card p-3 text-sm text-surface-400 hover:text-surface-100
                            hover:bg-surface-700/30 transition-colors text-center"
                     :disabled="uploadsLoading">
               {{ uploadsLoading ? 'Loading...' : 'Load more uploads' }}

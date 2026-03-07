@@ -87,7 +87,7 @@ The router's `beforeEach` guard enforces authentication in three layers (checked
 
 CLI auth approval (`to.name === 'cli-auth'`) always requires authentication regardless of auth mode.
 
-> **Gotcha**: In `main.js`, `app.use(router)` is called inside the `Promise.all([loadConfig(), checkSession()]).then(...)` callback, NOT before it. This is critical because the router's navigation guards rely on `config.feature_authentication` being loaded. Installing the router before config loads would cause the forced-auth guard to see the default value (`"disabled"`) instead of the server-configured value.
+> **Gotcha**: In `main.js`, `app.use(router)` is called inside the `Promise.all([loadConfig(), loadSettings(), checkSession()]).then(...)` callback, NOT before it. This is critical because the router's navigation guards rely on `config.feature_authentication` being loaded, and the UI needs settings (name, background, custom CSS/JS) resolved before rendering. Installing the router before these load would cause the forced-auth guard to see default values and the UI to flash with empty branding.
 
 **Redirect preservation**: When the guard redirects to login, it saves the intended destination to `sessionStorage` (`plik-auth-redirect` key) instead of a URL query parameter. This is necessary because OAuth flows do a full-page round-trip through an external provider (Google, OIDC, OVH), and the server callback redirects back to `/#/login` — any hash-fragment query params would be lost during this round-trip. Using sessionStorage solves this uniformly for all auth methods (local login and OAuth).
 
@@ -404,6 +404,40 @@ The `GET /config` response also includes:
 | `oidcProviderName` | Display name for OIDC button (e.g. `"Keycloak"`, defaults to `"OpenID"`) |
 | `downloadDomain` | Alternate domain for download URLs (set in `api.js` via `setDownloadDomain`) |
 | `abuseContact` | Abuse contact email → displayed in global footer (`App.vue`) |
+
+---
+
+## Webapp Settings (`settings.js`)
+
+The webapp loads instance-level settings from `/settings.json` at startup (JSONC — `//` comments are stripped before parsing). This is separate from the server `/config` endpoint and lives in `webapp/public/settings.json`.
+
+| Field | Type | Default | Purpose |
+|-------|------|---------|--------|
+| `name` | string | `"Plik"` | Logo text and page title |
+| `logo` | string | `""` | Logo image path (replaces text when set) |
+| `theme` | string | `"auto"` | `"dark"`, `"light"`, `"auto"` (OS preference), or any custom theme name matching a CSS file in `themes/` |
+| `backgroundImage` | string | `""` | Background image path |
+| `backgroundColor` | string | `""` | Fallback background color |
+| `overlayOpacity` | number | `0.2` | Dark overlay over background |
+| `customCSS` | string | `""` | Path to custom CSS (injected if non-empty) |
+| `customJS` | string | `""` | Path to custom JS (injected if non-empty) |
+| `themes` | array | `["*"]` | Available themes in the picker (`["*"]` = all built-ins, `[]` = no picker). Entries can be strings (`"nord"`), objects (`{ "name": "custom", "label": "My Theme" }`), or `"*"` to expand all built-ins (e.g. `["*", { "name": "acme", "label": "Acme" }]`) |
+| `defaultDarkTheme` | string | `"dark"` | Theme used by "auto" when OS prefers dark mode |
+| `defaultLightTheme` | string | `"light"` | Theme used by "auto" when OS prefers light mode |
+
+**White-label safety**: The JS defaults are all empty (name = `''`). Only the shipped `settings.json` provides `"Plik"`. If the file is missing or fails to load, no branding leaks.
+
+**Custom asset injection**: `loadSettings()` conditionally injects `<link>` and `<script>` tags if `customCSS`/`customJS` paths are set. Injection happens before Vue mounts (inside the `Promise.all` in `main.js`), so there's no flash of unstyled content.
+
+**Theme system**: Themes are standalone CSS files in `webapp/public/themes/` that override the design tokens defined in `style.css`'s `@theme` block. The built-in `dark` theme is compiled into `style.css` (zero HTTP cost). All other themes (including `light`) are lazy-loaded from `/themes/{name}.css` before `data-theme` is set. A `loadedThemes` Set prevents duplicate `<link>` injection on OS theme toggle. Flash prevention uses inline `<style>` in `index.html` to hide the page with `visibility: hidden` + `background: transparent !important` until the theme is resolved. The "auto" theme resolves to `settings.defaultDarkTheme` / `settings.defaultLightTheme` (defaulting to `dark`/`light`), allowing deployments to customize which themes "auto" uses (e.g. Solarized pair).
+
+Built-in themes: `solarized-dark`, `solarized-light`, `nord`, `nord-light`, `catppuccin-mocha`, `catppuccin-latte`, `matrix`, `hexless`. Dark themes may use outlined buttons (transparent bg + colored border with 40% opacity, brightening to 60% on hover) — see `TEMPLATE.css` for the pattern. Custom themes can be created by copying `themes/TEMPLATE.css`.
+
+**Theme picker** (`ThemePicker.vue`): Palette icon dropdown in the header nav bar, with "Theme" text label and dedicated separators. Lists themes from `getAvailableThemes()` (reads `settings.themes` — `["*"]` = all built-ins, `[]` = no picker). The picker is hidden when `themes.length ≤ 1`. Selection writes to localStorage (`plik-theme` key) and calls `applyTheme()` for instant switching. On boot, `loadSettings()` reads localStorage first, falling back to `settings.theme` default. The `autoListener` variable tracks the OS `prefers-color-scheme` listener and properly removes it when switching away from "auto" mode. **Server-side persistence**: For authenticated users, the theme is also stored in the `User.Theme` DB field. On login/session restore, `syncThemeFromUser()` applies the server value (server wins over localStorage). On theme change, `setUserTheme()` fires a background `patchMe()` call to persist the choice. Anonymous users use localStorage only.
+
+**Dark theme refinements**: The default dark theme uses semi-transparent button fills (`color-mix` at 85% for primary, 75% for danger) to reduce visual harshness. Body text defaults to `surface-200` (not `surface-100`) for reduced eye strain; `surface-100`/`surface-50` are reserved for headings and hover highlights. CodeEditor uses a single unified theme with CSS custom properties (`--color-surface-*`, `--color-accent-*`) so all themes get correct editor styling automatically — no per-theme CodeMirror overrides needed.
+
+**CSS hook**: Logo `<span>` elements in `AppHeader.vue` have the class `plik-logo-text` for targeting via custom CSS.
 
 ---
 
@@ -775,6 +809,7 @@ Tests live in `webapp/e2e/` and cover core flows:
 | `qrcode.spec.js` | QR code modal |
 | `retry.spec.js` | Upload failure/retry, cancel |
 | `streaming.spec.js` | Stream upload, URL path, hidden actions |
+| `customization.spec.js` | Runtime settings.json override, custom CSS/JS injection, white-label fallback |
 
 **Server lifecycle**: Playwright's `webServer` launches `e2e/start-server.sh` which creates a fresh temp directory with clean SQLite DB + data backend, seeds an admin user, and starts `plikd`. The `globalTeardown` cleans up after the suite.
 

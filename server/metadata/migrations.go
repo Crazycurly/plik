@@ -203,6 +203,20 @@ func (b *Backend) getMigrations() []*gormigrate.Migration {
 				b.log.Criticalf("Something went wrong. Please check database status manually")
 				return nil
 			},
+		}, {
+			ID: "0008-user-theme",
+			Migrate: func(tx *gorm.DB) error {
+				type User struct {
+					Theme string `json:"theme,omitempty"`
+				}
+
+				b.log.Warning("Applying database migration 0008-user-theme")
+				return b.setupTxForMigration(tx).AutoMigrate(&User{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				b.log.Criticalf("Something went wrong. Please check database status manually")
+				return nil
+			},
 		},
 	}
 

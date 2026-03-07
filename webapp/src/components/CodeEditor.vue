@@ -19,6 +19,8 @@ const emit = defineEmits(['update:modelValue', 'language-detected'])
 const editorContainer = ref(null)
 let view = null
 const languageCompartment = new Compartment()
+const themeCompartment = new Compartment()
+let themeObserver = null
 
 // Map file extension to language
 function getLanguageFromFilename(filename) {
@@ -109,59 +111,57 @@ function prettifyJson() {
   showFeedback('prettify')
 }
 
-// Custom theme to match Plik's dark glass-card aesthetic
-const plikTheme = EditorView.theme({
-  '&': {
-    fontSize: '13px',
-    backgroundColor: 'transparent',
-  },
+// Shared CodeMirror style overrides (font, sizing, gutters)
+const plikBaseTheme = EditorView.theme({
+  '&': { fontSize: '13px', backgroundColor: 'transparent' },
   '.cm-content': {
     fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
-    caretColor: '#38bdf8',
     minHeight: '120px',
+    caretColor: 'var(--color-accent-400)',
   },
-  '&.cm-focused .cm-content': {
-    caretColor: '#38bdf8',
-  },
+  '&.cm-focused .cm-content': { caretColor: 'var(--color-accent-400)' },
+  '.cm-scroller': { overflow: 'auto' },
   '.cm-gutters': {
-    backgroundColor: 'color-mix(in srgb, #1e293b 40%, transparent)',
-    color: '#475569',
+    backgroundColor: 'color-mix(in srgb, var(--color-surface-800) 40%, transparent)',
+    color: 'var(--color-surface-500)',
     border: 'none',
-    borderRight: '1px solid color-mix(in srgb, #334155 50%, transparent)',
+    borderRight: '1px solid color-mix(in srgb, var(--color-surface-700) 50%, transparent)',
   },
   '.cm-activeLineGutter': {
-    backgroundColor: 'color-mix(in srgb, #334155 40%, transparent)',
-    color: '#94a3b8',
+    backgroundColor: 'color-mix(in srgb, var(--color-surface-700) 40%, transparent)',
+    color: 'var(--color-surface-300)',
   },
   '.cm-activeLine': {
-    backgroundColor: 'color-mix(in srgb, #334155 25%, transparent)',
+    backgroundColor: 'color-mix(in srgb, var(--color-surface-700) 25%, transparent)',
   },
-  '&.cm-focused .cm-cursor': {
-    borderLeftColor: '#38bdf8',
-  },
+  '&.cm-focused .cm-cursor': { borderLeftColor: 'var(--color-accent-400)' },
   '&.cm-focused .cm-selectionBackground, ::selection': {
-    backgroundColor: 'color-mix(in srgb, #0ea5e9 20%, transparent)',
+    backgroundColor: 'color-mix(in srgb, var(--color-accent-500) 20%, transparent)',
     color: 'inherit',
   },
   '.cm-selectionBackground': {
-    backgroundColor: 'color-mix(in srgb, #0ea5e9 15%, transparent)',
+    backgroundColor: 'color-mix(in srgb, var(--color-accent-500) 15%, transparent)',
   },
-  '.cm-foldGutter': {
-    color: '#475569',
-  },
+  '.cm-foldGutter': { color: 'var(--color-surface-500)' },
   '.cm-tooltip': {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    color: '#e2e8f0',
+    backgroundColor: 'var(--color-surface-800)',
+    border: '1px solid var(--color-surface-700)',
+    color: 'var(--color-surface-100)',
   },
-  '.cm-placeholder': {
-    color: '#64748b',
-    fontStyle: 'italic',
-  },
-  '.cm-scroller': {
-    overflow: 'auto',
-  },
+  '.cm-placeholder': { color: 'var(--color-surface-500)', fontStyle: 'italic' },
 })
+
+function isDarkTheme() {
+  const cs = getComputedStyle(document.documentElement).colorScheme
+  return cs !== 'light'
+}
+
+function getThemeExtensions() {
+  if (isDarkTheme()) {
+    return [oneDark]
+  }
+  return []
+}
 
 async function createEditor() {
   if (!editorContainer.value) return
@@ -175,8 +175,8 @@ async function createEditor() {
     bracketMatching(),
     foldGutter(),
     indentOnInput(),
-    oneDark,
-    plikTheme,
+    plikBaseTheme,
+    themeCompartment.of(getThemeExtensions()),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     EditorView.lineWrapping,
   ]
@@ -320,11 +320,23 @@ onMounted(async () => {
       detectLanguageFromContent(props.modelValue)
     }, 500)
   }
+
+  // Watch for theme changes and reconfigure editor
+  themeObserver = new MutationObserver(() => {
+    if (view) {
+      view.dispatch({ effects: themeCompartment.reconfigure(getThemeExtensions()) })
+    }
+  })
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme'],
+  })
 })
 
 onBeforeUnmount(() => {
   if (detectionTimeout) clearTimeout(detectionTimeout)
   if (feedbackResetTimeout) clearTimeout(feedbackResetTimeout)
+  if (themeObserver) { themeObserver.disconnect(); themeObserver = null }
   destroyEditor()
 })
 </script>
@@ -390,7 +402,7 @@ onBeforeUnmount(() => {
               d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <span class="truncate">{{ jsonError }}</span>
-      <button class="ml-auto text-danger-400 hover:text-white shrink-0" @click="jsonError = null">
+      <button class="ml-auto text-danger-400 hover:text-surface-100 shrink-0" @click="jsonError = null">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
