@@ -512,6 +512,28 @@ test.describe('Delete file/upload', () => {
         // File still visible
         await expect(page.getByRole('link', { name: 'cancel-delete.txt' })).toBeVisible()
     })
+
+    test('deleting viewed file closes viewer panel', async ({ page }) => {
+        // Upload a single text file — the viewer auto-opens for single viewable files
+        await uploadTestFile(page, 'viewed-file.txt', 'viewer content')
+        const panel = page.locator('#file-viewer-panel')
+        await expect(panel).toBeVisible({ timeout: 5_000 })
+
+        // Delete the file via the remove button
+        const removeBtn = page.getByTitle('Remove file').first()
+        await removeBtn.click()
+
+        // Confirm dialog
+        const dialog = page.locator('.fixed.inset-0.z-50 .glass-card')
+        await expect(dialog).toBeVisible({ timeout: 3_000 })
+        await dialog.getByRole('button', { name: 'Delete' }).click()
+
+        // Viewer panel should close
+        await expect(panel).not.toBeVisible({ timeout: 5_000 })
+
+        // Empty state should be shown
+        await expect(page.getByText('No files in this upload')).toBeVisible({ timeout: 5_000 })
+    })
 })
 
 test.describe('Unauthenticated download permissions', () => {
