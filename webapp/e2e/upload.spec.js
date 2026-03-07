@@ -144,6 +144,43 @@ test.describe('Upload flow', () => {
         // Verify the file appears on the download page with the original name
         await expect(page.getByText(fileName).first()).toBeVisible()
     })
+
+    test('user-edited filename is preserved despite auto-detection', async ({ page }) => {
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Open text paste mode
+        await page.getByText('Paste text').click()
+
+        const editor = page.locator('.cm-content, textarea').first()
+        await editor.waitFor({ state: 'visible', timeout: 5_000 })
+
+        // Type content that looks like JavaScript (triggers language detection)
+        await editor.fill('function hello() {\n  console.log("world")\n}\nhello()')
+
+        // Wait for the auto-detection to fire and update the filename
+        const filenameInput = page.locator('input[placeholder="paste.txt"]')
+        await expect(filenameInput).toHaveValue(/paste\.\w+/, { timeout: 5_000 })
+
+        // User manually edits the filename
+        await filenameInput.fill('my-notes.txt')
+        await expect(filenameInput).toHaveValue('my-notes.txt')
+
+        // Wait to make sure auto-detection doesn't overwrite it
+        await page.waitForTimeout(2000)
+        await expect(filenameInput).toHaveValue('my-notes.txt')
+
+        // Add as file and upload
+        await page.getByRole('button', { name: /^Add$/i }).click()
+        await expect(page.getByText('my-notes.txt')).toBeVisible()
+
+        await page.getByRole('button', { name: 'Upload', exact: true }).click()
+        await page.waitForURL(/[?&]id=/, { timeout: 10_000 })
+        await page.waitForLoadState('networkidle')
+
+        // Download page should show the user-chosen filename
+        await expect(page.getByRole('link', { name: 'my-notes.txt' })).toBeVisible()
+    })
 })
 
 test.describe('Paste editor markdown preview', () => {

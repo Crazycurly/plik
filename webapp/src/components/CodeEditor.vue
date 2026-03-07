@@ -3,7 +3,7 @@ import { ref, watch, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { EditorState, Compartment } from '@codemirror/state'
 import { EditorView, keymap, placeholder as cmPlaceholder, lineNumbers, highlightActiveLineGutter, highlightActiveLine } from '@codemirror/view'
 import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands'
-import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language'
+import { bracketMatching, foldGutter, indentOnInput, syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { languages } from '@codemirror/language-data'
 
@@ -160,7 +160,7 @@ function getThemeExtensions() {
   if (isDarkTheme()) {
     return [oneDark]
   }
-  return []
+  return [syntaxHighlighting(defaultHighlightStyle)]
 }
 
 async function createEditor() {
