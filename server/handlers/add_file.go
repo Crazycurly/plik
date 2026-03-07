@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/dustin/go-humanize"
+	"github.com/gabriel-vasile/mimetype"
 
 	"github.com/root-gg/plik/server/common"
 	"github.com/root-gg/plik/server/context"
@@ -250,7 +251,7 @@ func preprocessor(ctx *context.Context, file io.Reader, preprocessWriter io.Writ
 			if bytesRead >= len(ageHeader) && bytes.HasPrefix(buf[:bytesRead], ageHeader) {
 				mimeType = "application/octet-stream"
 			} else {
-				mimeType = http.DetectContentType(buf[:bytesRead])
+				mimeType = mimetype.Detect(buf[:bytesRead]).String()
 			}
 		}
 

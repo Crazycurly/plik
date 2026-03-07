@@ -10,6 +10,7 @@ require (
 	github.com/camathieu/pb v1.0.29-0.20190403132434-889de99fc8d5
 	github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815
 	github.com/dustin/go-humanize v1.0.1
+	github.com/gabriel-vasile/mimetype v1.4.13
 	github.com/go-gormigrate/gormigrate/v2 v2.1.5
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang/snappy v1.0.0

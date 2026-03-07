@@ -219,7 +219,7 @@ Each handler file contains one or more `http.Handler` functions.
 | File | Handlers | Description |
 |------|----------|-------------|
 | `create_upload.go` | `CreateUpload` | Create upload with options, validate config/quotas |
-| `add_file.go` | `AddFile` | Upload file to existing upload (multipart) |
+| `add_file.go` | `AddFile` | Upload file to existing upload (multipart). Detects content type via [`gabriel-vasile/mimetype`](https://github.com/gabriel-vasile/mimetype) magic-number sniffing (200+ formats). E2EE uploads are forced to `application/octet-stream` via age-header detection. |
 | `get_upload.go` | `GetUpload` | Return upload metadata |
 | `get_file.go` | `GetFile` | Download file, handle OneShot, extend TTL, support HTTP range requests (via `http.ServeContent` for non-stream/non-oneshot). E2EE uploads: redirects webapp to download page, forces `application/octet-stream` |
 | `get_archive.go` | `GetArchive` | Download all files as zip |
