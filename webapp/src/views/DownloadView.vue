@@ -237,6 +237,10 @@ async function deleteFile(file) {
           { id: props.id, stream: upload.value.stream, uploadToken: uploadToken.value },
           file,
         )
+        // Close viewer if the deleted file was being viewed
+        if (viewingFile.value?.id === file.id) {
+          closeViewer()
+        }
         await fetchUpload()
       } catch (err) {
         error.value = err.message || 'Failed to delete file'
