@@ -24,6 +24,14 @@ const overlayStyle = computed(() => ({
 }))
 
 const hasBackground = computed(() => !!settings.backgroundImage)
+
+const footerHTML = computed(() => {
+    if (settings.footer) return settings.footer
+    if (config.abuseContact) {
+        return `For abuse contact <a href="mailto:${config.abuseContact}" class="underline hover:text-surface-200">${config.abuseContact}</a>`
+    }
+    return ''
+})
 </script>
 
 <template>
@@ -45,11 +53,10 @@ const hasBackground = computed(() => !!settings.backgroundImage)
       </router-view>
     </div>
 
-    <!-- Abuse contact footer -->
-    <footer v-if="config.abuseContact"
-            class="relative z-10 text-center text-xs text-surface-400 py-3">
-      For abuse contact {{ config.abuseContact }}
-    </footer>
+    <!-- Footer -->
+    <footer v-if="footerHTML"
+            class="relative z-10 text-center text-xs text-surface-400 py-3"
+            v-html="footerHTML" />
   </div>
 </template>
 

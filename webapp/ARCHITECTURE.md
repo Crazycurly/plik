@@ -429,6 +429,9 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 | `themes` | array | `["*"]` | Available themes in the picker (`["*"]` = all built-ins, `[]` = no picker). Entries can be strings (`"nord"`), objects (`{ "name": "custom", "label": "My Theme" }`), or `"*"` to expand all built-ins (e.g. `["*", { "name": "acme", "label": "Acme" }]`) |
 | `defaultDarkTheme` | string | `"dark"` | Theme used by "auto" when OS prefers dark mode |
 | `defaultLightTheme` | string | `"light"` | Theme used by "auto" when OS prefers light mode |
+| `footer` | string | `""` | Custom footer HTML (e.g. `"Powered by <a href='…'>Plik</a>"`). Takes precedence over `AbuseContact` in `plikd.cfg`. |
+
+**Footer priority**: `settings.footer` > `config.abuseContact` (`plikd.cfg`) > none. When only `AbuseContact` is set, the footer renders a default "For abuse contact &lt;mailto&gt;" template.
 
 **White-label safety**: The JS defaults are all empty (name = `''`). Only the shipped `settings.json` provides `"Plik"`. If the file is missing or fails to load, no branding leaks.
 

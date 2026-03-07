@@ -42,7 +42,7 @@ PLIKD_DATA_BACKEND_CONFIG='{"Directory":"/var/files"}' ./plikd
 | `DownloadDomainAlias` | `[]` | Additional accepted download hosts |
 | `EnhancedWebSecurity` | `false` | Extra security headers + secure cookies |
 | `SessionTimeout` | `365d` | Authentication session duration |
-| `AbuseContact` | `""` | Abuse contact email (displayed in UI) |
+| `AbuseContact` | `""` | Abuse contact email shown in footer. `settings.json` `"footer"` takes precedence when set |
 | `WebappDirectory` | `../webapp/dist` | Web UI static files directory |
 | `ClientsDirectory` | `../clients` | CLI client binaries directory |
 | `ChangelogDirectory` | `../changelog` | Release changelog directory |

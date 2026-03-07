@@ -23,5 +23,8 @@
   // Path to a custom CSS file (e.g. "/css/custom.css")
   "customCSS": "",
   // Path to a custom JavaScript file (e.g. "/js/custom.js")
-  "customJS": ""
+  "customJS": "",
+  // Custom footer HTML (e.g. "Powered by <a href='https://plik.root.gg'>Plik</a>")
+  // Overrides the deprecated AbuseContact from plikd.cfg when set.
+  "footer": ""
 }

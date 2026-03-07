@@ -272,25 +272,60 @@ test.describe('Feature flags', () => {
     })
 })
 
-// ── Abuse Contact Footer ──────────────────────────────────────────────────
+// ── Footer ────────────────────────────────────────────────────────────────
 
-test.describe('Abuse contact footer', () => {
-    test('hidden when abuseContact is empty', async ({ page }) => {
+test.describe('Footer', () => {
+    test('hidden when nothing is configured', async ({ page }) => {
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
-        // Default config has empty abuseContact — no footer with "abuse"
         await expect(page.locator('footer')).not.toBeVisible()
     })
 
-    test('shown when abuseContact is configured', async ({ page, withConfig }) => {
+    test('shown with mailto link when server abuseContact is configured', async ({ page, withConfig }) => {
         await withConfig({ abuseContact: 'abuse@example.com' })
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
         const footer = page.locator('footer')
         await expect(footer).toBeVisible({ timeout: 5_000 })
-        await expect(footer).toContainText('abuse@example.com')
+        await expect(footer).toContainText('For abuse contact')
+
+        const link = footer.locator('a[href="mailto:abuse@example.com"]')
+        await expect(link).toBeVisible()
+        await expect(link).toHaveText('abuse@example.com')
+    })
+
+    test('custom footer HTML from settings.json', async ({ page, withSettings }) => {
+        await withSettings({
+            name: 'Plik',
+            footer: 'Powered by <a href="https://plik.root.gg">Plik</a> · Custom footer',
+        })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        const footer = page.locator('footer')
+        await expect(footer).toBeVisible({ timeout: 5_000 })
+        await expect(footer).toContainText('Custom footer')
+
+        const link = footer.locator('a[href="https://plik.root.gg"]')
+        await expect(link).toBeVisible()
+        await expect(link).toHaveText('Plik')
+    })
+
+    test('settings.json footer overrides server abuseContact', async ({ page, withConfig, withSettings }) => {
+        await withConfig({ abuseContact: 'abuse@example.com' })
+        await withSettings({
+            name: 'Plik',
+            footer: 'Custom takes priority',
+        })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        const footer = page.locator('footer')
+        await expect(footer).toBeVisible({ timeout: 5_000 })
+        await expect(footer).toContainText('Custom takes priority')
+        await expect(footer).not.toContainText('abuse@example.com')
     })
 })
 
