@@ -38,7 +38,7 @@ PLIKD_DATA_BACKEND_CONFIG='{"Directory":"/var/files"}' ./plikd
 | `TlsVersion` | `tlsv10` | Minimum TLS version |
 | `NoWebInterface` | `false` | Disable web UI |
 | `PlikDomain` | `""` | Public webapp URL (e.g., `https://plik.example.com`). Used for OAuth redirects and CORS. Does **not** restrict downloads on its own — set `DownloadDomain` for that |
-| `DownloadDomain` | `""` | Enforce download domain (e.g., `https://dl.plik.example.com`). Set `PlikDomain` too for CORS |
+| `DownloadDomain` | `""` | Enforce download domain (e.g., `https://dl.plik.example.com`). UI/API blocking and CORS require `PlikDomain` too |
 | `DownloadDomainAlias` | `[]` | Additional accepted download hosts |
 | `EnhancedWebSecurity` | `false` | Extra security headers + secure cookies |
 | `SessionTimeout` | `365d` | Authentication session duration |

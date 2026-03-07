@@ -173,7 +173,7 @@ func (ps *PlikServer) start() (err error) {
 	}
 
 	if ps.config.DownloadDomain != "" && ps.config.PlikDomain == "" {
-		log.Warning("DownloadDomain is set without PlikDomain: non-file requests on the download domain will be rejected with 403 instead of redirected. Set PlikDomain for a smoother user experience.")
+		log.Warning("DownloadDomain is set without PlikDomain: download domain UI/API restriction is disabled (no domain to redirect to). Set PlikDomain to enable full domain separation.")
 	}
 
 	// Initialize backends
