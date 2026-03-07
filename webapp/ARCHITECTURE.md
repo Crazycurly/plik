@@ -940,10 +940,11 @@ Provides streaming encryption/decryption using the `age-encryption` npm package:
 ### Upload Flow (E2EE)
 
 1. User toggles E2EE in `UploadSidebar` → passphrase auto-generated (or customized)
-2. `UploadView.doUpload()` encrypts each file via `encryptFile()` before building the upload params
-3. `params.e2ee = 'age'` sent to server → server stores the E2EE scheme on the upload model
-4. Passphrase passed via `setPendingFiles(id, files, basicAuth, passphrase)` to the pending store
-5. Navigation to DownloadView — passphrase is **not** in the URL
+2. **Validation**: Both `doUpload()` and `createEmptyUpload()` reject the upload with an error if E2EE is enabled but the passphrase is empty (prevents unencrypted files from being marked as encrypted). `UploadSidebar` also shows a red warning ring and "Passphrase cannot be empty" message on the input field.
+3. `UploadView.doUpload()` encrypts each file via `encryptFile()` before building the upload params
+4. `params.e2ee = 'age'` sent to server → server stores the E2EE scheme on the upload model
+5. Passphrase passed via `setPendingFiles(id, files, basicAuth, passphrase)` to the pending store
+6. Navigation to DownloadView — passphrase is **not** in the URL
 
 ### Download Flow (E2EE)
 

@@ -252,6 +252,10 @@ async function createEmptyUpload() {
     uploadError.value = 'A comment is required'
     return
   }
+  if (settings.e2eeEnabled && !settings.e2eePassphrase.trim()) {
+    uploadError.value = 'E2EE is enabled but the passphrase is empty'
+    return
+  }
 
   isUploading.value = true
   uploadError.value = null
@@ -273,6 +277,10 @@ async function doUpload() {
   if (!hasFiles.value || isUploading.value) return
   if (commentsRequired.value) {
     uploadError.value = 'A comment is required'
+    return
+  }
+  if (settings.e2eeEnabled && !settings.e2eePassphrase.trim()) {
+    uploadError.value = 'E2EE is enabled but the passphrase is empty'
     return
   }
 

@@ -218,6 +218,7 @@ const hasAnySettings = computed(() =>
           <div class="relative">
             <input type="text"
                    class="input-field pr-9 font-mono text-xs"
+                   :class="{ 'ring-1 ring-danger-500/50 border-danger-500/50': !settings.e2eePassphrase.trim() }"
                    :value="settings.e2eePassphrase"
                    @input="updateSetting('e2eePassphrase', $event.target.value)" />
             <button type="button"
@@ -233,6 +234,7 @@ const hasAnySettings = computed(() =>
               </svg>
             </button>
           </div>
+          <p v-if="!settings.e2eePassphrase.trim()" class="text-xs text-danger-400 mt-1">Passphrase cannot be empty</p>
         </div>
       </div>
 

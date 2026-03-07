@@ -221,6 +221,43 @@ test.describe('E2EE', () => {
         await freshPage.close()
     })
 
+    test('upload rejected when passphrase is empty', async ({ page }) => {
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Enable E2EE
+        const e2eeSection = page.getByText('End-to-End Encryption').locator('xpath=ancestor::div[1]')
+        const toggle = e2eeSection.locator('.toggle-switch')
+        await toggle.click()
+
+        // Wait for passphrase input
+        const passphraseInput = page.locator('aside input.font-mono').first()
+        await expect(passphraseInput).toBeVisible({ timeout: 3_000 })
+
+        // Clear the passphrase
+        await passphraseInput.fill('')
+
+        // Verify the warning message appears
+        await expect(page.getByText('Passphrase cannot be empty')).toBeVisible()
+
+        // Add a file
+        const input = page.locator('input[type="file"]')
+        await input.setInputFiles({
+            name: 'test.txt',
+            mimeType: 'text/plain',
+            buffer: Buffer.from('test content'),
+        })
+
+        // Click Upload
+        await page.getByRole('button', { name: 'Upload', exact: true }).click()
+
+        // Should show error, not navigate
+        await expect(page.getByText('E2EE is enabled but the passphrase is empty')).toBeVisible({ timeout: 3_000 })
+
+        // Should still be on the upload page (no ?id= in URL)
+        expect(page.url()).not.toContain('id=')
+    })
+
     test('view button hidden for E2EE files (server overrides mimeType to binary)', async ({ page }) => {
         await uploadE2EEFile(page, 'viewable.txt', 'Decrypted text viewer content check')
 
