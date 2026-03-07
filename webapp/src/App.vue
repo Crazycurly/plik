@@ -1,7 +1,6 @@
 <script setup>
 import { computed } from 'vue'
 import AppHeader from './components/AppHeader.vue'
-import NotificationBanner from './components/NotificationBanner.vue'
 import { settings } from './settings.js'
 import { config } from './config.js'
 
@@ -36,7 +35,6 @@ const hasBackground = computed(() => !!settings.backgroundImage)
 
     <!-- Header -->
     <AppHeader class="relative z-50" />
-    <NotificationBanner />
 
     <!-- Main Content Area -->
     <div class="flex-1 flex relative z-10">

@@ -552,16 +552,6 @@ App.vue
 
 Reactive singleton holding `auth.user` (set on login, cleared on logout). Checked by `main.js` on app load via `GET /me`. The header shows user/admin links when `auth.user` is set.
 
-### Notification Store (`notification.js`)
-
-Reactive notification singleton for surfacing user-facing errors and success messages.
-
-- `showError(msg)` / `showSuccess(msg)` — set the notification and start a 5-second auto-dismiss timer
-- `dismiss()` — clears immediately
-- `NotificationBanner.vue` — mounted in `App.vue`, renders the notification as a fixed toast below the header
-
-> **Note**: HomeView and AdminView use the reusable `ErrorBanner` component for persistent inline API-error display instead of `showError()` toasts. The notification store is still used by other parts of the app for ephemeral success/error messages.
-
 ### LoginView (`/#/login`)
 
 - Local login form (username + password → `POST /auth/local/login`) — **hidden** when `isFeatureEnabled('local_login')` returns `false` (i.e. `FeatureLocalLogin = "disabled"` on the server)
@@ -792,7 +782,7 @@ Tests live in `src/__tests__/` and cover pure utility functions, config helpers,
 | `config.test.js` | Feature flag helpers (`isFeatureEnabled`, `isFeatureForced`, `isFeatureDefaultOn`) |
 | `markdown.test.js` | Markdown rendering + XSS sanitization via DOMPurify |
 | `pendingUploadStore.test.js` | One-shot store semantics (set, consume, double-consume) |
-| `notification.test.js` | Notification store (show/dismiss, auto-dismiss timer, replacement) |
+
 
 Vitest configuration is in `vite.config.js` under the `test` key (`globals: true`, `environment: 'jsdom'`).
 

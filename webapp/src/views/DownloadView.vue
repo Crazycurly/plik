@@ -587,7 +587,8 @@ watch(activeFiles, (files) => {
         @edit-passphrase="openPassphraseModal"
         @delete-upload="deleteUpload"
         @add-files="triggerAddFiles"
-        @show-qr="openQrUpload" />
+        @show-qr="openQrUpload"
+        @error="uploadError = $event" />
 
       <!-- Loading placeholder sidebar -->
       <aside v-else class="w-full md:w-80 md:shrink-0 p-4">

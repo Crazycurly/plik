@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue'
 import { formatDate } from '../utils.js'
 import { getArchiveURL, getAdminURL } from '../api.js'
-import { showError } from '../notification.js'
 import CopyButton from './CopyButton.vue'
 import UploadBadges from './UploadBadges.vue'
 
@@ -12,7 +11,7 @@ const props = defineProps({
   upload: { type: Object, required: true },
 })
 
-const emit = defineEmits(['delete-upload', 'add-files', 'show-qr', 'edit-passphrase'])
+const emit = defineEmits(['delete-upload', 'add-files', 'show-qr', 'edit-passphrase', 'error'])
 
 const expirationText = computed(() => {
   if (!props.upload.expireAt) return 'Never expires'
@@ -60,7 +59,7 @@ async function nativeShare() {
   } catch (err) {
     // User cancelled or share failed — ignore
     if (err.name !== 'AbortError') {
-      showError('Share failed')
+      emit('error', 'Share failed')
     }
   }
 }
