@@ -691,3 +691,32 @@ func TestAddFileE2EEMimeType(t *testing.T) {
 
 	require.Equal(t, "application/octet-stream", fileResult.Type, "E2EE uploads should always be application/octet-stream")
 }
+
+func TestAddFilePNGMimeType(t *testing.T) {
+	ctx := newTestingContext(common.NewConfiguration())
+
+	upload := &common.Upload{IsAdmin: true}
+	file := upload.NewFile()
+	file.Name = "image.png"
+	createTestUpload(t, ctx, upload)
+
+	// PNG magic bytes
+	pngData := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+	reader, contentType, err := getMultipartFormData(file.Name, bytes.NewBuffer(pngData))
+	require.NoError(t, err, "unable get multipart form data")
+
+	req := getUploadRequest(t, upload, file, reader, contentType)
+
+	rr := ctx.NewRecorder(req)
+	AddFile(ctx, rr, req)
+	context.TestOK(t, rr)
+
+	respBody, err := io.ReadAll(rr.Body)
+	require.NoError(t, err)
+
+	var fileResult = &common.File{}
+	err = json.Unmarshal(respBody, fileResult)
+	require.NoError(t, err)
+
+	require.Equal(t, "image/png", fileResult.Type, "PNG should be detected")
+}
