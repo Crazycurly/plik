@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"testing"
 
@@ -119,18 +120,18 @@ func TestGetArchiveFileNameTooLong(t *testing.T) {
 	upload := &common.Upload{}
 	ctx.SetUpload(upload)
 
-	archiveName := ""
+	var archiveName strings.Builder
 	for range 10240 {
-		archiveName += "x"
+		archiveName.WriteString("x")
 	}
-	archiveName += ".zip"
+	archiveName.WriteString(".zip")
 
-	req, err := http.NewRequest("GET", "/archive/"+upload.ID+"/"+archiveName, bytes.NewBuffer([]byte{}))
+	req, err := http.NewRequest("GET", "/archive/"+upload.ID+"/"+archiveName.String(), bytes.NewBuffer([]byte{}))
 	require.NoError(t, err, "unable to create new request")
 
 	// Fake gorilla/mux vars
 	vars := map[string]string{
-		"filename": archiveName,
+		"filename": archiveName.String(),
 	}
 	req = mux.SetURLVars(req, vars)
 
