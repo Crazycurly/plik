@@ -79,8 +79,8 @@ lint:
 	if [[ -z "$$OUT" ]]; then echo " OK" ; else echo " FAIL"; echo "$$OUT"; FAIL=1 ; fi ;\
 	echo -n " - go vet :" ; OUT=`go vet ./... 2>&1` ; \
 	if [[ -z "$$OUT" ]]; then echo " OK" ; else echo " FAIL"; echo "$$OUT"; FAIL=1 ; fi ;\
-	echo -n " - go fix :" ; OUT=`go fix ./... 2>&1` ; \
-	if [[ -z "$$OUT" ]]; then echo " OK" ; else echo " FAIL"; echo "$$OUT"; FAIL=1 ; fi ;\
+	echo -n " - go fix :" ; BEFORE=`git diff --name-only` ; go fix ./... 2>&1 ; AFTER=`git diff --name-only` ; \
+	if [[ "$$BEFORE" == "$$AFTER" ]]; then echo " OK" ; else echo " FAIL"; diff <(echo "$$BEFORE") <(echo "$$AFTER") | grep '^>' | sed 's/^> /  /'; FAIL=1 ; fi ;\
 	test $$FAIL -eq 0
 
 ###

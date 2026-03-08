@@ -49,6 +49,8 @@ Focus on `high` and `critical` severity — `moderate` and below can be noted bu
 
 If vulnerabilities are found, present them to the user and discuss whether to fix, bump, or acknowledge before proceeding.
 
+**Go version bump**: Always check the latest available Go patch version by looking up the [Go downloads page](https://go.dev/dl/) or probing `curl -sI https://go.dev/dl/go<version>.linux-amd64.tar.gz | head -1`. If a newer patch version exists than what `go.mod` currently specifies, propose bumping the `go.mod` Go directive. Include the `go.mod` change in the release commit and use the newer version in the changelog. This ensures the CI Docker image (`golang:1-bookworm`) builds with the latest patched Go version.
+
 **⏸️ Present the vulnerability scan results. Wait for user confirmation before proceeding.**
 
 ### 2. Check dependency freshness
@@ -56,38 +58,36 @@ If vulnerabilities are found, present them to the user and discuss whether to fi
 Run a dependency audit to identify available updates:
 
 ```bash
-go list -m -u all 2>&1 | grep '\[v'
+go list -mod=mod -m -u all 2>&1 | grep '\[v'
 ```
+
+> [!IMPORTANT]
+> The `-mod=mod` flag is required because Plik vendors its dependencies. Without it, `go list -u` silently fails in vendored projects.
 
 Categorize the output:
 - **Direct dependencies** — listed in `go.mod` with no `// indirect` comment
 - **Indirect dependencies** — transitive deps, lower priority
 
-This step is **informational only** — it is not a release blocker. If significant updates are available (especially security-related), discuss with the user whether to address them before the release.
-
-> [!TIP]
-> `govulncheck` (from step 1) already flags dependencies with known CVEs. This step complements it by showing all available updates regardless of vulnerability status.
+For each outdated **direct** dependency, check the release notes or changelog for breaking changes or notable behavior changes. Present a summary table of available updates (module, current version, available version, any breaking changes noted) and let the user decide which to bump. After bumping, run `go mod tidy && go mod vendor` and verify the build compiles.
 
 **⏸️ Present the dependency audit summary. Wait for user confirmation before proceeding.**
 
 ### 3. Check build pipeline versions
 
-Before starting the release, check if newer versions are available for the base images in the `Dockerfile`:
+Before starting the release, actively check for newer versions of all base images in the `Dockerfile` and propose updates:
 
-| Image | Current | Check |
-|-------|---------|-------|
-| `node:<major>-alpine` | `node:24-alpine` | [Node.js releases](https://nodejs.org/en/about/previous-releases) — check for new LTS major |
-| `golang:1-bookworm` | Resolves to latest Go 1.x | Run `docker run --rm golang:1-bookworm go version` to see the current Go version |
-| `alpine:<version>` | `alpine:3.21` | [Alpine releases](https://alpinelinux.org/releases/) — check for new stable |
+| Image | How to check |
+|-------|-------------|
+| `node:<major>-alpine` | Search for the current Node.js LTS schedule. If a newer LTS major exists, propose updating the Dockerfile. |
+| `golang:1-bookworm` | The Go version was already checked in Step 1. Ensure `go.mod` is bumped to the latest patch. |
+| `alpine:<version>` | Search for the latest Alpine stable release. If a newer minor/patch exists, propose updating the Dockerfile. |
 
-Also check:
-- `go.mod` Go directive — does it match the Go version from the image?
-- Locally installed Go: `go version`
+**All three must be checked every release.** If any updates are available, propose the Dockerfile changes and include them in the release commit. Do not treat this step as informational — outdated base images should be bumped.
 
-If any updates are available, propose a Dockerfile update and include it in the release commit.
+Also verify that the `go.mod` Go directive matches the version that `golang:1-bookworm` will resolve to in CI.
 
 > [!TIP]
-> The Go version from this step is needed for the changelog ("Binaries will be built with Go X.Y.Z").
+> The Go version from Step 1 is needed for the changelog ("Binaries will be built with Go X.Y.Z").
 
 **⏸️ Present findings to the user. Wait for confirmation before proceeding.**
 
