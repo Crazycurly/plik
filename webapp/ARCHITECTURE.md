@@ -33,6 +33,8 @@ All routes use hash-history (`#/`):
 | `/#/upload/:id`| (redirect)      | Legacy URL → `/?id=:id`                   |
 
 Admin link (upload-level): `/#/?id=<uploadId>&uploadToken=<token>`
+Deep link to a specific file: `/#/?id=<uploadId>&file=<fileId>`
+Deep link to a media timestamp: `/#/?id=<uploadId>&file=<fileId>&t=<seconds>`
 
 `RootView.vue` checks `route.query.id` — if present, renders `DownloadView`; otherwise `UploadView`.
 
@@ -758,7 +760,9 @@ Video (`video/*`) and audio (`audio/*`) files are played inline using native HTM
 - The `src` attribute is set directly on `<video>`/`<audio>` (NOT via `<source>` children, which causes browsers to make multiple probe requests)
 - `preload="metadata"` lets the browser fetch duration/dimensions without downloading the full file
 - The viewer header shows a film icon for video and a music-note icon for audio
-- The Copy button is hidden for video/audio (content isn't text)
+- The Copy button is hidden for video/audio (content isn't text); a **"Copy link at current time"** button is shown instead
+- The `timeupdate` event updates a `mediaCurrentTime` reactive ref (throttled to 2s) which syncs into the URL's `t=` query param
+- On load, if `t=` is in the URL, the media element seeks to that timestamp via `loadedmetadata` event
 - E2E encrypted media is not supported in the inline player (same limitation as images)
 
 ### Viewer Navigation
@@ -769,6 +773,17 @@ When an upload contains multiple viewable files (text, image, video, or audio), 
 - **Keyboard shortcuts**: `ArrowLeft` / `ArrowRight` to navigate, `Escape` to close
 - `viewableFiles` computed filters `activeFiles` through `isViewableFile`, excluding one-shot and streaming uploads
 - Keyboard handler ignores events when focus is in an input, textarea, or contenteditable element
+
+### URL Deep Linking (`file=` and `t=` query params)
+
+The viewer state is synced bidirectionally with URL query parameters for sharing:
+
+- **`file=<fileId>`**: When a file viewer opens, `syncViewerToUrl()` adds `file=<fileId>` to the URL via `router.replace()`. When the viewer closes, the param is removed. On page load, if `file=` is in the URL, the corresponding file is auto-opened in the viewer.
+- **`t=<seconds>`**: For video/audio files, the `timeupdate` event handler updates `t=` in the URL (throttled to 2s). On load, if `t=` is present, the media element seeks to that time once `loadedmetadata` fires.
+- **"Copy link at current time"** button appears in the viewer header for video/audio files — copies the full URL including `file=` and `t=` to the clipboard.
+- Uses `router.replace()` (not `push`) to avoid cluttering browser history.
+
+> **Gotcha**: The `shareAtTimeUrl` computed property uses a reactive `mediaCurrentTime` ref that's updated in the `timeupdate` handler, since Vue cannot observe native DOM property changes on `<video>`/`<audio>` elements directly.
 
 ---
 

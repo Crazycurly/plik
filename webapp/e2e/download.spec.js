@@ -693,3 +693,137 @@ test.describe('Unauthenticated download permissions', () => {
     })
 })
 
+test.describe('URL file selection', () => {
+    test('file= query param opens the correct file viewer on load', async ({ page, context }) => {
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Upload 2 text files
+        const input = page.locator('input[type="file"]')
+        await input.setInputFiles([
+            { name: 'alpha.txt', mimeType: 'text/plain', buffer: Buffer.from('alpha content') },
+            { name: 'beta.txt', mimeType: 'text/plain', buffer: Buffer.from('beta content') },
+        ])
+
+        await page.getByRole('button', { name: 'Upload', exact: true }).click()
+        await page.waitForURL(/[?&]id=/, { timeout: 10_000 })
+        await page.waitForLoadState('networkidle')
+
+        // Both files listed
+        await expect(page.getByRole('link', { name: 'alpha.txt' })).toBeVisible()
+        await expect(page.getByRole('link', { name: 'beta.txt' })).toBeVisible()
+
+        // Click View on second file to get its file ID from the URL
+        const viewButtons = page.getByRole('button', { name: 'View', exact: true })
+        await expect(viewButtons.nth(1)).toBeVisible({ timeout: 5_000 })
+        await viewButtons.nth(1).click()
+
+        const panel = page.locator('#file-viewer-panel')
+        await expect(panel).toBeVisible({ timeout: 5_000 })
+
+        // URL should now contain file= param
+        const urlWithFile = page.url()
+        expect(urlWithFile).toMatch(/file=/)
+
+        // Extract upload ID and file ID from URL
+        const hashPart = urlWithFile.substring(urlWithFile.indexOf('#'))
+        const searchPart = hashPart.includes('?') ? hashPart.substring(hashPart.indexOf('?')) : ''
+        const params = new URLSearchParams(searchPart)
+        const uploadId = params.get('id')
+        const fileId = params.get('file')
+        expect(uploadId).toBeTruthy()
+        expect(fileId).toBeTruthy()
+
+        // Open in a fresh page with the file= param
+        const freshPage = await context.newPage()
+        await freshPage.goto(`/#/?id=${uploadId}&file=${fileId}`)
+        await freshPage.waitForLoadState('networkidle')
+
+        // Viewer should auto-open showing beta.txt
+        const freshPanel = freshPage.locator('#file-viewer-panel')
+        await expect(freshPanel).toBeVisible({ timeout: 5_000 })
+        await expect(freshPanel).toContainText('beta.txt')
+        await expect(freshPanel).toContainText('beta content')
+
+        await freshPage.close()
+    })
+
+    test('URL updates with file= when viewer opens and clears when closed', async ({ page }) => {
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Upload 2 files so auto-view doesn't trigger
+        const input = page.locator('input[type="file"]')
+        await input.setInputFiles([
+            { name: 'one.txt', mimeType: 'text/plain', buffer: Buffer.from('one') },
+            { name: 'two.txt', mimeType: 'text/plain', buffer: Buffer.from('two') },
+        ])
+
+        await page.getByRole('button', { name: 'Upload', exact: true }).click()
+        await page.waitForURL(/[?&]id=/, { timeout: 10_000 })
+        await page.waitForLoadState('networkidle')
+
+        // Viewer should NOT be auto-open (multiple files)
+        const panel = page.locator('#file-viewer-panel')
+        await expect(panel).not.toBeVisible()
+
+        // URL should NOT have file= param yet
+        expect(page.url()).not.toMatch(/file=/)
+
+        // Open viewer on first file
+        const viewBtn = page.getByRole('button', { name: 'View', exact: true }).first()
+        await expect(viewBtn).toBeVisible({ timeout: 5_000 })
+        await viewBtn.click()
+        await expect(panel).toBeVisible({ timeout: 5_000 })
+
+        // URL should now have file= param
+        expect(page.url()).toMatch(/file=/)
+
+        // Close viewer
+        await page.keyboard.press('Escape')
+        await expect(panel).not.toBeVisible()
+
+        // URL should no longer have file= param
+        expect(page.url()).not.toMatch(/file=/)
+    })
+
+    test('viewer navigation updates file= in URL', async ({ page }) => {
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Upload 2 text files
+        const input = page.locator('input[type="file"]')
+        await input.setInputFiles([
+            { name: 'first.txt', mimeType: 'text/plain', buffer: Buffer.from('first') },
+            { name: 'second.txt', mimeType: 'text/plain', buffer: Buffer.from('second') },
+        ])
+
+        await page.getByRole('button', { name: 'Upload', exact: true }).click()
+        await page.waitForURL(/[?&]id=/, { timeout: 10_000 })
+        await page.waitForLoadState('networkidle')
+
+        // Open viewer on first file
+        const viewBtn = page.getByRole('button', { name: 'View', exact: true }).first()
+        await expect(viewBtn).toBeVisible({ timeout: 5_000 })
+        await viewBtn.click()
+
+        const panel = page.locator('#file-viewer-panel')
+        await expect(panel).toBeVisible({ timeout: 5_000 })
+        await expect(panel.locator('text=1/2')).toBeVisible()
+
+        // Get fileId from URL
+        const url1 = page.url()
+        const fileId1 = new URL(url1.replace('#/', '').replace('#', '')).searchParams.get('file')
+            || new URLSearchParams(url1.split('file=')[1]?.split('&')[0] || '').get('file')
+
+        // Navigate to next file
+        await page.keyboard.press('ArrowRight')
+        await expect(panel.locator('text=2/2')).toBeVisible()
+
+        // URL file= should have changed
+        const url2 = page.url()
+        expect(url2).toMatch(/file=/)
+        expect(url2).not.toBe(url1) // different file ID
+    })
+})
+
