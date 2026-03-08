@@ -169,6 +169,22 @@
   font-weight: 600;
 }
 
+/* Mermaid diagrams rendered from ```mermaid code blocks */
+.prose .mermaid {
+  display: flex;
+  justify-content: center;
+  padding: 1em 0;
+  margin-bottom: 0.75em;
+  background-color: color-mix(in srgb, var(--color-surface-900) 50%, transparent);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.prose .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
 /* ── Custom Utilities ── */
 @utility glass-card {
   background-color: color-mix(in srgb, var(--color-surface-800) 60%, transparent);

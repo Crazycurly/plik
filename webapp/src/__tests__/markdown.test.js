@@ -37,6 +37,32 @@ describe('renderMarkdown', () => {
         expect(html).toContain('<code>')
     })
 
+    // ── Mermaid diagrams ──
+
+    it('renders mermaid code blocks as <div class="mermaid">', () => {
+        const md = '```mermaid\ngraph TD\n    A-->B\n```'
+        const html = renderMarkdown(md)
+        expect(html).toContain('<div class="mermaid">')
+        expect(html).toContain('A--&gt;B')
+        // Must NOT be wrapped in <pre><code>
+        expect(html).not.toMatch(/<pre>.*mermaid/s)
+    })
+
+    it('leaves non-mermaid code blocks as <pre><code>', () => {
+        const md = '```javascript\nconsole.log("hi")\n```'
+        const html = renderMarkdown(md)
+        expect(html).toContain('<pre>')
+        expect(html).toContain('<code')
+        expect(html).not.toContain('class="mermaid"')
+    })
+
+    it('mermaid content survives DOMPurify', () => {
+        const md = '```mermaid\ngraph LR\n    A[Start] --> B{Check}\n```'
+        const html = renderMarkdown(md)
+        expect(html).toContain('<div class="mermaid">')
+        expect(html).toContain('graph LR')
+    })
+
     // ── XSS sanitization ──
 
     it('strips <script> tags', () => {
