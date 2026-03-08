@@ -750,7 +750,7 @@ onMounted(async () => {
             <!-- Provider filter -->
             <div class="flex flex-wrap items-center gap-2 text-surface-400">
               <span>Provider:</span>
-              <button v-for="p in ['', 'local', 'google', 'ovh', 'oidc']" :key="p"
+              <button v-for="p in ['', 'local', 'google', 'github', 'ovh', 'oidc']" :key="p"
                       @click="changeUsersProviderFilter(p)"
                       :class="usersProviderFilter === p ? 'text-accent-400 bg-accent-500/10' : 'text-surface-500 hover:text-surface-300'"
                       class="px-2 py-0.5 rounded-full text-xs transition-colors">
@@ -957,6 +957,7 @@ onMounted(async () => {
             <select v-model="createForm.provider" class="input-field w-full">
               <option value="local">local</option>
               <option value="google">google</option>
+              <option value="github">github</option>
               <option value="ovh">ovh</option>
               <option value="oidc">oidc</option>
             </select>

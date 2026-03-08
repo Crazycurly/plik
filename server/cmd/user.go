@@ -81,7 +81,7 @@ func init() {
 	rootCmd.AddCommand(userCmd)
 
 	// Here you will define your flags and configuration settings.
-	userCmd.PersistentFlags().StringVar(&userParams.provider, "provider", common.ProviderLocal, "user provider [local|google|ovh|oidc]")
+	userCmd.PersistentFlags().StringVar(&userParams.provider, "provider", common.ProviderLocal, "user provider [local|google|github|ovh|oidc]")
 	userCmd.PersistentFlags().StringVar(&userParams.login, "login", "", "user login")
 
 	userCmd.AddCommand(createUserCmd)

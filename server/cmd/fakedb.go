@@ -61,7 +61,7 @@ var emailDomains = []string{
 	"acme.co", "corp.net", "dev.io", "company.com", "test.local",
 }
 
-var fakeProviders = []string{"local", "google", "ovh", "oidc"}
+var fakeProviders = []string{"local", "google", "github", "ovh", "oidc"}
 
 var fileTypes = []struct {
 	ext         string

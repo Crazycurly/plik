@@ -67,7 +67,7 @@ Filter/sort state is appended as query parameters (e.g. `/#/admin/users?provider
 | `user` | user ID | — | uploads | Filter uploads by user |
 | `sort` | `date`, `size` | `date` | uploads/users | Sort field |
 | `order` | `desc`, `asc` | `desc` | uploads/users | Sort direction |
-| `provider` | `local`, `google`, `ovh`, `oidc` | — | users | Filter by auth provider |
+| `provider` | `local`, `google`, `github`, `ovh`, `oidc` | — | users | Filter by auth provider |
 | `admin` | `true`, `false` | — | users | Filter by admin role |
 
 > **Security**: Token filter values are NOT included in admin upload URLs — they contain full API tokens that would leak in browser history, Referer headers, and shared links.
@@ -91,7 +91,7 @@ CLI auth approval (`to.name === 'cli-auth'`) always requires authentication rega
 
 > **Gotcha**: In `main.js`, `app.use(router)` is called inside the `Promise.all([loadConfig(), loadSettings(), checkSession()]).then(...)` callback, NOT before it. This is critical because the router's navigation guards rely on `config.feature_authentication` being loaded, and the UI needs settings (name, background, custom CSS/JS) resolved before rendering. Installing the router before these load would cause the forced-auth guard to see default values and the UI to flash with empty branding.
 
-**Redirect preservation**: When the guard redirects to login, it saves the intended destination to `sessionStorage` (`plik-auth-redirect` key) instead of a URL query parameter. This is necessary because OAuth flows do a full-page round-trip through an external provider (Google, OIDC, OVH), and the server callback redirects back to `/#/login` — any hash-fragment query params would be lost during this round-trip. Using sessionStorage solves this uniformly for all auth methods (local login and OAuth).
+**Redirect preservation**: When the guard redirects to login, it saves the intended destination to `sessionStorage` (`plik-auth-redirect` key) instead of a URL query parameter. This is necessary because OAuth flows do a full-page round-trip through an external provider (Google, GitHub, OIDC, OVH), and the server callback redirects back to `/#/login` — any hash-fragment query params would be lost during this round-trip. Using sessionStorage solves this uniformly for all auth methods (local login and OAuth).
 
 ---
 
@@ -407,6 +407,7 @@ The `GET /config` response also includes:
 | `maxUserSize` | Max total size per user |
 | `maxTTL` | Max TTL in seconds |
 | `googleAuthentication` | `true` if Google OAuth is configured → shows Google login button |
+| `githubAuthentication` | `true` if GitHub OAuth is configured → shows GitHub login button |
 | `ovhAuthentication` | `true` if OVH OAuth is configured → shows OVH login button |
 | `feature_local_login` | `"enabled"` or `"disabled"` — controls local login form visibility (replaces old `localAuthentication` boolean) |
 | `oidcAuthentication` | `true` if OIDC is configured → shows OIDC login button |
@@ -566,7 +567,7 @@ Reactive singleton holding `auth.user` (set on login, cleared on logout). Checke
 ### LoginView (`/#/login`)
 
 - Local login form (username + password → `POST /auth/local/login`) — **hidden** when `isFeatureEnabled('local_login')` returns `false` (i.e. `FeatureLocalLogin = "disabled"` on the server)
-- Conditional OAuth buttons (Google, OVH) based on `config.googleAuthentication` / `config.ovhAuthentication`
+- Conditional OAuth buttons (Google, GitHub, OVH) based on `config.googleAuthentication` / `config.githubAuthentication` / `config.ovhAuthentication`
 - OIDC button (label from `config.oidcProviderName`) → calls `GET /auth/oidc/login` to get the authorization URL, then `window.location.href` redirects to the OIDC provider
 - "or continue with" divider only shown when both local login and at least one OAuth/OIDC provider are enabled
 - Redirects to the stored `sessionStorage` destination on success via `consumeRedirect()`, or `/` if none
@@ -633,6 +634,7 @@ Allows an admin to "become" another user to browse their uploads, test their quo
 | `/auth/oidc/login`    | GET    | Get OIDC authorization URL     | —          |
 | `/auth/oidc/callback` | GET    | OIDC callback (sets session)   | —          |
 | `/auth/google/login`  | GET    | Get Google authorization URL   | —          |
+| `/auth/github/login`  | GET    | Get GitHub authorization URL   | —          |
 | `/auth/ovh/login`     | GET    | Get OVH authorization URL      | —          |
 | `/auth/logout`        | GET    | Logout                         | Session    |
 | `/me`                 | GET    | Get current user               | Session    |

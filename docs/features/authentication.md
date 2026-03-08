@@ -29,6 +29,17 @@ GoogleApiSecret = "your-client-secret"
 GoogleValidDomains = ["company.com"]  # Optional: restrict to email domains
 ```
 
+## GitHub
+
+1. Create an OAuth App in [GitHub Developer Settings](https://github.com/settings/developers)
+2. Set the callback URL to `https://yourdomain/auth/github/callback`
+
+```toml
+GitHubApiClientID = "your-client-id"
+GitHubApiSecret = "your-client-secret"
+GitHubValidOrganizations = ["myorg"]  # Optional: restrict to org members
+```
+
 ## OVH
 
 1. Create an application at [OVH API](https://eu.api.ovh.com/createApp/)
