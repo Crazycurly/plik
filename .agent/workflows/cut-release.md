@@ -300,7 +300,7 @@ After the release is published:
     apt-get install -y plik-server plik-client
     echo "--- Verify versions ---"
     plik --version
-    plik-server --version
+    plikd --version
     echo "--- Verify installed files ---"
     dpkg -L plik-server | head -20
     dpkg -L plik-client
@@ -311,7 +311,7 @@ After the release is published:
   ```
   Verify:
   - Both packages install without errors
-  - `plik --version` and `plik-server --version` output `<VERSION>`
+  - `plik --version` and `plikd --version` output `<VERSION>`
   - The systemd service unit is installed
 - [ ] **Verify GitHub release page** — check that the changelog and release artifacts (archives + Helm chart `.tgz` + `.deb` files) are attached
 
