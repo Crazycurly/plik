@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { getUpload, removeUpload, removeFile as apiRemoveFile, uploadFile, getFileURL } from '../api.js'
 import { generateRef, isMarkdownFile, isImageFile, isVideoFile, isAudioFile, isViewableFile } from '../utils.js'
 import { fetchAndDecrypt } from '../crypto.js'
@@ -24,6 +24,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const route = useRoute()
 
 const upload = ref(null)
 const loading = ref(true)
@@ -62,6 +63,11 @@ const viewingLoading = ref(false)
 const viewingError = ref(null)
 const lastAutoViewedId = ref(null)
 const viewerTab = ref('code') // 'code' | 'preview'
+
+// Media time tracking
+const initialMediaTime = ref(null)
+const mediaCurrentTime = ref(0) // reactive tracker for share URL
+const isDeepLinked = ref(false) // true when viewer was opened from URL params (for autoplay)
 const isViewingMarkdown = computed(() => viewingFile.value && isMarkdownFile(viewingFile.value))
 const isViewingImage = computed(() => viewingFile.value && isImageFile(viewingFile.value))
 const viewingImageUrl = computed(() => {
@@ -95,6 +101,10 @@ async function viewFile(file) {
   viewingContent.value = ''
   viewingLoading.value = false
   viewingError.value = null
+  mediaCurrentTime.value = 0 // reset so shareAtTimeUrl doesn't show stale time
+
+  // Sync file ID to URL
+  syncViewerToUrl()
 
   // Media files render directly from the server URL — no content fetch needed
   if (isImageFile(file) || isVideoFile(file) || isAudioFile(file)) {
@@ -129,7 +139,59 @@ function closeViewer() {
   viewingContent.value = ''
   viewingError.value = null
   viewerTab.value = 'code'
+  initialMediaTime.value = null
+  mediaCurrentTime.value = 0
+  isDeepLinked.value = false
+  syncViewerToUrl()
 }
+
+// --- URL ↔ Viewer sync ---
+
+// Update URL query params to reflect current viewer state
+function syncViewerToUrl() {
+  const query = { ...route.query }
+  // Strip t= when not viewing media (keep it for video/audio deep links)
+  if (!viewingFile.value || (!isVideoFile(viewingFile.value) && !isAudioFile(viewingFile.value))) {
+    delete query.t
+  }
+  if (viewingFile.value) {
+    query.file = viewingFile.value.id
+  } else {
+    delete query.file
+  }
+  router.replace({ query })
+}
+
+// Handle timeupdate events from video/audio
+function onMediaTimeUpdate(event) {
+  mediaCurrentTime.value = event.target.currentTime
+}
+
+// Seek media to initial time once metadata is loaded
+function onMediaLoadedMetadata(event) {
+  if (initialMediaTime.value != null && initialMediaTime.value > 0) {
+    event.target.currentTime = initialMediaTime.value
+    initialMediaTime.value = null
+  }
+  // Autoplay when arriving from a deep link
+  if (isDeepLinked.value) {
+    isDeepLinked.value = false
+    event.target.muted = true
+    event.target.play().then(() => {
+      event.target.muted = false
+    }).catch(() => {})
+  }
+}
+
+// Build a shareable URL with file= and t= for current media position
+const shareAtTimeUrl = computed(() => {
+  if (!viewingFile.value) return ''
+  const t = Math.floor(mediaCurrentTime.value)
+  const query = { id: props.id, file: viewingFile.value.id }
+  if (t > 0) query.t = String(t)
+  const resolved = router.resolve({ query })
+  return window.location.origin + resolved.href
+})
 
 // Viewer navigation — prev/next through viewable files
 const viewableFiles = computed(() => {
@@ -553,14 +615,25 @@ onMounted(async () => {
   if (queryKey) {
     e2eePassphrase.value = queryKey
     // Strip the key from the URL without reloading
-    router.replace({ path: '/', query: { id: props.id } })
+    router.replace({ query: { id: props.id } })
   }
 
   // If uploadToken is in the URL (from admin URL), save it to memory and strip from URL
   const queryToken = router.currentRoute.value.query.uploadToken
   if (queryToken) {
     setToken(props.id, queryToken)
-    router.replace({ path: '/', query: { id: props.id } })
+    router.replace({ query: { id: props.id } })
+  }
+
+  // Extract file= and t= from URL BEFORE fetchUpload, because the
+  // activeFiles watcher ({ immediate: true }) fires when upload.value changes
+  // and could race with our deep-link handling.
+  const queryFileId = router.currentRoute.value.query.file
+  const queryTime = router.currentRoute.value.query.t
+
+  // Pre-set lastAutoViewedId so the auto-view watcher won't open a conflicting file
+  if (queryFileId) {
+    lastAutoViewedId.value = queryFileId
   }
 
   await fetchUpload()
@@ -576,6 +649,25 @@ onMounted(async () => {
     }
     // Auto-start uploading
     uploadPendingFiles()
+  }
+
+  // Open file from URL (file= query param)
+  if (queryFileId && upload.value?.files) {
+    const targetFile = upload.value.files.find(f => f.id === queryFileId && f.status !== 'removed' && f.status !== 'deleted')
+    if (targetFile) {
+      // Store the time param for media seek
+      if (queryTime) {
+        const t = parseInt(queryTime, 10)
+        if (!isNaN(t) && t > 0) initialMediaTime.value = t
+      }
+
+      isDeepLinked.value = true
+      lastAutoViewedId.value = targetFile.id // confirm match (pre-set was by ID string)
+      viewFile(targetFile)
+    } else {
+      // File not found — clear the pre-set guard so auto-view can work normally
+      lastAutoViewedId.value = null
+    }
   }
 
   // If this is an E2EE upload and we don't have the passphrase, prompt the user
@@ -737,6 +829,11 @@ watch(activeFiles, (files) => {
               </div>
               <div class="flex items-center gap-1">
                 <CopyButton v-if="viewingContent && !isViewingVideo && !isViewingAudio" :text="viewingContent" label="Copy" />
+                <!-- Copy link at current time (video/audio only) -->
+                <CopyButton v-if="isViewingVideo || isViewingAudio"
+                            :text="shareAtTimeUrl"
+                            label="Copy link at current time"
+                            size="sm" />
                 <!-- Prev/Next navigation (only when multiple viewable files) -->
                 <template v-if="viewableFiles.length > 1">
                   <button class="p-1 transition-colors"
@@ -792,18 +889,24 @@ watch(activeFiles, (files) => {
                    class="max-w-full max-h-[70vh] object-contain rounded" />
             </div>
             <div v-else-if="isViewingVideo" class="p-4 flex items-center justify-center bg-surface-900/50">
-              <video :key="viewingFile.id"
+              <video
+                     :key="viewingFile.id"
                      :src="viewingVideoUrl"
                      controls
                      preload="metadata"
-                     class="max-w-full max-h-[70vh] rounded" />
+                     class="max-w-full max-h-[70vh] rounded"
+                     @timeupdate="onMediaTimeUpdate"
+                     @loadedmetadata="onMediaLoadedMetadata" />
             </div>
             <div v-else-if="isViewingAudio" class="p-4 flex items-center justify-center bg-surface-900/50">
-              <audio :key="viewingFile.id"
+              <audio
+                     :key="viewingFile.id"
                      :src="viewingAudioUrl"
                      controls
                      preload="metadata"
-                     class="w-full max-w-lg" />
+                     class="w-full max-w-lg"
+                     @timeupdate="onMediaTimeUpdate"
+                     @loadedmetadata="onMediaLoadedMetadata" />
             </div>
             <div v-else-if="!isViewingMarkdown" class="p-2">
               <CodeEditor
