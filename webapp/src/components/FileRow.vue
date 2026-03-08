@@ -24,6 +24,10 @@ const isDownloadable = computed(() =>
   (props.isStream && props.file.status === 'uploading')
 )
 
+const isDeleted = computed(() =>
+  props.file.status === 'removed' || props.file.status === 'deleted'
+)
+
 const isViewable = computed(() => {
   if (props.file.status !== 'uploaded') return false
   return checkIsViewableFile(props.file)
@@ -83,7 +87,7 @@ function fileUrl() {
 </script>
 
 <template>
-  <div class="file-row animate-fade-in flex-wrap">
+  <div class="file-row animate-fade-in flex-wrap" :class="{ 'opacity-50': isDeleted }">
     <div class="flex flex-wrap items-center gap-2 md:gap-3 flex-1 min-w-0">
       <!-- File icon -->
       <div class="shrink-0">
@@ -126,7 +130,10 @@ function fileUrl() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
           </button>
-          <a v-if="isDownloadable && !isE2ee"
+          <span v-if="isDeleted" class="text-sm text-surface-500 truncate line-through">
+            {{ file.fileName }}
+          </span>
+          <a v-else-if="isDownloadable && !isE2ee"
              :href="fileUrl()"
              class="text-sm text-surface-200 hover:text-accent-400 transition-colors truncate"
              target="_blank"
@@ -191,18 +198,22 @@ function fileUrl() {
       </div>
 
       <!-- Status badge for non-uploaded files (download mode) -->
-      <span v-if="mode === 'download' && file.status === 'missing'"
+      <span v-if="mode === 'download' && isDeleted"
+            class="text-xs text-danger-500 bg-danger-500/10 px-2 py-0.5 rounded-full shrink-0">
+        Removed
+      </span>
+      <span v-else-if="mode === 'download' && file.status === 'missing'"
             class="text-xs text-warning-500 bg-warning-500/10 px-2 py-0.5 rounded-full shrink-0">
         Waiting for upload
       </span>
-      <span v-if="mode === 'download' && file.status === 'uploading'"
+      <span v-else-if="mode === 'download' && file.status === 'uploading'"
             class="text-xs text-accent-400 bg-accent-500/10 px-2 py-0.5 rounded-full shrink-0 inline-flex items-center gap-1">
         <div class="animate-spin rounded-full h-3 w-3 border border-accent-400 border-t-transparent" />
         Uploading…
       </span>
 
       <!-- Actions -->
-      <div class="flex items-center gap-1 shrink-0">
+      <div v-if="!isDeleted" class="flex items-center gap-1 shrink-0">
 
         <!-- QR Code button (download mode) -->
         <button v-if="mode === 'download' && isDownloadable"
