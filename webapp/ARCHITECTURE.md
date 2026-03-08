@@ -761,8 +761,8 @@ Video (`video/*`) and audio (`audio/*`) files are played inline using native HTM
 - `preload="metadata"` lets the browser fetch duration/dimensions without downloading the full file
 - The viewer header shows a film icon for video and a music-note icon for audio
 - The Copy button is hidden for video/audio (content isn't text); a **"Copy link at current time"** button is shown instead
-- The `timeupdate` event updates a `mediaCurrentTime` reactive ref (throttled to 2s) which syncs into the URL's `t=` query param
-- On load, if `t=` is in the URL, the media element seeks to that timestamp via `loadedmetadata` event
+- The `timeupdate` event updates a `mediaCurrentTime` reactive ref used by the "Copy link at current time" button
+- On load, if `t=` is in the URL, the media element seeks to that timestamp via `loadedmetadata` event and attempts autoplay (muted, then unmuted)
 - E2E encrypted media is not supported in the inline player (same limitation as images)
 
 ### Viewer Navigation
@@ -779,9 +779,9 @@ When an upload contains multiple viewable files (text, image, video, or audio), 
 The viewer state is synced bidirectionally with URL query parameters for sharing:
 
 - **`file=<fileId>`**: When a file viewer opens, `syncViewerToUrl()` adds `file=<fileId>` to the URL via `router.replace()`. When the viewer closes, the param is removed. On page load, if `file=` is in the URL, the corresponding file is auto-opened in the viewer.
-- **`t=<seconds>`**: For video/audio files, the `timeupdate` event handler updates `t=` in the URL (throttled to 2s). On load, if `t=` is present, the media element seeks to that time once `loadedmetadata` fires.
-- **"Copy link at current time"** button appears in the viewer header for video/audio files — copies the full URL including `file=` and `t=` to the clipboard.
-- Uses `router.replace()` (not `push`) to avoid cluttering browser history.
+- **`t=<seconds>`**: On page load, if `t=` is present for a video/audio file, the media element seeks to that time once `loadedmetadata` fires and attempts autoplay. The `t=` param is preserved in the URL while viewing media but is **not** live-updated during playback.
+- **"Copy link at current time"** button appears in the viewer header for video/audio files — copies the full URL including `file=` and `t=` at the current playback position.
+- Uses `router.replace()` (not `push`) to avoid cluttering browser history. No `path` is specified in `router.replace()` calls so the app works under sub-paths.
 
 > **Gotcha**: The `shareAtTimeUrl` computed property uses a reactive `mediaCurrentTime` ref that's updated in the `timeupdate` handler, since Vue cannot observe native DOM property changes on `<video>`/`<audio>` elements directly.
 

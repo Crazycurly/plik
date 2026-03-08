@@ -64,13 +64,10 @@ const viewingError = ref(null)
 const lastAutoViewedId = ref(null)
 const viewerTab = ref('code') // 'code' | 'preview'
 
-// Media refs and time tracking
-const videoRef = ref(null)
-const audioRef = ref(null)
+// Media time tracking
 const initialMediaTime = ref(null)
 const mediaCurrentTime = ref(0) // reactive tracker for share URL
 const isDeepLinked = ref(false) // true when viewer was opened from URL params (for autoplay)
-let lastUrlTimeUpdate = 0 // throttle URL updates
 const isViewingMarkdown = computed(() => viewingFile.value && isMarkdownFile(viewingFile.value))
 const isViewingImage = computed(() => viewingFile.value && isImageFile(viewingFile.value))
 const viewingImageUrl = computed(() => {
@@ -104,6 +101,7 @@ async function viewFile(file) {
   viewingContent.value = ''
   viewingLoading.value = false
   viewingError.value = null
+  mediaCurrentTime.value = 0 // reset so shareAtTimeUrl doesn't show stale time
 
   // Sync file ID to URL
   syncViewerToUrl()
@@ -152,38 +150,24 @@ function closeViewer() {
 // Update URL query params to reflect current viewer state
 function syncViewerToUrl() {
   const query = { ...route.query }
+  // Strip t= when not viewing media (keep it for video/audio deep links)
+  if (!viewingFile.value || (!isVideoFile(viewingFile.value) && !isAudioFile(viewingFile.value))) {
+    delete query.t
+  }
   if (viewingFile.value) {
     query.file = viewingFile.value.id
   } else {
     delete query.file
   }
-  // Remove t= when not viewing media
-  if (!viewingFile.value || (!isVideoFile(viewingFile.value) && !isAudioFile(viewingFile.value))) {
-    delete query.t
-  }
-  router.replace({ path: '/', query })
-}
-
-// Update t= param in URL from media currentTime (throttled)
-function updateUrlTime(seconds) {
-  const now = Date.now()
-  if (now - lastUrlTimeUpdate < 2000) return // throttle to 2s
-  lastUrlTimeUpdate = now
-  const t = Math.floor(seconds)
-  if (t <= 0) return
-  const query = { ...route.query }
-  if (query.t === String(t)) return // no change
-  query.t = String(t)
-  router.replace({ path: '/', query })
+  router.replace({ query })
 }
 
 // Handle timeupdate events from video/audio
 function onMediaTimeUpdate(event) {
   mediaCurrentTime.value = event.target.currentTime
-  updateUrlTime(event.target.currentTime)
 }
 
-// Seek media to initial time once metadata is loaded, then autoplay
+// Seek media to initial time once metadata is loaded
 function onMediaLoadedMetadata(event) {
   if (initialMediaTime.value != null && initialMediaTime.value > 0) {
     event.target.currentTime = initialMediaTime.value
@@ -192,21 +176,9 @@ function onMediaLoadedMetadata(event) {
   // Autoplay when arriving from a deep link
   if (isDeepLinked.value) {
     isDeepLinked.value = false
-    const el = event.target
-    // Browsers always allow muted autoplay — start muted then try to unmute
-    el.muted = true
-    el.play().then(() => {
-      // Playing (muted) — try to unmute
-      el.muted = false
-      // If unmuting causes the browser to pause, stay muted
-      el.addEventListener('pause', function unmuteFallback() {
-        el.removeEventListener('pause', unmuteFallback)
-        // Browser paused because we unmuted — restart muted
-        if (el.paused && !el.ended) {
-          el.muted = true
-          el.play().catch(() => {})
-        }
-      }, { once: true })
+    event.target.muted = true
+    event.target.play().then(() => {
+      event.target.muted = false
     }).catch(() => {})
   }
 }
@@ -215,10 +187,10 @@ function onMediaLoadedMetadata(event) {
 const shareAtTimeUrl = computed(() => {
   if (!viewingFile.value) return ''
   const t = Math.floor(mediaCurrentTime.value)
-  const base = window.location.origin + window.location.pathname
-  const params = new URLSearchParams({ id: props.id, file: viewingFile.value.id })
-  if (t > 0) params.set('t', String(t))
-  return `${base}#/?${params.toString()}`
+  const query = { id: props.id, file: viewingFile.value.id }
+  if (t > 0) query.t = String(t)
+  const resolved = router.resolve({ query })
+  return window.location.origin + resolved.href
 })
 
 // Viewer navigation — prev/next through viewable files
@@ -637,14 +609,14 @@ onMounted(async () => {
   if (queryKey) {
     e2eePassphrase.value = queryKey
     // Strip the key from the URL without reloading
-    router.replace({ path: '/', query: { id: props.id } })
+    router.replace({ query: { id: props.id } })
   }
 
   // If uploadToken is in the URL (from admin URL), save it to memory and strip from URL
   const queryToken = router.currentRoute.value.query.uploadToken
   if (queryToken) {
     setToken(props.id, queryToken)
-    router.replace({ path: '/', query: { id: props.id } })
+    router.replace({ query: { id: props.id } })
   }
 
   // Extract file= and t= from URL BEFORE fetchUpload, because the
@@ -682,6 +654,7 @@ onMounted(async () => {
         const t = parseInt(queryTime, 10)
         if (!isNaN(t) && t > 0) initialMediaTime.value = t
       }
+
       isDeepLinked.value = true
       lastAutoViewedId.value = targetFile.id // confirm match (pre-set was by ID string)
       viewFile(targetFile)
@@ -910,7 +883,7 @@ watch(activeFiles, (files) => {
                    class="max-w-full max-h-[70vh] object-contain rounded" />
             </div>
             <div v-else-if="isViewingVideo" class="p-4 flex items-center justify-center bg-surface-900/50">
-              <video ref="videoRef"
+              <video
                      :key="viewingFile.id"
                      :src="viewingVideoUrl"
                      controls
@@ -920,7 +893,7 @@ watch(activeFiles, (files) => {
                      @loadedmetadata="onMediaLoadedMetadata" />
             </div>
             <div v-else-if="isViewingAudio" class="p-4 flex items-center justify-center bg-surface-900/50">
-              <audio ref="audioRef"
+              <audio
                      :key="viewingFile.id"
                      :src="viewingAudioUrl"
                      controls

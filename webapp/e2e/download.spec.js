@@ -811,19 +811,24 @@ test.describe('URL file selection', () => {
         await expect(panel).toBeVisible({ timeout: 5_000 })
         await expect(panel.locator('text=1/2')).toBeVisible()
 
-        // Get fileId from URL
+        // Extract file= from hash URL
         const url1 = page.url()
-        const fileId1 = new URL(url1.replace('#/', '').replace('#', '')).searchParams.get('file')
-            || new URLSearchParams(url1.split('file=')[1]?.split('&')[0] || '').get('file')
+        const hash1 = url1.substring(url1.indexOf('#'))
+        const search1 = hash1.includes('?') ? hash1.substring(hash1.indexOf('?')) : ''
+        const fileId1 = new URLSearchParams(search1).get('file')
+        expect(fileId1).toBeTruthy()
 
         // Navigate to next file
         await page.keyboard.press('ArrowRight')
         await expect(panel.locator('text=2/2')).toBeVisible()
 
-        // URL file= should have changed
+        // URL file= should point to a different file
         const url2 = page.url()
-        expect(url2).toMatch(/file=/)
-        expect(url2).not.toBe(url1) // different file ID
+        const hash2 = url2.substring(url2.indexOf('#'))
+        const search2 = hash2.includes('?') ? hash2.substring(hash2.indexOf('?')) : ''
+        const fileId2 = new URLSearchParams(search2).get('file')
+        expect(fileId2).toBeTruthy()
+        expect(fileId2).not.toBe(fileId1)
     })
 })
 
