@@ -142,8 +142,8 @@ Files in the Plik API have a `status` field with 5 possible values:
 | `missing`   | File entry created, waiting to be uploaded         | ✅ Yes (uploading UI) |
 | `uploading` | File is currently being uploaded                   | ✅ Yes (progress bar) |
 | `uploaded`  | File has been uploaded and is ready for download   | ✅ Yes      |
-| `removed`   | File has been removed by user, not yet cleaned up  | ❌ No       |
-| `deleted`   | File has been deleted from the data backend        | ❌ No       |
+| `removed`   | File has been removed by user, not yet cleaned up  | ✅ Yes (greyed-out, "Removed" badge) |
+| `deleted`   | File has been deleted from the data backend        | ✅ Yes (greyed-out, "Removed" badge) |
 
 ### activeFiles computed property
 
@@ -151,13 +151,13 @@ During active uploads (`isAddingFiles`), the top panel only shows files the user
 - **Non-streaming**: only `uploaded` files (must be complete on server)
 - **Streaming**: `uploading` + `uploaded` (download works via live stream)
 
-When not uploading (e.g. friend viewing the download page), all non-removed files are shown:
+When not uploading (e.g. friend viewing the download page), all files are shown — including removed/deleted files, which render greyed-out with a "Removed" badge (no download/view/remove actions):
 
 ```js
 const activeFiles = computed(() => {
   if (!upload.value?.files) return []
   return upload.value.files.filter(f => {
-    if (f.status === 'removed' || f.status === 'deleted') return false
+    if (f.status === 'removed' || f.status === 'deleted') return true
     if (isAddingFiles.value) {
       if (upload.value.stream) {
         return f.status === 'uploading' || f.status === 'uploaded'
@@ -172,9 +172,11 @@ const activeFiles = computed(() => {
 
 > **Key design**: Files "move" from the bottom pending panel to the top active list as they become ready — non-streaming files appear when uploaded, streaming files appear when they start uploading (since their download link is immediately valid).
 
+> **Deleted file visibility**: Removed/deleted files stay visible in the file list with `opacity-50`, a red "Removed" pill badge, a `line-through` filename (plain text, no link), and all action buttons hidden. The `totalFiles` computed (which excludes removed/deleted) drives the heading count and the auto-view watcher, so "2 files" only counts downloadable files.
+
 > **Gotcha**: After deleting a file via the API, the server returns `"ok"` (plain text, not JSON). The file's status changes to `removed` server-side but the API **does not return the updated file object**. You must call `fetchUpload()` again to refresh the list.
 
-> **Note**: If `activeFiles.length === 0` after fetching, DownloadView shows a "No files in this upload" message. It does **not** redirect to home — this allows cancel-all and empty uploads to work cleanly.
+> **Note**: If all files are deleted, the file list still shows the greyed-out deleted rows. The "No files in this upload" empty state only appears when `activeFiles.length === 0` (i.e. no files at all, including deleted ones).
 
 ---
 
@@ -541,7 +543,7 @@ App.vue
 │   ├── CopyButton         — clipboard copy for tokens
 │   ├── EditUserModal      — shared edit-user modal (quotas, name, email, password)
 │   ├── UploadControls     — sort/order/badge filters with active-filters slot
-│   └── UploadCard         — shared upload card (files, tokens, actions)
+│   └── UploadCard         — shared upload card (files with status badges, tokens, actions)
 ├── AdminView.vue          — admin panel (stats/users/uploads)
 │   ├── ErrorBanner        — inline dismissible error banner
 │   ├── EditUserModal      — shared edit-user modal (quotas always shown)
@@ -878,7 +880,7 @@ For full details on the Docker multi-stage build and release packaging, see [rel
 
 3. **`uploadToken` must be in `X-UploadToken` header** — not in the request body or URL query for API calls.
 
-4. **During uploads, `activeFiles` filters by readiness** — non-streaming: only `uploaded`; streaming: `uploading` + `uploaded`. When not uploading (friend viewing), all non-removed statuses are shown. Don't change this to a simple blacklist.
+4. **During uploads, `activeFiles` filters by readiness** — non-streaming: only `uploaded`; streaming: `uploading` + `uploaded`. When not uploading (friend viewing), all files are shown including removed/deleted (greyed-out with "Removed" badge). The `totalFiles` computed excludes removed/deleted for counting purposes.
 
 5. **Refreshing the page loses admin access** — tokens are in-memory only. The only way to regain access is to open the Admin URL again.
 
