@@ -9,7 +9,9 @@ Want to access the documentation? **https://root-gg.github.io/plik**
 
 Want to see a live demo ? **https://plik.root.gg**
 
-Want to chat with us ? Telegram channel : **https://t.me/plik_rootgg**
+Want to chat with us ? Telegram group : **https://t.me/plik_rootgg**
+
+Want to hear about new releases only ? Telegram channel : **https://t.me/plik_root_gg**
 
 # Plik
 
