@@ -385,6 +385,7 @@ func (ps *PlikServer) getHTTPHandler() (handler http.Handler) {
 	router.Handle("/file/{uploadID}/{fileID}/{filename}", tokenChain.AppendChain(getFileChain).Then(handlers.RemoveFile)).Methods("DELETE")
 	router.Handle("/file/{uploadID}/{fileID}/{filename}", tokenChainWithRedirect.AppendChain(getFileChain).Then(handlers.GetFile)).Methods("HEAD", "GET", "OPTIONS")
 	router.Handle("/stream/{uploadID}/{fileID}/{filename}", tokenChain.AppendChain(getFileChain).Then(handlers.AddFile)).Methods("POST")
+	router.Handle("/stream/{uploadID}/{fileID}/{filename}", tokenChain.AppendChain(getFileChain).Then(handlers.RemoveFile)).Methods("DELETE")
 	router.Handle("/stream/{uploadID}/{fileID}/{filename}", tokenChainWithRedirect.AppendChain(getFileChain).Then(handlers.GetFile)).Methods("HEAD", "GET", "OPTIONS")
 	router.Handle("/archive/{uploadID}/{filename}", tokenChainWithRedirect.Append(middleware.CORSPreflight, middleware.Upload, middleware.BlockBotDownload).Then(handlers.GetArchive)).Methods("HEAD", "GET", "OPTIONS")
 
@@ -526,7 +527,7 @@ func (ps *PlikServer) WithStreamBackend(backend data.Backend) *PlikServer {
 // Initialize data backend from type found in configuration
 func (ps *PlikServer) initializeStreamBackend() (err error) {
 	if ps.streamBackend == nil && ps.config.FeatureStream != common.FeatureDisabled {
-		ps.streamBackend = stream.NewBackend()
+		ps.streamBackend = stream.NewBackend(time.Duration(ps.config.GetStreamTimeout()) * time.Second)
 	}
 
 	return nil

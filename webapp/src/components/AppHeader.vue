@@ -244,12 +244,12 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
 
   <!-- Impersonation Banner -->
   <div v-if="auth.impersonatedUser"
-       class="bg-yellow-500/20 border-b border-yellow-500/30 px-4 py-2 flex items-center justify-center gap-3 text-sm relative z-40">
-    <span class="text-yellow-300">⚠️ Impersonating
-      <strong class="text-yellow-200">{{ auth.impersonatedUser.login || auth.impersonatedUser.name || auth.impersonatedUser.id }}</strong>
+       class="bg-orange-500/20 border-b-2 border-orange-500/50 px-4 py-2 flex items-center justify-center gap-3 text-sm relative z-40">
+    <span class="text-orange-500 font-medium">⚠️ Impersonating
+      <strong class="text-orange-400">{{ auth.impersonatedUser.login || auth.impersonatedUser.name || auth.impersonatedUser.id }}</strong>
     </span>
     <button @click="clearImpersonate"
-            class="text-xs bg-yellow-500/30 hover:bg-yellow-500/50 text-yellow-200 rounded px-3 py-1 transition-colors">
+            class="text-xs bg-orange-500/30 hover:bg-orange-500/50 text-orange-400 font-semibold rounded px-3 py-1 transition-colors">
       Stop Impersonating
     </button>
   </div>

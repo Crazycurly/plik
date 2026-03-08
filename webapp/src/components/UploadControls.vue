@@ -58,5 +58,7 @@ const emit = defineEmits(['update:sort-by', 'update:sort-order', 'toggle-filter'
                 :class="badgeFilters.e2ee ? 'bg-fuchsia-500/20 text-fuchsia-400 ring-1 ring-fuchsia-500/50' : 'text-surface-500 hover:text-surface-300'"
                 class="px-2 py-0.5 rounded text-xs transition-all">encrypted</button>
     </div>
+    <!-- Active filter chips (token, user, etc.) -->
+    <slot name="active-filters" />
   </div>
 </template>

@@ -444,6 +444,30 @@ test.describe('Add files', () => {
         // Add Files should NOT be visible for streaming uploads
         await expect(page.getByRole('button', { name: /Add Files/i })).not.toBeVisible()
     })
+
+    test('streaming upload shows info banner', async ({ page, withConfig }) => {
+        await withConfig({ feature_stream: 'enabled' })
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        const streamingLabel = page.locator('label').filter({ hasText: 'Streaming' })
+        await streamingLabel.locator('.toggle-switch').click()
+
+        const input = page.locator('input[type="file"]')
+        await input.setInputFiles({
+            name: 'stream-banner.txt',
+            mimeType: 'text/plain',
+            buffer: Buffer.from('banner test'),
+        })
+
+        await page.getByRole('button', { name: 'Upload', exact: true }).click()
+        await page.waitForURL(/[?&]id=/, { timeout: 15_000 })
+        await page.waitForLoadState('networkidle')
+
+        // Streaming indicator banner should be visible
+        await expect(page.getByText('Streaming Upload')).toBeVisible({ timeout: 5_000 })
+        await expect(page.getByText(/share the upload link/i)).toBeVisible()
+    })
 })
 
 test.describe('Delete file/upload', () => {

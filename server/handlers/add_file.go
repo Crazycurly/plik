@@ -152,7 +152,16 @@ func AddFile(ctx *context.Context, resp http.ResponseWriter, req *http.Request) 
 	err = backend.AddFile(file, preprocessReader)
 	if err != nil {
 		ctx.InternalServerError("unable to save file", err)
-		cleanup()
+		if upload.Stream {
+			// Stream uploads store nothing on disk — skip purge and reset to
+			// FileMissing so the frontend can retry with the same file ID.
+			err := ctx.GetMetadataBackend().UpdateFileStatus(file, common.FileUploading, common.FileMissing)
+			if err != nil {
+				log.Warningf("unable to reset stream file status : %s", err)
+			}
+		} else {
+			cleanup()
+		}
 		return
 	}
 

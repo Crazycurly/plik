@@ -42,7 +42,7 @@ PLIKD_DATA_BACKEND_CONFIG='{"Directory":"/var/files"}' ./plikd
 | `DownloadDomainAlias` | `[]` | Additional accepted download hosts |
 | `EnhancedWebSecurity` | `false` | Extra security headers + secure cookies |
 | `SessionTimeout` | `365d` | Authentication session duration |
-| `AbuseContact` | `""` | Abuse contact email (displayed in UI) |
+| `AbuseContact` | `""` | Abuse contact email shown in footer. `settings.json` `"footer"` takes precedence when set |
 | `WebappDirectory` | `../webapp/dist` | Web UI static files directory |
 | `ClientsDirectory` | `../clients` | CLI client binaries directory |
 | `ChangelogDirectory` | `../changelog` | Release changelog directory |
@@ -76,6 +76,7 @@ Features can be set to one of four states:
 | `FeatureOneShot` | `enabled` | Files deleted after first download |
 | `FeatureRemovable` | `enabled` | Anyone can delete files |
 | `FeatureStream` | `enabled` | Direct uploader-to-downloader streaming |
+| `StreamTimeoutStr` | `5m` | Max wait for a streaming download to start before releasing the upload goroutine (`0` = no timeout) |
 | `FeaturePassword` | `enabled` | Password-protected uploads |
 | `FeatureComments` | `enabled` | Markdown comments on uploads |
 | `FeatureSetTTL` | `enabled` | Custom TTL setting |

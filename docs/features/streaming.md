@@ -5,10 +5,14 @@ Stream mode enables direct file transfer from uploader to downloader — nothing
 ## How It Works
 
 1. The uploader sends a file via the UI or CLI or API with stream mode enabled
-2. The upload request **blocks** until a downloader connects
+2. The upload request **blocks** until a downloader connects (or a timeout expires)
 3. Data flows directly from uploader → server → downloader
 4. Once the transfer is complete, both connections close
 5. No data is persisted on disk
+
+::: tip
+Transfers can be very large and last as long as the connection stay open — the timeout only applies to the initial wait for a downloader, not the transfer itself.
+:::
 
 ## Usage
 
@@ -35,6 +39,29 @@ POST /upload
 ::: tip
 For stream mode, you need to know the file ID before the upload starts (since it will block). Pass a `files` array in the upload creation request to get file IDs assigned upfront.
 :::
+
+## Timeout
+
+By default, the server waits **5 minutes** for a downloader to connect. If no download starts within that period, the upload is interrupted — but the file returns to a retryable state.
+
+The download link remains valid. Click **Retry** in the UI (or re-POST via the API) to restart the wait.
+
+| Behavior | Description |
+|----------|-------------|
+| Timeout fires | Upload is interrupted, file can be retried |
+| Download starts before timeout | Transfer proceeds normally |
+| Timeout set to `0` | No timeout — upload blocks indefinitely |
+
+### Configuration
+
+Set `StreamTimeoutStr` in `plikd.cfg` (or via the `PLIKD_STREAM_TIMEOUT_STR` environment variable):
+
+```toml
+# Max wait for a streaming download to start (0 = no timeout)
+StreamTimeoutStr = "5m"
+```
+
+Accepted duration formats: `30s`, `5m`, `1h`, `1d`, `1w`.
 
 ## Multi-Instance Deployment
 

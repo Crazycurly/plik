@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 
 	"github.com/gorilla/mux"
 	"github.com/pilagod/gorm-cursor-paginator/v2/paginator"
@@ -109,7 +110,7 @@ func GetUserTokens(ctx *context.Context, resp http.ResponseWriter, req *http.Req
 
 // GetUserUploads get user uploads
 func GetUserUploads(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
-	user, token, err := getUserAndToken(ctx, req)
+	user, tokenStr, err := getUserAndTokenStr(ctx, req)
 	if err != nil {
 		handleHTTPError(ctx, err)
 		return
@@ -119,12 +120,8 @@ func GetUserUploads(ctx *context.Context, resp http.ResponseWriter, req *http.Re
 	sort := req.URL.Query().Get("sort")
 
 	filters := parseBadgeFilters(req)
-	if user != nil {
-		filters.User = user.ID
-	}
-	if token != nil {
-		filters.Token = token.Token
-	}
+	filters.User = user.ID
+	filters.Token = tokenStr
 
 	var uploads []*common.Upload
 	var cursor *paginator.Cursor
@@ -155,22 +152,13 @@ func GetUserUploads(ctx *context.Context, resp http.ResponseWriter, req *http.Re
 
 // RemoveUserUploads delete all user uploads
 func RemoveUserUploads(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
-	user, token, err := getUserAndToken(ctx, req)
+	user, tokenStr, err := getUserAndTokenStr(ctx, req)
 	if err != nil {
 		handleHTTPError(ctx, err)
 		return
 	}
 
-	var userID string
-	if user != nil {
-		userID = user.ID
-	}
-	var tokenStr string
-	if token != nil {
-		tokenStr = token.Token
-	}
-
-	deleted, err := ctx.GetMetadataBackend().RemoveUserUploads(userID, tokenStr)
+	deleted, err := ctx.GetMetadataBackend().RemoveUserUploads(user.ID, tokenStr)
 	if err != nil {
 		ctx.InternalServerError("unable to delete user uploads", err)
 		return
@@ -181,19 +169,19 @@ func RemoveUserUploads(ctx *context.Context, resp http.ResponseWriter, req *http
 
 // GetUserStatistics return the user statistics
 func GetUserStatistics(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
-	user, token, err := getUserAndToken(ctx, req)
+	user, tokenStr, err := getUserAndTokenStr(ctx, req)
 	if err != nil {
 		handleHTTPError(ctx, err)
 		return
 	}
 
-	var tokenStr *string
-	if token != nil {
-		tokenStr = &token.Token
+	var tokenPtr *string
+	if tokenStr != "" {
+		tokenPtr = &tokenStr
 	}
 
 	// Get user statistics
-	stats, err := ctx.GetMetadataBackend().GetUserStatistics(user.ID, tokenStr)
+	stats, err := ctx.GetMetadataBackend().GetUserStatistics(user.ID, tokenPtr)
 	if err != nil {
 		ctx.InternalServerError("unable to get user statistics", err)
 		return
@@ -231,28 +219,22 @@ func DeleteAccount(ctx *context.Context, resp http.ResponseWriter, req *http.Req
 	_, _ = resp.Write([]byte("ok"))
 }
 
-func getUserAndToken(ctx *context.Context, req *http.Request) (user *common.User, token *common.Token, err error) {
-	// Get user from context
+// uuidRe matches a UUID v4 string (8-4-4-4-12 hex).
+var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+// getUserAndTokenStr extracts the authenticated user and an optional token
+// query parameter (validated as a UUID string, no DB lookup).
+// This allows filtering by revoked tokens — the token doesn't need to exist.
+func getUserAndTokenStr(ctx *context.Context, req *http.Request) (user *common.User, tokenStr string, err error) {
 	user = ctx.GetUser()
 	if user == nil {
-		return nil, nil, common.NewHTTPError("missing user, please login first", nil, http.StatusUnauthorized)
+		return nil, "", common.NewHTTPError("missing user, please login first", nil, http.StatusUnauthorized)
 	}
 
-	// Get token from URL query parameter
-	tokenStr := req.URL.Query().Get("token")
-	if tokenStr != "" {
-		token, err = ctx.GetMetadataBackend().GetToken(tokenStr)
-		if err != nil {
-			ctx.InternalServerError("unable to get token", err)
-			return nil, nil, common.NewHTTPError("unable to get token", err, http.StatusInternalServerError)
-		}
-		if token == nil {
-			return nil, nil, common.NewHTTPError("token not found", nil, http.StatusNotFound)
-		}
-		if token.UserID != user.ID {
-			return nil, nil, common.NewHTTPError("token not found", nil, http.StatusNotFound)
-		}
+	tokenStr = req.URL.Query().Get("token")
+	if tokenStr != "" && !uuidRe.MatchString(tokenStr) {
+		return nil, "", common.NewHTTPError("invalid token format", nil, http.StatusBadRequest)
 	}
 
-	return user, token, nil
+	return user, tokenStr, nil
 }

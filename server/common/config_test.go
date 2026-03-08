@@ -424,6 +424,37 @@ func TestConfiguration_GetSessionTimeout(t *testing.T) {
 	RequireError(t, err, "unable to parse SessionTimeout")
 }
 
+func TestConfiguration_GetStreamTimeout(t *testing.T) {
+	config := NewConfiguration()
+	require.Equal(t, 0, config.GetStreamTimeout())
+
+	err := config.Initialize()
+	require.NoError(t, err)
+	require.Equal(t, 5*60, config.GetStreamTimeout()) // default "5m"
+
+	config = NewConfiguration()
+	config.StreamTimeoutStr = "10m"
+	err = config.Initialize()
+	require.NoError(t, err)
+	require.Equal(t, 10*60, config.GetStreamTimeout())
+
+	config = NewConfiguration()
+	config.StreamTimeoutStr = "0"
+	err = config.Initialize()
+	require.NoError(t, err)
+	require.Equal(t, 0, config.GetStreamTimeout()) // disabled
+
+	config = NewConfiguration()
+	config.StreamTimeoutStr = "azerty"
+	err = config.Initialize()
+	RequireError(t, err, "unable to parse StreamTimeout")
+
+	config = NewConfiguration()
+	config.StreamTimeoutStr = "-1"
+	err = config.Initialize()
+	RequireError(t, err, "invalid negative value for StreamTimeout")
+}
+
 func TestConfiguration_GetPath(t *testing.T) {
 	config := NewConfiguration()
 	require.Equal(t, "/", config.GetPath())

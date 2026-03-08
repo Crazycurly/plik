@@ -35,6 +35,7 @@ export const settings = reactive({
     overlayOpacity: 0,
     customCSS: '',
     customJS: '',
+    footer: '',
 })
 
 /** Reactive current theme value — used by ThemePicker */

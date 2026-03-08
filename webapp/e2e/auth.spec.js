@@ -31,7 +31,7 @@ test.describe('Authentication', () => {
         await page.getByPlaceholder('Enter your password').fill('badpassword')
         await page.getByRole('button', { name: /Sign in/i }).click()
 
-        // Error message should appear (toast notification)
+        // Error message should appear
         await expect(page.getByText(/invalid|error|denied|unauthorized/i).first()).toBeVisible({ timeout: 5_000 })
     })
 

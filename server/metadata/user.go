@@ -141,30 +141,47 @@ func (b *Backend) ForEachUserUploads(userID string, tokenStr string, f func(uplo
 	return nil
 }
 
-// RemoveUserUploads deletes all uploads matching the user and token filters
+// RemoveUserUploads soft-deletes all uploads matching the user and token filters
+// in a single transaction: marks files for cleanup and soft-deletes the uploads.
+// The cleanup job will handle actual file removal from the data backend.
 func (b *Backend) RemoveUserUploads(userID string, tokenStr string) (removed int, err error) {
-	deleted := 0
-	var errors []error
-	f := func(upload *common.Upload) (err error) {
-		err = b.RemoveUpload(upload.ID)
+	err = b.db.Transaction(func(tx *gorm.DB) (err error) {
+		// Subquery: SELECT id FROM uploads WHERE user = ? [AND token = ?]
+		// Used by the file updates below so the DB handles filtering internally
+		// without materializing IDs in Go memory.
+		uploadIDsSubquery := tx.Model(&common.Upload{}).
+			Select("id").
+			Where(&common.Upload{User: userID, Token: tokenStr})
+
+		// Mark files with no data on disk (missing/empty) as deleted
+		err = tx.Model(&common.File{}).
+			Where("upload_id IN (?)", uploadIDsSubquery).
+			Where(tx.Where(&common.File{Status: common.FileMissing}).Or(&common.File{Status: ""})).
+			Update("status", common.FileDeleted).Error
 		if err != nil {
-			b.log.Warningf("unable to remove upload %s : %s", upload.ID, err)
-			errors = append(errors, err)
-			return nil
+			return fmt.Errorf("unable to mark missing files as deleted : %s", err)
 		}
-		deleted++
+
+		// Mark files with data on disk (uploading/uploaded) as removed
+		err = tx.Model(&common.File{}).
+			Where("upload_id IN (?)", uploadIDsSubquery).
+			Where(tx.Where(&common.File{Status: common.FileUploading}).Or(&common.File{Status: common.FileUploaded})).
+			Update("status", common.FileRemoved).Error
+		if err != nil {
+			return fmt.Errorf("unable to mark uploaded files as removed : %s", err)
+		}
+
+		// Soft-delete all uploads
+		result := tx.Where(&common.Upload{User: userID, Token: tokenStr}).Delete(&common.Upload{})
+		if result.Error != nil {
+			return fmt.Errorf("unable to soft-delete uploads : %s", result.Error)
+		}
+		removed = int(result.RowsAffected)
+
 		return nil
-	}
+	})
 
-	err = b.ForEachUserUploads(userID, tokenStr, f)
-	if err != nil {
-		return deleted, err
-	}
-	if len(errors) > 0 {
-		return deleted, fmt.Errorf("unable to delete all user uploads")
-	}
-
-	return deleted, nil
+	return removed, err
 }
 
 // DeleteUser delete a user from the DB

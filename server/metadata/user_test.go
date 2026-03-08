@@ -358,17 +358,32 @@ func TestBackend_DeleteUserUploads(t *testing.T) {
 	token := user.NewToken()
 	createUser(t, b, user)
 
-	for range 2 {
-		upload := &common.Upload{}
-		upload.User = user.ID
-		createUpload(t, b, upload)
-	}
-
+	// Create uploads with files in various states
+	var tokenUploadIDs []string
 	for range 5 {
 		upload := &common.Upload{}
 		upload.User = user.ID
 		upload.Token = token.Token
 		createUpload(t, b, upload)
+		tokenUploadIDs = append(tokenUploadIDs, upload.ID)
+		// Add a file with "uploaded" status (has data on disk)
+		file := upload.NewFile()
+		file.Status = common.FileUploaded
+		err := b.CreateFile(file)
+		require.NoError(t, err)
+		// Add a file with "missing" status (no data on disk)
+		file2 := upload.NewFile()
+		file2.Status = common.FileMissing
+		err = b.CreateFile(file2)
+		require.NoError(t, err)
+	}
+
+	var otherUploadIDs []string
+	for range 2 {
+		upload := &common.Upload{}
+		upload.User = user.ID
+		createUpload(t, b, upload)
+		otherUploadIDs = append(otherUploadIDs, upload.ID)
 	}
 
 	for range 10 {
@@ -377,13 +392,39 @@ func TestBackend_DeleteUserUploads(t *testing.T) {
 		createUpload(t, b, upload)
 	}
 
+	// Delete only token uploads
 	deleted, err := b.RemoveUserUploads(user.ID, token.Token)
-	require.NoError(t, err, "for each user upload error")
+	require.NoError(t, err, "remove user uploads error")
 	require.Equal(t, 5, deleted, "invalid upload count")
 
+	// Verify file statuses were batch-updated
+	for _, id := range tokenUploadIDs {
+		upload, err := b.GetUpload(id)
+		require.NoError(t, err)
+		require.Nil(t, upload, "upload should be soft-deleted")
+
+		// Check file statuses via unscoped query
+		var files []*common.File
+		err = b.db.Where(&common.File{UploadID: id}).Find(&files).Error
+		require.NoError(t, err)
+		require.Len(t, files, 2, "expected 2 files per upload")
+		for _, f := range files {
+			if f.Status == common.FileRemoved || f.Status == common.FileDeleted {
+				continue
+			}
+			t.Errorf("unexpected file status %q for file %s", f.Status, f.ID)
+		}
+	}
+
+	// Other user uploads should be unaffected
 	deleted, err = b.RemoveUserUploads(user.ID, "")
-	require.NoError(t, err, "for each user upload error")
+	require.NoError(t, err, "remove user uploads error")
 	require.Equal(t, 2, deleted, "invalid upload count")
+
+	// No-op when nothing left
+	deleted, err = b.RemoveUserUploads(user.ID, "")
+	require.NoError(t, err, "remove user uploads error")
+	require.Equal(t, 0, deleted, "should be zero")
 }
 
 func TestBackend_CountUsers(t *testing.T) {

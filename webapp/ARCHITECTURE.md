@@ -226,7 +226,12 @@ try { return JSON.parse(text) } catch { return text }
 
 ### Error display
 
-Errors from `fetchUpload` are displayed inline (not redirecting). This shows the actual server message like `"upload feafea not found"` instead of a generic error.
+All views use the same reusable error components for consistent look and feel:
+
+| Component | Purpose | Display |
+|-----------|---------|--------|
+| `ErrorState` | Full-page error when content can't be loaded (e.g. upload not found) | Centered glass-card with danger icon, message, and retry button — replaces content area |
+| `ErrorBanner` | Inline error for API failures while content remains visible | Horizontal glass-card with danger icon, message, and dismiss ✕ button — sits atop content |
 
 ### Separated error states in DownloadView
 
@@ -234,8 +239,8 @@ DownloadView uses **two separate error refs** to avoid upload errors from hiding
 
 | Ref | Purpose | Display |
 |-----|---------|---------|
-| `error` | Page-level failures (e.g., `fetchUpload` fails, upload not found) | Full-page error state via `v-else-if="error"` — replaces entire content |
-| `uploadError` | Non-file operational errors (reserved for future use) | Dismissible inline banner within the upload content area |
+| `error` | Page-level failures (e.g., `fetchUpload` fails, upload not found) | Full-page error state via `ErrorState` component (`v-else-if="error"`) — replaces entire content |
+| `uploadError` | Non-file operational errors (reserved for future use) | Dismissible inline `ErrorBanner` within the upload content area |
 
 > **Why two refs**: The template uses `v-if="loading"` / `v-else-if="error"` / `v-else-if="upload"` branching. If file upload errors set `error`, the `v-else-if="error"` branch takes over and hides the sidebar + file list. The `uploadError` ref keeps errors in the `v-else-if="upload"` block so the user retains context.
 
@@ -424,6 +429,11 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 | `themes` | array | `["*"]` | Available themes in the picker (`["*"]` = all built-ins, `[]` = no picker). Entries can be strings (`"nord"`), objects (`{ "name": "custom", "label": "My Theme" }`), or `"*"` to expand all built-ins (e.g. `["*", { "name": "acme", "label": "Acme" }]`) |
 | `defaultDarkTheme` | string | `"dark"` | Theme used by "auto" when OS prefers dark mode |
 | `defaultLightTheme` | string | `"light"` | Theme used by "auto" when OS prefers light mode |
+| `footer` | string | `""` | Custom footer HTML (e.g. `"Powered by <a href='…'>Plik</a>"`). Takes precedence over `AbuseContact` in `plikd.cfg`. |
+
+**Footer priority**: `settings.footer` > `config.abuseContact` (`plikd.cfg`) > none. When only `AbuseContact` is set, the footer renders a default "For abuse contact &lt;mailto&gt;" template.
+
+**Streaming upload UX**: The download view shows a "Streaming Upload" info banner (`v-if="upload.stream"`) with an optional timeout notice derived from `config.streamTimeout` (seconds). Cancel for streaming uploads explicitly calls `apiRemoveFile()` after aborting the XHR, because the server goroutine stays blocked in `io.Copy` waiting for a downloader and won't clean up on its own. On any error (timeout, network drop), the server resets the file to `missing` so the existing Retry button works — the `uploadFileEntry` catch block calls `fetchUpload()` and removes non-retryable files from the pending list. The file-uploaded counter (`X/Y files uploaded`) is hidden for streaming uploads since files aren't truly "uploaded" in the traditional sense.
 
 **White-label safety**: The JS defaults are all empty (name = `''`). Only the shipped `settings.json` provides `"Plik"`. If the file is missing or fails to load, no branding leaks.
 
@@ -514,21 +524,28 @@ App.vue
 │   ├── UploadView.vue     — file staging, settings, upload execution
 │   │   ├── UploadSidebar  — upload settings (one-shot, stream, TTL, E2EE, etc.) with (?) help tooltips
 │   │   ├── FileRow        — individual file display
+│   │   ├── ErrorBanner    — inline dismissible error banner
 │   │   └── CodeEditor     — text paste mode with syntax highlighting
 │   └── DownloadView.vue   — file list, admin actions
 │       ├── DownloadSidebar — upload info (E2EE badge), share (passphrase + toggle), admin URL, actions
 │       ├── FileRow         — file link (preview), caret (details), download/QR/copy/view/remove
+│       ├── ErrorState      — full-page error state (not found, network error)
+│       ├── ErrorBanner     — inline dismissible error banner
 │       ├── CodeEditor      — inline file viewer (read-only)
 │       ├── QrCodeDialog    — QR code modal
 │       ├── CopyButton      — clipboard copy with feedback
 │       └── ConfirmDialog   — confirmation modal
 ├── LoginView.vue          — local login form + OAuth/OIDC buttons
 ├── HomeView.vue           — user dashboard (uploads/tokens/account)
+│   ├── ErrorBanner        — inline dismissible error banner
 │   ├── CopyButton         — clipboard copy for tokens
 │   ├── EditUserModal      — shared edit-user modal (quotas, name, email, password)
+│   ├── UploadControls     — sort/order/badge filters with active-filters slot
 │   └── UploadCard         — shared upload card (files, tokens, actions)
 ├── AdminView.vue          — admin panel (stats/users/uploads)
+│   ├── ErrorBanner        — inline dismissible error banner
 │   ├── EditUserModal      — shared edit-user modal (quotas always shown)
+│   ├── UploadControls     — sort/order/badge filters with active-filters slot
 │   └── UploadCard         — shared upload card (with user column)
 ├── ClientsView.vue        — CLI client downloads (from embedded build info)
 └── CLIAuthView.vue        — CLI device auth approval (displays code, approves session)
@@ -541,14 +558,6 @@ App.vue
 ### Auth State (`authStore.js`)
 
 Reactive singleton holding `auth.user` (set on login, cleared on logout). Checked by `main.js` on app load via `GET /me`. The header shows user/admin links when `auth.user` is set.
-
-### Notification Store (`notification.js`)
-
-Reactive notification singleton for surfacing user-facing errors and success messages.
-
-- `showError(msg)` / `showSuccess(msg)` — set the notification and start a 5-second auto-dismiss timer
-- `dismiss()` — clears immediately
-- `NotificationBanner.vue` — mounted in `App.vue`, renders the notification as a fixed toast below the header
 
 ### LoginView (`/#/login`)
 
@@ -780,7 +789,7 @@ Tests live in `src/__tests__/` and cover pure utility functions, config helpers,
 | `config.test.js` | Feature flag helpers (`isFeatureEnabled`, `isFeatureForced`, `isFeatureDefaultOn`) |
 | `markdown.test.js` | Markdown rendering + XSS sanitization via DOMPurify |
 | `pendingUploadStore.test.js` | One-shot store semantics (set, consume, double-consume) |
-| `notification.test.js` | Notification store (show/dismiss, auto-dismiss timer, replacement) |
+
 
 Vitest configuration is in `vite.config.js` under the `test` key (`globals: true`, `environment: 'jsdom'`).
 
@@ -885,7 +894,7 @@ For full details on the Docker multi-stage build and release packaging, see [rel
 
 11. **`webapp/dist/` is gitignored** — never commit build artifacts. The CI/Docker build produces them fresh.
 
-12. **DownloadView has two error refs** — `error` (page-level) and `uploadError` (inline banner). Setting file upload errors on `error` hides the entire upload content due to template branching. Always use `uploadError` for file transfer failures.
+12. **DownloadView has two error refs** — `error` (page-level, rendered via `ErrorState`) and `uploadError` (inline `ErrorBanner`). Setting file upload errors on `error` hides the entire upload content due to template branching. Always use `uploadError` for file transfer failures. HomeView and AdminView use a single `error` ref rendered via `ErrorBanner` at the top of `<main>`.
 
 13. **Filenames are capped at 1024 characters** — enforced in `UploadView.addFiles()`, `FileRow.onNameInput/onNameKeydown/onNamePaste`. The server also validates this, so both layers must agree.
 
@@ -928,10 +937,11 @@ Provides streaming encryption/decryption using the `age-encryption` npm package:
 ### Upload Flow (E2EE)
 
 1. User toggles E2EE in `UploadSidebar` → passphrase auto-generated (or customized)
-2. `UploadView.doUpload()` encrypts each file via `encryptFile()` before building the upload params
-3. `params.e2ee = 'age'` sent to server → server stores the E2EE scheme on the upload model
-4. Passphrase passed via `setPendingFiles(id, files, basicAuth, passphrase)` to the pending store
-5. Navigation to DownloadView — passphrase is **not** in the URL
+2. **Validation**: Both `doUpload()` and `createEmptyUpload()` reject the upload with an error if E2EE is enabled but the passphrase is empty (prevents unencrypted files from being marked as encrypted). `UploadSidebar` also shows a red warning ring and "Passphrase cannot be empty" message on the input field.
+3. `UploadView.doUpload()` encrypts each file via `encryptFile()` before building the upload params
+4. `params.e2ee = 'age'` sent to server → server stores the E2EE scheme on the upload model
+5. Passphrase passed via `setPendingFiles(id, files, basicAuth, passphrase)` to the pending store
+6. Navigation to DownloadView — passphrase is **not** in the URL
 
 ### Download Flow (E2EE)
 
