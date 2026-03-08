@@ -471,7 +471,7 @@ test.describe('Add files', () => {
 })
 
 test.describe('Delete file/upload', () => {
-    test('delete file removes it from list', async ({ page }) => {
+    test('delete file shows it as deleted', async ({ page }) => {
         // Upload two files so we can delete one
         await page.goto('/')
         await page.waitForLoadState('networkidle')
@@ -498,10 +498,35 @@ test.describe('Delete file/upload', () => {
         await expect(dialog).toBeVisible({ timeout: 3_000 })
         await dialog.getByRole('button', { name: 'Delete' }).click()
 
-        // File should disappear
-        await expect(page.getByRole('link', { name: 'remove.txt' })).not.toBeVisible({ timeout: 5_000 })
-        // Other file still there
+        // Deleted file should still be visible but greyed-out with a Deleted badge
+        await expect(page.getByText('Removed')).toBeVisible({ timeout: 5_000 })
+        // The file name should be plain text (no download link), with line-through
+        await expect(page.getByRole('link', { name: 'remove.txt' })).not.toBeVisible()
+        await expect(page.getByText('remove.txt')).toBeVisible()
+        // Other file still has its download link
         await expect(page.getByRole('link', { name: 'keep.txt' })).toBeVisible()
+        // File count heading should say "1 file" (only the live one)
+        await expect(page.getByRole('heading', { name: '1 file' })).toBeVisible({ timeout: 3_000 })
+    })
+
+    test('deleted file has no action buttons', async ({ page }) => {
+        await uploadTestFile(page, 'action-test.txt', 'action test content')
+
+        // Delete the file
+        const removeBtn = page.getByTitle('Remove file').first()
+        await removeBtn.click()
+        const dialog = page.locator('.fixed.inset-0.z-50 .glass-card')
+        await expect(dialog).toBeVisible({ timeout: 3_000 })
+        await dialog.getByRole('button', { name: 'Delete' }).click()
+
+        // Wait for the Deleted badge to appear
+        await expect(page.getByText('Removed')).toBeVisible({ timeout: 5_000 })
+
+        // No download, view, QR, copy, or remove buttons should be visible on the deleted row
+        await expect(page.getByRole('link', { name: 'Download' })).not.toBeVisible()
+        await expect(page.getByRole('button', { name: 'View' })).not.toBeVisible()
+        await expect(page.getByTitle('Show QR code')).not.toBeVisible()
+        await expect(page.getByTitle('Remove file')).not.toBeVisible()
     })
 
     test('delete upload redirects to home', async ({ page }) => {
@@ -555,8 +580,9 @@ test.describe('Delete file/upload', () => {
         // Viewer panel should close
         await expect(panel).not.toBeVisible({ timeout: 5_000 })
 
-        // Empty state should be shown
-        await expect(page.getByText('No files in this upload')).toBeVisible({ timeout: 5_000 })
+        // Deleted file should still be visible with Deleted badge (not hidden)
+        await expect(page.getByText('Removed')).toBeVisible({ timeout: 5_000 })
+        await expect(page.getByText('viewed-file.txt')).toBeVisible()
     })
 })
 

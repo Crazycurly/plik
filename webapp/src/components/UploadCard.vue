@@ -42,13 +42,32 @@ const emit = defineEmits(['delete', 'filter-token', 'filter-user'])
 
       <!-- Files -->
       <div class="flex-1 min-w-0 text-sm space-y-1">
-        <div v-for="file in (upload.files || []).filter(f => f.status === 'uploaded')"
+        <div v-for="file in (upload.files || [])"
              :key="file.id"
-             class="flex items-center justify-between gap-2">
-          <a :href="getFileURL(upload.id, file.id, file.fileName, upload.stream)"
-             class="text-surface-300 hover:text-accent-400 transition-colors truncate">
-            {{ file.fileName }}
-          </a>
+             class="flex items-center justify-between gap-2"
+             :class="{ 'opacity-50': file.status !== 'uploaded' }">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span v-if="file.status === 'missing'"
+                  class="shrink-0 w-4 h-4 rounded-full bg-warning-500/15 text-warning-500 text-[10px] font-bold flex items-center justify-center cursor-default"
+                  title="Missing — waiting for upload">m</span>
+            <span v-else-if="file.status === 'uploading'"
+                  class="shrink-0 w-4 h-4 rounded-full bg-accent-500/15 text-accent-400 text-[10px] font-bold flex items-center justify-center cursor-default"
+                  title="Uploading">u</span>
+            <span v-else-if="file.status === 'removed'"
+                  class="shrink-0 w-4 h-4 rounded-full bg-danger-500/15 text-danger-500 text-[10px] font-bold flex items-center justify-center cursor-default"
+                  title="Removed">r</span>
+            <span v-else-if="file.status === 'deleted'"
+                  class="shrink-0 w-4 h-4 rounded-full bg-danger-500/15 text-danger-500 text-[10px] font-bold flex items-center justify-center cursor-default"
+                  title="Deleted">d</span>
+            <a v-else-if="file.status === 'uploaded'"
+               :href="getFileURL(upload.id, file.id, file.fileName, upload.stream)"
+               class="text-surface-300 hover:text-accent-400 transition-colors truncate">
+              {{ file.fileName }}
+            </a>
+            <span v-else class="text-surface-500 truncate line-through">
+              {{ file.fileName }}
+            </span>
+          </div>
           <span class="text-surface-500 shrink-0">{{ humanReadableSize(file.fileSize) }}</span>
         </div>
         <p v-if="!upload.files || upload.files.length === 0"

@@ -164,11 +164,11 @@ function onViewerKeydown(e) {
 // During uploads, only show files the user can interact with:
 //  - Non-streaming: only 'uploaded' (file complete on server)
 //  - Streaming: 'uploading' + 'uploaded' (download works via live stream)
-// When not uploading (e.g. friend viewing), show all non-removed files
+// When not uploading (e.g. friend viewing), show all files including removed/deleted
 const activeFiles = computed(() => {
   if (!upload.value?.files) return []
   return upload.value.files.filter(f => {
-    if (f.status === 'removed' || f.status === 'deleted') return false
+    if (f.status === 'removed' || f.status === 'deleted') return true
     if (isAddingFiles.value) {
       if (upload.value.stream) {
         return f.status === 'uploading' || f.status === 'uploaded'
@@ -184,6 +184,12 @@ const activeFiles = computed(() => {
 const totalFiles = computed(() => {
   if (!upload.value?.files) return 0
   return upload.value.files.filter(f => f.status !== 'removed' && f.status !== 'deleted').length
+})
+
+// Count of fully uploaded files (progress numerator during active uploads)
+const uploadedCount = computed(() => {
+  if (!upload.value?.files) return 0
+  return upload.value.files.filter(f => f.status === 'uploaded').length
 })
 
 // Upload token from in-memory store (set after upload or from admin URL)
@@ -813,10 +819,10 @@ watch(activeFiles, (files) => {
             <div class="flex items-center justify-between px-1">
               <h3 class="text-sm font-medium text-surface-400">
                 <template v-if="isAddingFiles && !upload.stream">
-                  {{ activeFiles.length }}/{{ totalFiles }} file{{ totalFiles > 1 ? 's' : '' }} uploaded
+                  {{ uploadedCount }}/{{ totalFiles }} file{{ totalFiles > 1 ? 's' : '' }} uploaded
                 </template>
                 <template v-else>
-                  {{ activeFiles.length }} file{{ activeFiles.length > 1 ? 's' : '' }}
+                  {{ totalFiles }} file{{ totalFiles > 1 ? 's' : '' }}
                 </template>
               </h3>
               <CopyButton

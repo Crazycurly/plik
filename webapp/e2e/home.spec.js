@@ -146,6 +146,35 @@ test.describe('Home view', () => {
         // Token filter chip should be visible with the truncated token string
         await expect(page.getByText(tokenData.token.substring(0, 12))).toBeVisible({ timeout: 5_000 })
     })
+
+    test('upload card shows removed file with status badge', async ({ authenticatedPage: page }) => {
+        // Upload a file
+        await uploadTestFile(page, 'badge-test.txt', 'badge test content')
+
+        // Delete the file on the download page
+        const removeBtn = page.getByTitle('Remove file').first()
+        await removeBtn.click()
+        const dialog = page.locator('.fixed.inset-0.z-50 .glass-card')
+        await expect(dialog).toBeVisible({ timeout: 3_000 })
+        await dialog.getByRole('button', { name: 'Delete' }).click()
+        await expect(page.getByText('Removed')).toBeVisible({ timeout: 5_000 })
+
+        // Navigate to Home → Uploads tab
+        await page.goto('/#/home/uploads')
+        await page.waitForLoadState('networkidle')
+
+        // The file should appear with line-through styling (span, not link)
+        const fileName = page.locator('.line-through').filter({ hasText: 'badge-test.txt' })
+        await expect(fileName).toBeVisible({ timeout: 5_000 })
+
+        // The single-letter status badge (r or d) should be visible
+        const badge = page.locator('[title="Removed"], [title="Deleted"]')
+        await expect(badge).toBeVisible()
+        await expect(badge).toHaveText(/^[rd]$/)
+
+        // The file name should NOT be a download link
+        await expect(page.getByRole('link', { name: 'badge-test.txt' })).not.toBeVisible()
+    })
 })
 
 test.describe('User info card', () => {
