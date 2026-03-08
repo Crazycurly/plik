@@ -47,6 +47,7 @@ const emit = defineEmits(['delete', 'filter-token', 'filter-user'])
              class="flex items-center justify-between gap-2"
              :class="{ 'opacity-50': file.status !== 'uploaded' }">
           <div class="flex items-center gap-1.5 min-w-0">
+            <!-- Status badges -->
             <span v-if="file.status === 'missing'"
                   class="shrink-0 w-4 h-4 rounded-full bg-warning-500/15 text-warning-500 text-[10px] font-bold flex items-center justify-center cursor-default"
                   title="Missing — waiting for upload">m</span>
@@ -59,12 +60,17 @@ const emit = defineEmits(['delete', 'filter-token', 'filter-user'])
             <span v-else-if="file.status === 'deleted'"
                   class="shrink-0 w-4 h-4 rounded-full bg-danger-500/15 text-danger-500 text-[10px] font-bold flex items-center justify-center cursor-default"
                   title="Deleted">d</span>
-            <a v-else-if="file.status === 'uploaded'"
+            <!-- File name: link for uploaded, strikethrough for deleted/removed, plain otherwise -->
+            <a v-if="file.status === 'uploaded'"
                :href="getFileURL(upload.id, file.id, file.fileName, upload.stream)"
                class="text-surface-300 hover:text-accent-400 transition-colors truncate">
               {{ file.fileName }}
             </a>
-            <span v-else class="text-surface-500 truncate line-through">
+            <span v-else-if="file.status === 'removed' || file.status === 'deleted'"
+                  class="text-surface-500 truncate line-through">
+              {{ file.fileName }}
+            </span>
+            <span v-else class="text-surface-500 truncate">
               {{ file.fileName }}
             </span>
           </div>
