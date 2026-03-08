@@ -370,7 +370,7 @@ async function submitEditUser() {
 
 function handleDeleteUser(user) {
     confirm.value = {
-        message: `Delete user "${user.login}" (${user.provider})? All their uploads will remain.`,
+        message: `Delete user "${user.login}" (${user.provider})? All their uploads and files will be deleted.`,
         action: async () => {
             try {
                 await apiDeleteUser(user.id)
@@ -873,30 +873,31 @@ onMounted(async () => {
             @update:sort-by="changeSortBy"
             @update:sort-order="changeSortOrder"
             @toggle-filter="toggleBadgeFilter"
-          />
-
-          <!-- Active filters -->
-          <div v-if="uploadsUserFilter || uploadsTokenFilter" class="flex flex-wrap items-center gap-3">
-            <div v-if="uploadsUserFilter" class="flex items-center gap-1.5 text-surface-300">
-              <svg class="w-3.5 h-3.5 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-              user: <span class="font-mono text-accent-400">{{ uploadsUserFilter }}</span>
-              <button @click="viewUserInUsersTab(uploadsUserFilter)"
-                      class="text-surface-400 hover:text-accent-400 transition-colors"
-                      title="View user in users tab">🔍</button>
-              <button @click="clearUserFilter" class="text-surface-500 hover:text-surface-100">×</button>
-            </div>
-            <div v-if="uploadsTokenFilter" class="flex items-center gap-1.5 text-surface-300">
-              <svg class="w-3.5 h-3.5 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-              token: <span class="font-mono text-accent-400">{{ uploadsTokenFilter.substring(0, 12) }}...</span>
-              <button @click="clearTokenFilter" class="text-surface-500 hover:text-surface-100">×</button>
-            </div>
-          </div>
+          >
+            <template #active-filters v-if="uploadsUserFilter || uploadsTokenFilter">
+              <div class="flex flex-wrap items-center gap-3">
+                <div v-if="uploadsUserFilter" class="flex items-center gap-1.5 text-surface-300">
+                  <svg class="w-3.5 h-3.5 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  user: <span class="font-mono text-accent-400">{{ uploadsUserFilter }}</span>
+                  <button @click="viewUserInUsersTab(uploadsUserFilter)"
+                          class="text-surface-400 hover:text-accent-400 transition-colors"
+                          title="View user in users tab">🔍</button>
+                  <button @click="clearUserFilter" class="text-surface-500 hover:text-surface-100">×</button>
+                </div>
+                <div v-if="uploadsTokenFilter" class="flex items-center gap-1.5 text-surface-300">
+                  <svg class="w-3.5 h-3.5 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  token: <span class="font-mono text-accent-400">{{ uploadsTokenFilter.substring(0, 12) }}...</span>
+                  <button @click="clearTokenFilter" class="text-surface-500 hover:text-surface-100">×</button>
+                </div>
+              </div>
+            </template>
+          </UploadControls>
 
           <p v-if="uploadsTotal !== null" class="text-xs text-surface-500 mb-2">
             Showing {{ uploads.length }} of {{ uploadsTotal }} uploads

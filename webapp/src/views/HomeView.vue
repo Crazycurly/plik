@@ -59,6 +59,7 @@ const editForm = ref({})
 const editSaving = ref(false)
 const editError = ref('')
 const error = ref(null)
+const successMessage = ref('')
 
 // ── Helpers ──
 
@@ -168,8 +169,11 @@ function filterByToken(token) {
     tokenFilter.value = token
     uploads.value = []
     uploadsCursor.value = null
-    display.value = 'uploads'
-    loadUploads()
+    if (display.value === 'uploads') {
+        loadUploads()
+    } else {
+        router.push('/home/uploads')
+    }
 }
 
 function clearTokenFilter() {
@@ -241,6 +245,25 @@ async function handleCreateToken() {
     }
 }
 
+async function handleDeleteTokenUploads(token) {
+    const label = token.comment || token.token.substring(0, 8) + '...'
+    confirm.value = {
+        message: `Delete all uploads for token "${label}"? The token itself will not be revoked.`,
+        action: async () => {
+            try {
+                const result = await deleteUserUploads(token.token)
+                confirm.value = null
+                // Show feedback (backend returns "X uploads removed")
+                successMessage.value = typeof result === 'string' ? result : 'Uploads removed'
+                setTimeout(() => { successMessage.value = '' }, 3000)
+            } catch (err) {
+                confirm.value = null
+                error.value = 'Could not delete token uploads'
+            }
+        }
+    }
+}
+
 async function handleRevokeToken(token) {
     confirm.value = {
         message: `Revoke token ${token.token.substring(0, 8)}...? Uploads created with this token will remain.`,
@@ -309,6 +332,7 @@ function showStats() {
 }
 
 function showUploads() {
+    tokenFilter.value = null
     router.push('/home/uploads')
 }
 
@@ -338,7 +362,6 @@ watch(display, (tab, prevTab) => {
     if (tab === 'stats') {
         loadUserStats()
     } else if (tab === 'uploads') {
-        tokenFilter.value = null
         uploadsSortBy.value = route.query.sort || 'date'
         uploadsSortOrder.value = route.query.order || 'desc'
         for (const key of BADGE_FILTER_KEYS) {
@@ -517,6 +540,14 @@ onMounted(() => {
 
         <!-- Error Banner -->
         <ErrorBanner v-if="error" :message="error" @dismiss="error = null" class="mb-4" />
+        <div v-if="successMessage"
+             class="mb-4 px-4 py-2.5 rounded-xl bg-green-500/15 border border-green-500/30
+                    text-emerald-500 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          {{ successMessage }}
+        </div>
 
         <!-- ─── Stats View ─── -->
         <template v-if="display === 'stats'">
@@ -574,23 +605,6 @@ onMounted(() => {
         <!-- ─── Uploads View ─── -->
         <template v-if="display === 'uploads'">
 
-          <!-- Token filter bar -->
-          <div v-if="tokenFilter"
-               class="glass-card p-3 mb-4 flex items-center justify-between text-sm">
-            <div class="flex items-center gap-2 text-surface-300">
-              <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-              Token: <span class="font-mono text-accent-400">{{ tokenFilter }}</span>
-            </div>
-            <button @click="clearTokenFilter" class="text-surface-400 hover:text-surface-100 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
           <UploadControls
             :sort-by="uploadsSortBy"
             :sort-order="uploadsSortOrder"
@@ -599,7 +613,20 @@ onMounted(() => {
             @update:sort-by="changeSortBy"
             @update:sort-order="changeSortOrder"
             @toggle-filter="toggleBadgeFilter"
-          />
+          >
+            <template #active-filters v-if="tokenFilter">
+              <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-1.5 text-surface-300">
+                  <svg class="w-3.5 h-3.5 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  token: <span class="font-mono text-accent-400">{{ tokenFilter.substring(0, 12) }}...</span>
+                  <button @click="clearTokenFilter" class="text-surface-500 hover:text-surface-100">×</button>
+                </div>
+              </div>
+            </template>
+          </UploadControls>
 
           <!-- Loading -->
           <div v-if="uploadsLoading && uploads.length === 0"
@@ -617,7 +644,7 @@ onMounted(() => {
           <div class="space-y-3">
             <UploadCard v-for="upload in uploads" :key="upload.id"
                         :upload="upload"
-                        :token-label="tokenLabel(upload.uploadToken)"
+                        :token-label="tokenLabel(upload.token)"
                         @delete="handleDeleteUpload"
                         @filter-token="filterByToken" />
           </div>
@@ -688,6 +715,13 @@ onMounted(() => {
               <!-- Created date -->
               <span class="text-xs text-surface-500 shrink-0">{{ formatDate(token.createdAt) }}</span>
               <!-- Revoke -->
+              <button @click="handleDeleteTokenUploads(token)"
+                      class="text-xs text-orange-400 hover:text-orange-300
+                             border border-orange-500/30
+                             rounded-lg px-3 py-1.5 hover:bg-amber-500/10 transition-colors shrink-0"
+                      title="Delete all uploads created with this token">
+                Delete Uploads
+              </button>
               <button @click="handleRevokeToken(token)"
                       class="text-xs text-red-400 hover:text-red-300 border border-red-500/30
                              rounded-lg px-3 py-1.5 hover:bg-red-500/10 transition-colors shrink-0">

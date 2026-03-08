@@ -136,7 +136,7 @@ Uses GORM with gormigrate for schema management across SQLite3, PostgreSQL, and 
 | `migrations.go` | Schema migration definitions |
 | `upload.go` | Upload CRUD + listing + expiration |
 | `file.go` | File CRUD + status updates |
-| `user.go` | User CRUD + listing |
+| `user.go` | User CRUD + listing; `RemoveUserUploads` bulk soft-deletes uploads + files in a single transaction |
 | `token.go` | Token CRUD + listing |
 | `cli_auth_session.go` | CLI auth session CRUD (create, get by code, update, delete expired) |
 | `setting.go` | Server settings key/value store |
@@ -219,11 +219,11 @@ Each handler file contains one or more `http.Handler` functions.
 | File | Handlers | Description |
 |------|----------|-------------|
 | `create_upload.go` | `CreateUpload` | Create upload with options, validate config/quotas |
-| `add_file.go` | `AddFile` | Upload file to existing upload (multipart). Detects content type via [`gabriel-vasile/mimetype`](https://github.com/gabriel-vasile/mimetype) magic-number sniffing (200+ formats). E2EE uploads are forced to `application/octet-stream` via age-header detection. |
+| `add_file.go` | `AddFile` | Upload file to existing upload (multipart). Detects content type via [`gabriel-vasile/mimetype`](https://github.com/gabriel-vasile/mimetype) magic-number sniffing (200+ formats). E2EE uploads are forced to `application/octet-stream` via age-header detection. On stream upload error, resets file to `missing` (retryable); on regular upload error, purges partial data and leaves file in `uploading` (not retryable). |
 | `get_upload.go` | `GetUpload` | Return upload metadata |
 | `get_file.go` | `GetFile` | Download file, handle OneShot, extend TTL, support HTTP range requests (via `http.ServeContent` for non-stream/non-oneshot). E2EE uploads: redirects webapp to download page, forces `application/octet-stream` |
 | `get_archive.go` | `GetArchive` | Download all files as zip |
-| `remove_file.go` | `RemoveFile` | Mark file as removed |
+| `remove_file.go` | `RemoveFile` | Mark file as removed. Also mapped to `DELETE /stream/...` to allow cancelling a blocked stream upload (closes the in-memory pipe). |
 | `remove_upload.go` | `RemoveUpload` | Soft-delete upload |
 | `misc.go` | `GetConfiguration`, `GetVersion`, `GetQrCode`, `Health` | Utility endpoints |
 | `local.go` | `LocalLogin`, `Logout` | Local auth |
@@ -231,10 +231,10 @@ Each handler file contains one or more `http.Handler` functions.
 | `ovh.go` | `OvhLogin`, `OvhCallback` | OVH OAuth |
 | `oidc.go` | `OIDCLogin`, `OIDCCallback` | OpenID Connect |
 | `cli_auth.go` | `CLIAuthInit`, `CLIAuthApprove`, `CLIAuthPoll` | CLI device auth flow |
-| `me.go` | `UserInfo`, `PatchMe`, `DeleteAccount`, `GetUserStatistics` | Current user |
+| `me.go` | `UserInfo`, `PatchMe`, `DeleteAccount`, `GetUserStatistics`, `GetUserUploads`, `RemoveUserUploads` | Current user; token filter param is UUID-validated (no DB lookup, works for revoked tokens) |
 | `token.go` | `GetUserTokens`, `CreateToken`, `RevokeToken` | Token management |
 | `user.go` | `GetUsers`, `CreateUser`, `UpdateUser` | User management |
-| `admin.go` | `GetServerStatistics`, `GetUploads`, `RemoveUserUploads`, `GetUserUploads` | Admin endpoints |
+| `admin.go` | `GetServerStatistics`, `GetUploads` | Admin endpoints |
 
 ---
 

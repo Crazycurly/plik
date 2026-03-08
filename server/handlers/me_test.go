@@ -239,7 +239,7 @@ func TestGetUserUploadsInvalidToken(t *testing.T) {
 	rr := ctx.NewRecorder(req)
 	GetUserUploads(ctx, rr, req)
 
-	context.TestNotFound(t, rr, "token not found")
+	context.TestBadRequest(t, rr, "invalid token format")
 }
 
 func TestGetUserTokens(t *testing.T) {
@@ -382,7 +382,7 @@ func TestRemoveUserUploadsInvalidToken(t *testing.T) {
 	rr := ctx.NewRecorder(req)
 	RemoveUserUploads(ctx, rr, req)
 
-	context.TestNotFound(t, rr, "token not found")
+	context.TestBadRequest(t, rr, "invalid token format")
 }
 
 func TestGetUserStatistics(t *testing.T) {
@@ -492,7 +492,7 @@ func TestGetUserStatisticsInvalidToken(t *testing.T) {
 	rr := ctx.NewRecorder(req)
 	GetUserStatistics(ctx, rr, req)
 
-	context.TestNotFound(t, rr, "token not found")
+	context.TestBadRequest(t, rr, "invalid token format")
 }
 
 func TestGetUserStatisticsNoUser(t *testing.T) {

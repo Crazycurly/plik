@@ -540,10 +540,12 @@ App.vue
 │   ├── ErrorBanner        — inline dismissible error banner
 │   ├── CopyButton         — clipboard copy for tokens
 │   ├── EditUserModal      — shared edit-user modal (quotas, name, email, password)
+│   ├── UploadControls     — sort/order/badge filters with active-filters slot
 │   └── UploadCard         — shared upload card (files, tokens, actions)
 ├── AdminView.vue          — admin panel (stats/users/uploads)
 │   ├── ErrorBanner        — inline dismissible error banner
 │   ├── EditUserModal      — shared edit-user modal (quotas always shown)
+│   ├── UploadControls     — sort/order/badge filters with active-filters slot
 │   └── UploadCard         — shared upload card (with user column)
 ├── ClientsView.vue        — CLI client downloads (from embedded build info)
 └── CLIAuthView.vue        — CLI device auth approval (displays code, approves session)

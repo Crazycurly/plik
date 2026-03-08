@@ -11,7 +11,7 @@ Stream mode enables direct file transfer from uploader to downloader — nothing
 5. No data is persisted on disk
 
 ::: tip
-Transfers can be very large (terabytes) and last for days — the timeout only applies to the initial wait for a downloader, not the transfer itself.
+Transfers can be very large and last as long as the connection stay open — the timeout only applies to the initial wait for a downloader, not the transfer itself.
 :::
 
 ## Usage
@@ -21,10 +21,6 @@ Transfers can be very large (terabytes) and last for days — the timeout only a
 ```bash
 plik --stream myfile.txt
 ```
-
-### Web UI
-
-Toggle the **Streaming** switch before uploading. The download page will show a "Streaming Upload" banner with the timeout countdown (if configured).
 
 ### API
 
@@ -52,8 +48,8 @@ The download link remains valid. Click **Retry** in the UI (or re-POST via the A
 
 | Behavior | Description |
 |----------|-------------|
-| Timeout fires | Upload goroutine is released, pipe is closed |
-| Download starts before timeout | Timer is cancelled, transfer proceeds normally |
+| Timeout fires | Upload is interrupted, file can be retried |
+| Download starts before timeout | Transfer proceeds normally |
 | Timeout set to `0` | No timeout — upload blocks indefinitely |
 
 ### Configuration
@@ -66,10 +62,6 @@ StreamTimeoutStr = "5m"
 ```
 
 Accepted duration formats: `30s`, `5m`, `1h`, `1d`, `1w`.
-
-## Cancelling
-
-Cancelling a streaming upload (via the web UI or a `DELETE /stream/{uploadID}/{fileID}/{filename}` API call) immediately closes the server-side pipe and releases the blocked upload goroutine. The cancelled file disappears from the file list.
 
 ## Multi-Instance Deployment
 
@@ -116,4 +108,3 @@ server {
 This configuration:
 - Routes `/stream/` requests to a consistent upstream based on the file ID hash
 - Routes all other requests with standard load balancing
-

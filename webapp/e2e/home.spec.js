@@ -53,6 +53,99 @@ test.describe('Home view', () => {
         // A "Revoke" button should appear for the new token
         await expect(page.getByRole('button', { name: /Revoke/i }).first()).toBeVisible({ timeout: 5_000 })
     })
+
+    test('delete token uploads', async ({ authenticatedPage: page }) => {
+        // Create a token via API
+        const tokenData = await page.evaluate(async () => {
+            const xsrf = document.cookie.match(/(?:^|;\s*)plik-xsrf=([^;]+)/)?.[1] || ''
+            const headers = { 'Content-Type': 'application/json' }
+            if (xsrf) headers['X-XSRFToken'] = xsrf
+            const r = await fetch('/me/token', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers,
+                body: JSON.stringify({}),
+            })
+            return r.json()
+        })
+
+        // Create an upload linked to that token via API
+        await page.evaluate(async (token) => {
+            const xsrf = document.cookie.match(/(?:^|;\s*)plik-xsrf=([^;]+)/)?.[1] || ''
+            const headers = { 'Content-Type': 'application/json', 'X-PlikToken': token }
+            if (xsrf) headers['X-XSRFToken'] = xsrf
+            const r = await fetch('/upload', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers,
+                body: JSON.stringify({}),
+            })
+            if (!r.ok) throw new Error(`Create upload failed: ${r.status}`)
+        }, tokenData.token)
+
+        // Navigate to tokens tab
+        await page.goto('/#/home/tokens')
+        await page.waitForLoadState('networkidle')
+
+        // Click the first "Delete Uploads" button
+        const deleteBtn = page.getByRole('button', { name: /Delete Uploads/i }).first()
+        await expect(deleteBtn).toBeVisible({ timeout: 5_000 })
+        await deleteBtn.click()
+
+        // Confirm dialog should appear
+        await expect(page.getByText('The token itself will not be revoked')).toBeVisible({ timeout: 5_000 })
+        await page.getByRole('button', { name: 'Confirm' }).click()
+
+        // Success toast should appear with "uploads removed"
+        await expect(page.getByText(/uploads? removed/i)).toBeVisible({ timeout: 5_000 })
+
+        // Toast should auto-dismiss
+        await expect(page.getByText(/uploads? removed/i)).not.toBeVisible({ timeout: 5_000 })
+    })
+
+    test('clicking token navigates to uploads with token filter', async ({ authenticatedPage: page }) => {
+        // Create a token with a comment via API
+        const tokenData = await page.evaluate(async () => {
+            const xsrf = document.cookie.match(/(?:^|;\s*)plik-xsrf=([^;]+)/)?.[1] || ''
+            const headers = { 'Content-Type': 'application/json' }
+            if (xsrf) headers['X-XSRFToken'] = xsrf
+            const r = await fetch('/me/token', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers,
+                body: JSON.stringify({ comment: 'filter-test' }),
+            })
+            return r.json()
+        })
+
+        // Create an upload linked to that token
+        await page.evaluate(async (token) => {
+            const xsrf = document.cookie.match(/(?:^|;\s*)plik-xsrf=([^;]+)/)?.[1] || ''
+            const headers = { 'Content-Type': 'application/json', 'X-PlikToken': token }
+            if (xsrf) headers['X-XSRFToken'] = xsrf
+            await fetch('/upload', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers,
+                body: JSON.stringify({}),
+            })
+        }, tokenData.token)
+
+        // Navigate to tokens tab
+        await page.goto('/#/home/tokens')
+        await page.waitForLoadState('networkidle')
+
+        // Click the token string link (the button with the token text)
+        const tokenBtn = page.getByRole('button', { name: new RegExp(tokenData.token.substring(0, 8)) }).first()
+        await expect(tokenBtn).toBeVisible({ timeout: 5_000 })
+        await tokenBtn.click()
+
+        // Should navigate to uploads tab
+        await page.waitForURL(/home\/uploads/, { timeout: 5_000 })
+
+        // Token filter chip should be visible with the truncated token string
+        await expect(page.getByText(tokenData.token.substring(0, 12))).toBeVisible({ timeout: 5_000 })
+    })
 })
 
 test.describe('User info card', () => {
