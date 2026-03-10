@@ -39,18 +39,27 @@ export function renderMarkdown(text) {
  * Call this AFTER Vue has injected rendered HTML via v-html + nextTick
  * so the DOM nodes actually exist.
  *
+ * `mermaid.initialize()` runs once (guarded by `mermaidReady`).
+ * The theme is chosen dynamically from <html>'s colorScheme at init time.
+ *
  * @param {HTMLElement} container - Parent element containing .mermaid divs
  */
+let mermaidReady = false
+
 export async function initMermaidInElement(container) {
     if (!container) return
     const nodes = container.querySelectorAll('.mermaid:not([data-processed])')
     if (!nodes.length) return
 
     const { default: mermaid } = await import('mermaid')
-    mermaid.initialize({
-        startOnLoad: false,
-        theme: 'dark',
-        securityLevel: 'strict',
-    })
+    if (!mermaidReady) {
+        const isDark = getComputedStyle(document.documentElement).colorScheme !== 'light'
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: isDark ? 'dark' : 'default',
+            securityLevel: 'strict',
+        })
+        mermaidReady = true
+    }
     await mermaid.run({ nodes })
 }

@@ -63,6 +63,13 @@ describe('renderMarkdown', () => {
         expect(html).toContain('graph LR')
     })
 
+    it('strips <script> tags inside mermaid node labels (XSS regression)', () => {
+        const md = '```mermaid\ngraph TD\n    A[<script>alert("xss")</script>] --> B\n```'
+        const html = renderMarkdown(md)
+        expect(html).toContain('<div class="mermaid">')
+        expect(html).not.toContain('<script')
+    })
+
     // ── XSS sanitization ──
 
     it('strips <script> tags', () => {
