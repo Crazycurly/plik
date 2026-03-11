@@ -474,6 +474,32 @@ describe('isTextFile', () => {
     it('uses size field as fallback', () => {
         expect(isTextFile({ size: 100, fileType: 'text/plain' })).toBe(true)
     })
+
+    // Server-side isText field (migration 0009)
+
+    it('returns true for application/json when isText is true', () => {
+        expect(isTextFile({ fileSize: 1000, fileType: 'application/json', isText: true })).toBe(true)
+    })
+
+    it('returns true for application/x-perl when isText is true', () => {
+        expect(isTextFile({ fileSize: 1000, fileType: 'application/x-perl', isText: true })).toBe(true)
+    })
+
+    it('returns false for application/octet-stream when isText is false', () => {
+        expect(isTextFile({ fileSize: 1000, fileType: 'application/octet-stream', isText: false })).toBe(false)
+    })
+
+    it('returns false when isText is true but file exceeds size limit', () => {
+        expect(isTextFile({ fileSize: MAX_VIEWABLE_SIZE + 1, fileType: 'application/json', isText: true })).toBe(false)
+    })
+
+    it('falls back to text/* prefix when isText is absent (pre-migration)', () => {
+        expect(isTextFile({ fileSize: 1000, fileType: 'text/plain' })).toBe(true)
+    })
+
+    it('returns false for application/json when isText is absent (pre-migration)', () => {
+        expect(isTextFile({ fileSize: 1000, fileType: 'application/json' })).toBe(false)
+    })
 })
 
 // ── isMarkdownFile ──

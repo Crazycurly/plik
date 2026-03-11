@@ -217,6 +217,20 @@ func (b *Backend) getMigrations() []*gormigrate.Migration {
 				b.log.Criticalf("Something went wrong. Please check database status manually")
 				return nil
 			},
+		}, {
+			ID: "0009-file-is-text",
+			Migrate: func(tx *gorm.DB) error {
+				type File struct {
+					IsText bool `json:"isText"`
+				}
+
+				b.log.Warning("Applying database migration 0009-file-is-text")
+				return b.setupTxForMigration(tx).AutoMigrate(&File{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				b.log.Criticalf("Something went wrong. Please check database status manually")
+				return nil
+			},
 		},
 	}
 

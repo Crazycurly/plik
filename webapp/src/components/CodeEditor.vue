@@ -54,11 +54,11 @@ function getLanguageFromFilename(filename) {
 const detectedLanguage = computed(() => {
   const lang = getLanguageFromFilename(props.filename)
   if (lang) return lang.name
-  if (props.filename) {
+  if (props.filename && props.filename.includes('.')) {
     const ext = props.filename.split('.').pop()?.toLowerCase()
     if (ext) return ext.toUpperCase()
   }
-  return 'Plain Text'
+  return 'Text'
 })
 
 // JSON prettify / validate
