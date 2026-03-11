@@ -22,21 +22,28 @@ const languageCompartment = new Compartment()
 const themeCompartment = new Compartment()
 let themeObserver = null
 
-// Map file extension to language
+// Map file extension (or full filename) to language
 function getLanguageFromFilename(filename) {
   if (!filename) return null
-  const ext = filename.split('.').pop()?.toLowerCase()
-  if (!ext) return null
+  const basename = filename.split('/').pop() || filename
 
-  // CodeMirror language-data stores extensions with a leading dot (e.g. ".xml")
-  const dotExt = `.${ext}`
-
-  // Find matching language from CodeMirror's language-data
+  // Check CodeMirror's built-in filename regex patterns (e.g. Dockerfile, Jenkinsfile)
   for (const lang of languages) {
-    if (lang.extensions && lang.extensions.includes(dotExt)) {
+    if (lang.filename && lang.filename.test(basename)) {
       return lang
     }
-    // Also check alias-based matching
+  }
+
+  const ext = basename.split('.').pop()?.toLowerCase()
+  if (!ext || ext === basename.toLowerCase()) return null
+
+  // Find matching language from CodeMirror's language-data
+  // language-data stores extensions without leading dot (e.g. "pl", "py", "js")
+  for (const lang of languages) {
+    if (lang.extensions && lang.extensions.includes(ext)) {
+      return lang
+    }
+    // Also check alias-based matching (e.g. "perl", "python")
     if (lang.alias && lang.alias.includes(ext)) {
       return lang
     }
