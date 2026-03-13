@@ -39,7 +39,7 @@ func NewConfig(params map[string]any) (config *Config) {
 	config.Bucket = "plik"
 	config.Location = "us-east-1"
 	config.PartSize = 16 * 1024 * 1024 // 16MiB
-	config.PartUploadConcurrency = 1
+	config.PartUploadConcurrency = 4
 	utils.Assign(config, params)
 	return
 }

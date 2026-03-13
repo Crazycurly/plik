@@ -27,7 +27,7 @@ DataBackend = "s3"
     Prefix = ""
     UseSSL = true
     PartSize = 16777216  # 16MiB chunks (min 5MiB, max file = PartSize × 10000)
-    PartUploadConcurrency = 1  # Parallel part upload threads (1 = sequential, higher = faster for large files)
+    PartUploadConcurrency = 4  # Parallel part upload threads (default 5, 1 = sequential)
     SendContentMd5 = false  # Use Content-MD5 instead of x-amz-checksum-* headers (for strict S3-compatible APIs like B2)
 ```
 
@@ -36,7 +36,7 @@ DataBackend = "s3"
 Plik uses a **buffer-then-decide** strategy for S3 uploads:
 
 - **Small files** (≤ `PartSize`): uploaded via a single PUT request with the exact size — optimal latency, minimal overhead.
-- **Large files** (> `PartSize`): uploaded via S3 multipart upload. Set `PartUploadConcurrency` > 1 to upload parts in parallel for better throughput. Memory usage per upload: `PartUploadConcurrency × PartSize`.
+- **Large files** (> `PartSize`): uploaded via S3 multipart upload with `PartUploadConcurrency` parallel part uploads (default: 4). Set to 1 for sequential uploads. Memory usage per upload: `PartUploadConcurrency × PartSize`.
 
 ### Bucket Versioning
 

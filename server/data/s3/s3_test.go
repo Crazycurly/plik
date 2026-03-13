@@ -10,7 +10,7 @@ func TestNewConfigDefaults(t *testing.T) {
 	config := NewConfig(make(map[string]any))
 	require.NotNil(t, config, "invalid nil config")
 	require.Equal(t, uint64(16*1024*1024), config.PartSize, "invalid default part size")
-	require.Equal(t, uint(1), config.PartUploadConcurrency, "invalid default part upload concurrency")
+	require.Equal(t, uint(4), config.PartUploadConcurrency, "invalid default part upload concurrency")
 	require.False(t, config.SendContentMd5, "SendContentMd5 should be disabled by default")
 }
 
