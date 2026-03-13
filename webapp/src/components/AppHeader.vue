@@ -36,7 +36,7 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
       </router-link>
 
       <!-- Nav Links (desktop) -->
-      <nav class="hidden sm:flex items-center gap-1">
+      <nav class="hidden lg:flex items-center gap-1">
         <router-link to="/" class="btn-ghost text-sm">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -129,7 +129,7 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
       </nav>
 
       <!-- Mobile menu button -->
-      <button class="sm:hidden btn-ghost p-2" @click="mobileOpen = !mobileOpen">
+      <button class="lg:hidden btn-ghost p-2" @click="mobileOpen = !mobileOpen">
         <!-- Hamburger / X icon -->
         <svg v-if="!mobileOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -142,7 +142,7 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
 
     <!-- Mobile dropdown menu -->
     <nav v-if="mobileOpen"
-         class="sm:hidden border-t border-surface-700/50 bg-surface-900/95 backdrop-blur-md animate-fade-in">
+         class="lg:hidden border-t border-surface-700/50 bg-surface-900/95 backdrop-blur-md animate-fade-in">
       <div class="px-4 py-3 space-y-1">
         <router-link to="/"
                      class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-surface-200
@@ -199,7 +199,7 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
             <span>Theme</span>
           </ThemePicker>
         </template>
-        <div v-if="showThemePicker || isFeatureEnabled('authentication')" class="border-t border-surface-700/50 my-1"></div>
+        <div v-if="isFeatureEnabled('authentication')" class="border-t border-surface-700/50 my-1"></div>
 
         <router-link v-if="auth.user"
                      to="/home"

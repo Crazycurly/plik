@@ -9,7 +9,6 @@ import (
 	"net/url"
 
 	"github.com/dustin/go-humanize"
-	"github.com/gabriel-vasile/mimetype"
 
 	"github.com/root-gg/plik/server/common"
 	"github.com/root-gg/plik/server/context"
@@ -20,6 +19,7 @@ type preprocessOutputReturn struct {
 	size     int64
 	md5sum   string
 	mimeType string
+	isText   bool
 	err      error
 }
 
@@ -134,6 +134,11 @@ func AddFile(ctx *context.Context, resp http.ResponseWriter, req *http.Request) 
 	preprocessOutputCh := make(chan preprocessOutputReturn)
 	go preprocessor(ctx, fileReader, preprocessWriter, preprocessOutputCh)
 
+	// Reset file.Size — the pre-populated value from createUpload is unreliable
+	// (e.g. wrong for E2EE uploads where encryption changes the size).
+	// The preprocessor goroutine will compute the actual size from the stream.
+	file.Size = 0
+
 	// Save file in the data backend
 	var backend data.Backend
 	if upload.Stream {
@@ -179,6 +184,7 @@ func AddFile(ctx *context.Context, resp http.ResponseWriter, req *http.Request) 
 	file.Type = preprocessOutput.mimeType
 	file.Size = preprocessOutput.size
 	file.Md5 = preprocessOutput.md5sum
+	file.IsText = preprocessOutput.isText
 
 	// Update file status
 	if upload.Stream {
@@ -234,6 +240,7 @@ func preprocessor(ctx *context.Context, file io.Reader, preprocessWriter io.Writ
 	var err error
 	var totalBytes int64
 	var mimeType string
+	var isText bool
 	var md5sum string
 
 	md5Hash := md5.New()
@@ -260,7 +267,7 @@ func preprocessor(ctx *context.Context, file io.Reader, preprocessWriter io.Writ
 			if bytesRead >= len(ageHeader) && bytes.HasPrefix(buf[:bytesRead], ageHeader) {
 				mimeType = "application/octet-stream"
 			} else {
-				mimeType = mimetype.Detect(buf[:bytesRead]).String()
+				mimeType, isText = common.DetectMIME(buf[:bytesRead])
 			}
 		}
 
@@ -301,7 +308,7 @@ func preprocessor(ctx *context.Context, file io.Reader, preprocessWriter io.Writ
 		outputCh <- preprocessOutputReturn{err: err}
 	} else {
 		md5sum = fmt.Sprintf("%x", md5Hash.Sum(nil))
-		outputCh <- preprocessOutputReturn{size: totalBytes, md5sum: md5sum, mimeType: mimeType}
+		outputCh <- preprocessOutputReturn{size: totalBytes, md5sum: md5sum, mimeType: mimeType, isText: isText}
 	}
 
 	close(outputCh)

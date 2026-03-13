@@ -261,13 +261,18 @@ export const MAX_VIEWABLE_SIZE = 5 * 1024 * 1024
 
 /**
  * Determine if a file object is a viewable text file.
- * The server detects MIME types via Go's http.DetectContentType,
- * which returns text/plain for all text-like content.
+ * The server walks the MIME type hierarchy to check if any ancestor is text/*,
+ * which covers text-like application/* types (json, perl, php, etc.).
+ * Falls back to text/* prefix for files uploaded before migration 0009.
  */
 export function isTextFile(file) {
     const size = file.fileSize || file.size || 0
     if (size > MAX_VIEWABLE_SIZE) return false
 
+    // Prefer server-side detection (covers application/json, application/x-perl, etc.)
+    if (file.isText) return true
+
+    // Backward-compat fallback for files uploaded before migration 0009
     const mime = (file.fileType || '').toLowerCase()
     return mime.startsWith('text/')
 }
