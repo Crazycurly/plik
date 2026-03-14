@@ -43,21 +43,38 @@ type githubOrg struct {
 	Login string `json:"login"`
 }
 
-// GitHubLogin return GitHub OAuth2 user consent URL.
-func GitHubLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
+// checkGitHubAuth validates that GitHub authentication is properly configured.
+// Returns false if an error response has been written and the caller should return.
+func checkGitHubAuth(ctx *context.Context) bool {
 	config := ctx.GetConfig()
 
 	if config.FeatureAuthentication == common.FeatureDisabled {
 		ctx.BadRequest("authentication is disabled")
-		return
+		return false
 	}
 
 	if !config.GitHubAuthentication {
 		ctx.BadRequest("GitHub authentication is disabled")
+		return false
+	}
+
+	if config.GitHubAPIClientID == "" || config.GitHubAPISecret == "" {
+		ctx.InternalServerError("missing GitHub API credentials", nil)
+		return false
+	}
+
+	return true
+}
+
+// GitHubLogin return GitHub OAuth2 user consent URL.
+func GitHubLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
+	if !checkGitHubAuth(ctx) {
 		return
 	}
 
-	// Get redirection URL from the referrer header
+	config := ctx.GetConfig()
+
+	// Get redirection URL from the PlikDomain or referrer header
 	redirectURL, err := getRedirectURL(ctx, "/auth/github/callback")
 	if err != nil {
 		handleHTTPError(ctx, err)
@@ -105,22 +122,11 @@ func GitHubLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Reque
 
 // GitHubCallback authenticate GitHub user.
 func GitHubCallback(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
+	if !checkGitHubAuth(ctx) {
+		return
+	}
+
 	config := ctx.GetConfig()
-
-	if config.FeatureAuthentication == common.FeatureDisabled {
-		ctx.BadRequest("authentication is disabled")
-		return
-	}
-
-	if !config.GitHubAuthentication {
-		ctx.BadRequest("GitHub authentication is disabled")
-		return
-	}
-
-	if config.GitHubAPIClientID == "" || config.GitHubAPISecret == "" {
-		ctx.InternalServerError("missing GitHub API credentials", nil)
-		return
-	}
 
 	code := req.URL.Query().Get("code")
 	if code == "" {

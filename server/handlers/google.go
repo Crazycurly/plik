@@ -19,21 +19,38 @@ import (
 
 var googleEndpointContextKey = "google_endpoint"
 
-// GoogleLogin return google api user consent URL.
-func GoogleLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
+// checkGoogleAuth validates that Google authentication is properly configured.
+// Returns false if an error response has been written and the caller should return.
+func checkGoogleAuth(ctx *context.Context) bool {
 	config := ctx.GetConfig()
 
 	if config.FeatureAuthentication == common.FeatureDisabled {
 		ctx.BadRequest("authentication is disabled")
-		return
+		return false
 	}
 
 	if !config.GoogleAuthentication {
 		ctx.BadRequest("Google authentication is disabled")
+		return false
+	}
+
+	if config.GoogleAPIClientID == "" || config.GoogleAPISecret == "" {
+		ctx.InternalServerError("missing Google API credentials", nil)
+		return false
+	}
+
+	return true
+}
+
+// GoogleLogin return google api user consent URL.
+func GoogleLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
+	if !checkGoogleAuth(ctx) {
 		return
 	}
 
-	// Get redirection URL from the referrer header
+	config := ctx.GetConfig()
+
+	// Get redirection URL from the PlikDomain or referrer header
 	redirectURL, err := getRedirectURL(ctx, "/auth/google/callback")
 	if err != nil {
 		handleHTTPError(ctx, err)
@@ -74,22 +91,11 @@ func GoogleLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Reque
 
 // GoogleCallback authenticate google user.
 func GoogleCallback(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
+	if !checkGoogleAuth(ctx) {
+		return
+	}
+
 	config := ctx.GetConfig()
-
-	if config.FeatureAuthentication == common.FeatureDisabled {
-		ctx.BadRequest("authentication is disabled")
-		return
-	}
-
-	if !config.GoogleAuthentication {
-		ctx.BadRequest("Google authentication is disabled")
-		return
-	}
-
-	if config.GoogleAPIClientID == "" || config.GoogleAPISecret == "" {
-		ctx.InternalServerError("missing Google API credentials", nil)
-		return
-	}
 
 	code := req.URL.Query().Get("code")
 	if code == "" {

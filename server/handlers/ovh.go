@@ -62,21 +62,38 @@ func decodeOVHResponse(resp *http.Response) ([]byte, error) {
 	return body, nil
 }
 
-// OvhLogin return OVH api user consent URL.
-func OvhLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
+// checkOvhAuth validates that OVH authentication is properly configured.
+// Returns false if an error response has been written and the caller should return.
+func checkOvhAuth(ctx *context.Context) bool {
 	config := ctx.GetConfig()
 
 	if config.FeatureAuthentication == common.FeatureDisabled {
 		ctx.BadRequest("authentication is disabled")
-		return
+		return false
 	}
 
 	if !config.OvhAuthentication {
 		ctx.BadRequest("OVH authentication is disabled")
+		return false
+	}
+
+	if config.OvhAPIKey == "" || config.OvhAPISecret == "" || config.OvhAPIEndpoint == "" {
+		ctx.InternalServerError("missing OVH API credentials", nil)
+		return false
+	}
+
+	return true
+}
+
+// OvhLogin return OVH api user consent URL.
+func OvhLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
+	if !checkOvhAuth(ctx) {
 		return
 	}
 
-	// Get redirection URL from the referrer header
+	config := ctx.GetConfig()
+
+	// Get redirection URL from the PlikDomain or referrer header
 	redirectURL, err := getRedirectURL(ctx, "/auth/ovh/callback")
 	if err != nil {
 		handleHTTPError(ctx, err)
@@ -175,25 +192,14 @@ func cleanOvhAuthSessionCookie(resp http.ResponseWriter) {
 
 // OvhCallback authenticate OVH user.
 func OvhCallback(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
-	config := ctx.GetConfig()
-
 	// Remove temporary OVH auth session cookie
 	cleanOvhAuthSessionCookie(resp)
 
-	if config.FeatureAuthentication == common.FeatureDisabled {
-		ctx.BadRequest("authentication is disabled")
+	if !checkOvhAuth(ctx) {
 		return
 	}
 
-	if !config.OvhAuthentication {
-		ctx.BadRequest("OVH authentication is disabled")
-		return
-	}
-
-	if config.OvhAPIKey == "" || config.OvhAPISecret == "" || config.OvhAPIEndpoint == "" {
-		ctx.InternalServerError("missing OVH API credentials", nil)
-		return
-	}
+	config := ctx.GetConfig()
 
 	// Get state from secure cookie
 	ovhSessionCookie, err := req.Cookie("plik-ovh-session")

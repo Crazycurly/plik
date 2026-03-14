@@ -130,11 +130,30 @@ func TestGitHubLoginGitHubAuthDisabled(t *testing.T) {
 	context.TestBadRequest(t, rr, "GitHub authentication is disabled")
 }
 
+func TestGitHubLoginMissingCredentials(t *testing.T) {
+	ctx := newTestingContext(common.NewConfiguration())
+
+	ctx.GetConfig().FeatureAuthentication = common.FeatureEnabled
+	ctx.GetConfig().GitHubAuthentication = true
+
+	req, err := http.NewRequest("GET", "/auth/github/login", bytes.NewBuffer([]byte{}))
+	require.NoError(t, err, "unable to create new request")
+
+	req.Header.Set("referer", "http://plik.root.gg")
+
+	rr := ctx.NewRecorder(req)
+	GitHubLogin(ctx, rr, req)
+
+	context.TestInternalServerError(t, rr, "missing GitHub API credentials")
+}
+
 func TestGitHubLoginMissingReferer(t *testing.T) {
 	ctx := newTestingContext(common.NewConfiguration())
 
 	ctx.GetConfig().FeatureAuthentication = common.FeatureEnabled
 	ctx.GetConfig().GitHubAuthentication = true
+	ctx.GetConfig().GitHubAPIClientID = "github_app_id"
+	ctx.GetConfig().GitHubAPISecret = "github_app_secret"
 
 	req, err := http.NewRequest("GET", "/auth/github/login", bytes.NewBuffer([]byte{}))
 	require.NoError(t, err, "unable to create new request")
