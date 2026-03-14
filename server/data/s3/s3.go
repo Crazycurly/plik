@@ -25,8 +25,8 @@ type Config struct {
 	Bucket                string
 	Location              string
 	Prefix                string
-	PartSize              uint64
-	PartUploadConcurrency uint
+	PartSize              int64
+	PartUploadConcurrency int
 	UseSSL                bool
 	SendContentMd5        bool
 	SSE                   string
@@ -62,7 +62,10 @@ func (config *Config) Validate() error {
 		return fmt.Errorf("missing location")
 	}
 	if config.PartSize < 5*1024*1024 {
-		return fmt.Errorf("invalid part size")
+		return fmt.Errorf("invalid part size: must be at least 5MiB")
+	}
+	if config.PartUploadConcurrency < 1 {
+		return fmt.Errorf("invalid part upload concurrency: must be at least 1")
 	}
 	return nil
 }
@@ -168,7 +171,7 @@ func (b *Backend) AddFile(file *common.File, fileReader io.Reader) (err error) {
 	}
 
 	objectName := b.getObjectName(file.UploadID, file.ID)
-	partSize := b.config.PartSize
+	partSize := uint64(b.config.PartSize)
 
 	// Buffer up to partSize+1 bytes to determine upload strategy.
 	// Using io.CopyN + bytes.Buffer instead of a fixed make([]byte, partSize)
@@ -192,7 +195,7 @@ func (b *Backend) AddFile(file *common.File, fileReader io.Reader) (err error) {
 		concurrency := max(b.config.PartUploadConcurrency, 1)
 		if concurrency > 1 {
 			putOpts.ConcurrentStreamParts = true
-			putOpts.NumThreads = concurrency
+			putOpts.NumThreads = uint(concurrency)
 		}
 
 		// Chain the buffered data with the remaining stream
