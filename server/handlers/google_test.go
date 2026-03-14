@@ -110,11 +110,30 @@ func TestGoogleLoginGoogleAuthDisabled(t *testing.T) {
 	context.TestBadRequest(t, rr, "Google authentication is disabled")
 }
 
+func TestGoogleLoginMissingCredentials(t *testing.T) {
+	ctx := newTestingContext(common.NewConfiguration())
+
+	ctx.GetConfig().FeatureAuthentication = common.FeatureEnabled
+	ctx.GetConfig().GoogleAuthentication = true
+
+	req, err := http.NewRequest("GET", "/auth/google/login", bytes.NewBuffer([]byte{}))
+	require.NoError(t, err, "unable to create new request")
+
+	req.Header.Set("referer", "http://plik.root.gg")
+
+	rr := ctx.NewRecorder(req)
+	GoogleLogin(ctx, rr, req)
+
+	context.TestInternalServerError(t, rr, "missing Google API credentials")
+}
+
 func TestGoogleLoginMissingReferer(t *testing.T) {
 	ctx := newTestingContext(common.NewConfiguration())
 
 	ctx.GetConfig().FeatureAuthentication = common.FeatureEnabled
 	ctx.GetConfig().GoogleAuthentication = true
+	ctx.GetConfig().GoogleAPIClientID = "google_app_id"
+	ctx.GetConfig().GoogleAPISecret = "google_app_secret"
 
 	req, err := http.NewRequest("GET", "/auth/google/login", bytes.NewBuffer([]byte{}))
 	require.NoError(t, err, "unable to create new request")

@@ -24,6 +24,8 @@ func TestOVHLogin(t *testing.T) {
 
 	ctx.GetConfig().FeatureAuthentication = common.FeatureEnabled
 	ctx.GetConfig().OvhAuthentication = true
+	ctx.GetConfig().OvhAPIKey = "ovh_api_key"
+	ctx.GetConfig().OvhAPISecret = "ovh_api_secret"
 	ctx.GetConfig().OvhAPIEndpoint = "http://127.0.0.1:" + strconv.Itoa(common.APIMockServerDefaultPort)
 
 	req, err := http.NewRequest("GET", "/auth/ovh/login", bytes.NewBuffer([]byte{}))
@@ -100,6 +102,8 @@ func TestOVHLoginInvalidOVHResponse(t *testing.T) {
 
 	ctx.GetConfig().FeatureAuthentication = common.FeatureEnabled
 	ctx.GetConfig().OvhAuthentication = true
+	ctx.GetConfig().OvhAPIKey = "ovh_api_key"
+	ctx.GetConfig().OvhAPISecret = "ovh_api_secret"
 	ctx.GetConfig().OvhAPIEndpoint = "http://127.0.0.1:" + strconv.Itoa(common.APIMockServerDefaultPort)
 
 	req, err := http.NewRequest("GET", "/auth/ovh/login", bytes.NewBuffer([]byte{}))
@@ -126,6 +130,8 @@ func TestOVHLoginInvalidOVHResponse2(t *testing.T) {
 
 	ctx.GetConfig().FeatureAuthentication = common.FeatureEnabled
 	ctx.GetConfig().OvhAuthentication = true
+	ctx.GetConfig().OvhAPIKey = "ovh_api_key"
+	ctx.GetConfig().OvhAPISecret = "ovh_api_secret"
 	ctx.GetConfig().OvhAPIEndpoint = "http://127.0.0.1:" + strconv.Itoa(common.APIMockServerDefaultPort)
 
 	req, err := http.NewRequest("GET", "/auth/ovh/login", bytes.NewBuffer([]byte{}))
@@ -181,11 +187,31 @@ func TestOVHLoginOVHAuthDisabled(t *testing.T) {
 	context.TestBadRequest(t, rr, "OVH authentication is disabled")
 }
 
+func TestOVHLoginMissingCredentials(t *testing.T) {
+	ctx := newTestingContext(common.NewConfiguration())
+
+	ctx.GetConfig().FeatureAuthentication = common.FeatureEnabled
+	ctx.GetConfig().OvhAuthentication = true
+
+	req, err := http.NewRequest("GET", "/auth/ovh/login", bytes.NewBuffer([]byte{}))
+	require.NoError(t, err, "unable to create new request")
+
+	req.Header.Set("referer", "http://plik.root.gg")
+
+	rr := ctx.NewRecorder(req)
+	OvhLogin(ctx, rr, req)
+
+	context.TestInternalServerError(t, rr, "missing OVH API credentials")
+}
+
 func TestOVHLoginMissingReferer(t *testing.T) {
 	ctx := newTestingContext(common.NewConfiguration())
 
 	ctx.GetConfig().FeatureAuthentication = common.FeatureEnabled
 	ctx.GetConfig().OvhAuthentication = true
+	ctx.GetConfig().OvhAPIKey = "ovh_api_key"
+	ctx.GetConfig().OvhAPISecret = "ovh_api_secret"
+	ctx.GetConfig().OvhAPIEndpoint = "http://127.0.0.1:" + strconv.Itoa(common.APIMockServerDefaultPort)
 
 	req, err := http.NewRequest("GET", "/auth/ovh/login", bytes.NewBuffer([]byte{}))
 	require.NoError(t, err, "unable to create new request")

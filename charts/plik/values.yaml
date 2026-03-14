@@ -254,6 +254,11 @@ plikd:
   # -- Require verified email from OIDC provider
   OIDCRequireVerifiedEmail: false
 
+  # -- GitHub OAuth app client ID
+  GitHubApiClientID: ""
+  # -- Restrict to GitHub organization members (empty = allow all)
+  GitHubValidOrganizations: []
+
   # -- Data backend type (`file`, `gcs`, `s3`, `swift`)
   DataBackend: "file"
   # -- Non-sensitive data backend configuration.
@@ -308,6 +313,9 @@ secrets:
 
   # -- OIDC client secret (injected as `PLIKD_OIDC_CLIENT_SECRET`)
   oidcClientSecret: ""
+
+  # -- GitHub OAuth app client secret (injected as `PLIKD_GIT_HUB_API_SECRET`)
+  githubApiSecret: ""
 
   # -- Sensitive data backend config (merged with `plikd.DataBackendConfig` at runtime).
   # Injected as `PLIKD_DATA_BACKEND_CONFIG` JSON.
