@@ -22,7 +22,7 @@ Plik is a temporary file upload system with three main components:
 |------|---------|-------------|
 | `Upload` | `server/common` | Container for files — has TTL, options (OneShot, Stream, Removable), password protection, E2EE scheme |
 | `File` | `server/common` | Individual file within an upload — has status, size, type, md5 |
-| `User` | `server/common` | Authenticated user (local, Google, OVH, OIDC) — has quotas |
+| `User` | `server/common` | Authenticated user (local, Google, GitHub, OVH, OIDC) — has quotas |
 | `Token` | `server/common` | Upload token (UUID) — authenticates CLI clients on behalf of a user |
 
 ---
@@ -236,6 +236,8 @@ When processing a request, limits are resolved via the custom `Context`:
 | GET | `/auth/ovh/callback` | `OvhCallback` | Open | OAuth callback |
 | GET | `/auth/oidc/login` | `OIDCLogin` | Cookie | Get OIDC consent URL |
 | GET | `/auth/oidc/callback` | `OIDCCallback` | Open | OIDC callback |
+| GET | `/auth/github/login` | `GitHubLogin` | Cookie | Get GitHub consent URL |
+| GET | `/auth/github/callback` | `GitHubCallback` | Open | GitHub OAuth callback |
 | POST | `/auth/local/login` | `LocalLogin` | Cookie | Login with login/password |
 | POST | `/auth/cli/init` | `CLIAuthInit` | Open | Initiate CLI device auth session |
 | POST | `/auth/cli/approve` | `CLIAuthApprove` | Session | Approve CLI login (browser-side) |
@@ -307,6 +309,7 @@ When processing a request, limits are resolved via the custom `Context`:
 |----------|-------------|----------------|
 | Local | — (CLI-created users) | `local:{login}` |
 | Google | `GoogleApiClientID`, `GoogleApiSecret` | `google:{email}` |
+| GitHub | `GitHubApiClientID`, `GitHubApiSecret` | `github:{login}` |
 | OVH | `OvhApiKey`, `OvhApiSecret` | `ovh:{customerCode}` |
 | OIDC | `OIDCClientID`, `OIDCClientSecret`, `OIDCProviderURL` | `oidc:{sub}` |
 

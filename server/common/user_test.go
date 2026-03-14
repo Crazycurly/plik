@@ -27,7 +27,9 @@ func TestUser_String(t *testing.T) {
 func TestIsValidProvider(t *testing.T) {
 	require.True(t, IsValidProvider(ProviderLocal))
 	require.True(t, IsValidProvider(ProviderGoogle))
+	require.True(t, IsValidProvider(ProviderGitHub))
 	require.True(t, IsValidProvider(ProviderOVH))
+	require.True(t, IsValidProvider(ProviderOIDC))
 	require.False(t, IsValidProvider(""))
 	require.False(t, IsValidProvider("foo"))
 }

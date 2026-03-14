@@ -64,6 +64,9 @@ data:
     OIDCValidDomains    = {{ .Values.plikd.OIDCValidDomains | toJson }}
     OIDCRequireVerifiedEmail = {{ .Values.plikd.OIDCRequireVerifiedEmail }}
 
+    GitHubApiClientID        = {{ .Values.plikd.GitHubApiClientID | quote }}
+    GitHubValidOrganizations = {{ .Values.plikd.GitHubValidOrganizations | toJson }}
+
     DataBackend = {{ .Values.plikd.DataBackend | quote }}
 
     [DataBackendConfig]

@@ -111,6 +111,11 @@ type Configuration struct {
 	OIDCValidDomains         []string `json:"-"`
 	OIDCRequireVerifiedEmail bool     `json:"-"`
 
+	GitHubAuthentication     bool     `json:"githubAuthentication"`
+	GitHubAPIClientID        string   `json:"-"`
+	GitHubAPISecret          string   `json:"-"`
+	GitHubValidOrganizations []string `json:"-"`
+
 	MetadataBackendConfig map[string]any `json:"-"`
 
 	DataBackend       string         `json:"-"`
@@ -232,12 +237,13 @@ func (config *Configuration) Initialize() (err error) {
 	config.GoogleAuthentication = config.FeatureAuthentication != FeatureDisabled && config.GoogleAPIClientID != "" && config.GoogleAPISecret != ""
 	config.OvhAuthentication = config.FeatureAuthentication != FeatureDisabled && config.OvhAPIKey != "" && config.OvhAPISecret != ""
 	config.OIDCAuthentication = config.FeatureAuthentication != FeatureDisabled && config.OIDCClientID != "" && config.OIDCClientSecret != "" && config.OIDCProviderURL != ""
+	config.GitHubAuthentication = config.FeatureAuthentication != FeatureDisabled && config.GitHubAPIClientID != "" && config.GitHubAPISecret != ""
 	config.LocalAuthentication = config.FeatureAuthentication != FeatureDisabled && config.FeatureLocalLogin != FeatureDisabled
 
 	// Validate that at least one authentication method is available when authentication is enabled
 	if config.FeatureAuthentication != FeatureDisabled &&
-		!config.LocalAuthentication && !config.GoogleAuthentication && !config.OvhAuthentication && !config.OIDCAuthentication {
-		return fmt.Errorf("authentication is enabled but no authentication method is available, enable at least one of : FeatureLocalLogin, Google, OVH, or OIDC")
+		!config.LocalAuthentication && !config.GoogleAuthentication && !config.OvhAuthentication && !config.OIDCAuthentication && !config.GitHubAuthentication {
+		return fmt.Errorf("authentication is enabled but no authentication method is available, enable at least one of : FeatureLocalLogin, Google, OVH, OIDC, or GitHub")
 	}
 
 	if config.PlikDomain != "" {
@@ -556,6 +562,12 @@ func (config *Configuration) String() string {
 			str += fmt.Sprintf("OIDC provider URL : %s\n", config.OIDCProviderURL)
 		} else {
 			str += "OIDC authentication : disabled\n"
+		}
+
+		if config.GitHubAuthentication {
+			str += "GitHub authentication : enabled\n"
+		} else {
+			str += "GitHub authentication : disabled\n"
 		}
 
 		str += fmt.Sprintf("Local login : %s\n", config.FeatureLocalLogin)

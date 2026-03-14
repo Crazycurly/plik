@@ -23,7 +23,7 @@ Plik is a scalable & friendly temporary file upload system — like WeTransfer, 
 - 🧑‍💻 Powerful [Command line client](https://root-gg.github.io/plik/features/cli-client.html)
 - ☁️ Multiple storage backends (local, S3, OpenStack Swift, Google Cloud Storage)
 - 🗄️ Multiple metadata backends (SQLite, PostgreSQL, MySQL)
-- 🔑 Multiple authentication providers (Local, Google, OVH, OIDC)
+- 🔑 Multiple authentication providers (Local, Google, GitHub, OVH, OIDC)
 - ⏱️ Configurable TTL with auto-cleanup
 - 💣 OneShot downloads (file deleted after first download)
 - ⚡ Stream mode (uploader → downloader, nothing stored)

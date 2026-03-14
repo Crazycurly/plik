@@ -127,6 +127,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions around config vs. se
 | plikd.FeatureSetTTL | string | `"enabled"` | Allow users to set a custom TTL |
 | plikd.FeatureStream | string | `"enabled"` | Enable streaming uploads |
 | plikd.FeatureText | string | `"enabled"` | Enable plain-text paste mode |
+| plikd.GitHubApiClientID | string | `""` | GitHub OAuth app client ID |
+| plikd.GitHubValidOrganizations | list | `[]` | Restrict to GitHub organization members (empty = allow all) |
 | plikd.GoogleApiClientID | string | `""` | Google OAuth2 client ID |
 | plikd.GoogleValidDomains | list | `[]` | Allowed Google domains (empty = allow all) |
 | plikd.ListenAddress | string | `"0.0.0.0"` | HTTP listen address |
@@ -162,6 +164,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions around config vs. se
 | resources | object | `{}` | CPU/memory resource requests and limits |
 | secrets.dataBackend | object | `{}` | Sensitive data backend config (merged with `plikd.DataBackendConfig` at runtime). Injected as `PLIKD_DATA_BACKEND_CONFIG` JSON. |
 | secrets.existingSecret | string | `""` | Use an existing Kubernetes Secret instead of creating one. The Secret must contain the relevant env var keys. |
+| secrets.githubApiSecret | string | `""` | GitHub OAuth app client secret (injected as `PLIKD_GIT_HUB_API_SECRET`) |
 | secrets.googleApiSecret | string | `""` | Google OAuth2 client secret (injected as `PLIKD_GOOGLE_API_SECRET`) |
 | secrets.metadataBackend | object | `{}` | Sensitive metadata backend config (e.g. database password). Injected as `PLIKD_METADATA_BACKEND_CONFIG` JSON. |
 | secrets.oidcClientSecret | string | `""` | OIDC client secret (injected as `PLIKD_OIDC_CLIENT_SECRET`) |
