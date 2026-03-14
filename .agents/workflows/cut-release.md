@@ -91,6 +91,34 @@ Also verify that the `go.mod` Go directive matches the version that `golang:1-bo
 
 **⏸️ Present findings to the user. Wait for confirmation before proceeding.**
 
+### 3.5. Check GitHub Actions versions
+
+Audit all workflow files in `.github/workflows/` for outdated action versions:
+
+```bash
+grep -rn 'uses:' .github/workflows/ | grep -v '\./'
+```
+
+For each third-party action, check whether a newer major version exists that supports Node.js 24 (GitHub's minimum runtime). Key actions to watch:
+
+| Action | How to check |
+|--------|-------------|
+| `actions/checkout` | Check [releases](https://github.com/actions/checkout/releases) for latest major |
+| `actions/setup-node` | Check [releases](https://github.com/actions/setup-node/releases) for latest major |
+| `actions/setup-go` | Check [releases](https://github.com/actions/setup-go/releases) for latest major |
+| `actions/upload-artifact` | Check [releases](https://github.com/actions/upload-artifact/releases) for latest major |
+| `actions/github-script` | Check [releases](https://github.com/actions/github-script/releases) for latest major |
+| `docker/login-action` | Check [releases](https://github.com/docker/login-action/releases) for latest major |
+| `docker/setup-buildx-action` | Check [releases](https://github.com/docker/setup-buildx-action/releases) for latest major |
+| `softprops/action-gh-release` | Check [releases](https://github.com/softprops/action-gh-release/releases) for latest major |
+| `azure/setup-helm` | Check [releases](https://github.com/Azure/setup-helm/releases) for latest major |
+| `appleboy/ssh-action` | Check [releases](https://github.com/appleboy/ssh-action/releases) for latest version |
+| `peaceiris/actions-gh-pages` | Check [releases](https://github.com/peaceiris/actions-gh-pages/releases) for latest major |
+
+If any actions are outdated, propose updates and include them in the release commit.
+
+**⏸️ Present findings to the user. Wait for confirmation before proceeding.**
+
 ### 4. Review documentation
 
 Verify that documentation is up-to-date with the changes in this release:
