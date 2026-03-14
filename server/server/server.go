@@ -345,7 +345,7 @@ func (ps *PlikServer) getHTTPHandler() (handler http.Handler) {
 	emptyChain := context.NewChain(middleware.Context(ps.setupContext))
 
 	// The base middleware chain
-	stdChain := emptyChain.Append(middleware.SourceIP, middleware.Log, middleware.Recover)
+	stdChain := emptyChain.Append(middleware.SourceIP, middleware.Log, middleware.Recover, middleware.LimitBody)
 
 	// A chain that authenticates user from session cookies
 	authChain := stdChain.Append(middleware.Authenticate(false), middleware.Impersonate)

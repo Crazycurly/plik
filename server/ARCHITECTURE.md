@@ -208,6 +208,7 @@ Each middleware is a function that takes a `context.Context` and optionally call
 | `block_bot_download.go` | `BlockBotDownload` | Block messaging app link preview bots from downloading one-shot/streaming files (returns 406) |
 | `user.go` | `User` | Resolve `{userID}` → load user (admin or self) |
 | `cors.go` | `CORSPreflight` | Short-circuits OPTIONS preflight requests with CORS headers (runs before Upload/File middleware) |
+| `limit_body.go` | `LimitBody` | Wraps request body with `http.MaxBytesReader` (1 MiB) to reject oversized payloads on JSON API endpoints. In `stdChain` — auto-skips GET/HEAD/DELETE/OPTIONS and file upload paths (`/`, `/file/*`, `/stream/*`) which have their own stream-based size limiting. |
 | `download_domain.go` | `RestrictDownloadDomain` | Router-level middleware: blocks non-file routes on the download domain when PlikDomain is also set (redirects to PlikDomain) |
 
 ---
