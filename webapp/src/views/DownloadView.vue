@@ -7,7 +7,7 @@ import { fetchAndDecrypt } from '../crypto.js'
 import { getToken, setToken } from '../tokenStore.js'
 import { config } from '../config.js'
 import { consumePendingFiles } from '../pendingUploadStore.js'
-import { renderMarkdown } from '../markdown.js'
+import { renderMarkdown, initMermaidInElement } from '../markdown.js'
 import DownloadSidebar from '../components/DownloadSidebar.vue'
 import MarkdownTabs from '../components/MarkdownTabs.vue'
 import FileRow from '../components/FileRow.vue'
@@ -31,6 +31,14 @@ const loading = ref(true)
 const error = ref(null)
 const uploadError = ref(null)
 const fileInput = ref(null)
+const commentsRef = ref(null)
+
+// Render mermaid diagrams in upload comments after they are injected
+watch(() => upload.value?.comments, async (comments) => {
+  if (!comments) return
+  await nextTick()
+  initMermaidInElement(commentsRef.value)
+})
 
 // Staged files pending upload
 const pendingFiles = ref([])
@@ -763,7 +771,7 @@ watch(activeFiles, (files) => {
               </svg>
               <h3 class="text-xs font-semibold text-surface-400 uppercase tracking-wider">Comment</h3>
             </div>
-            <div class="prose prose-sm max-w-none" v-html="renderMarkdown(upload.comments)" />
+            <div ref="commentsRef" class="prose prose-sm max-w-none" v-html="renderMarkdown(upload.comments)" />
           </div>
 
           <!-- E2EE Indicator -->
