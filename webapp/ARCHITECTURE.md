@@ -757,6 +757,8 @@ Fenced code blocks with language `mermaid` are rendered as interactive SVG diagr
 - `MarkdownTabs.vue` — watchers on `renderedHtml` and `modelValue` (tab switch to preview) call `initMermaidInElement()` after `nextTick`
 - `DownloadView.vue` — watcher on `upload.value?.comments` calls `initMermaidInElement()` on the comments container
 
+**Theme reactivity**: Mermaid diagrams automatically re-render when the user switches themes via `ThemePicker`. On first render, `initMermaidInElement()` stashes the original diagram source in a `data-source` attribute (since `mermaid.run()` replaces the text with SVG) and installs a `MutationObserver` on `<html data-theme="…">` (same pattern as `CodeEditor.vue`). When the theme changes, `reRenderAllMermaid()` detects the new `colorScheme`, re-initializes mermaid with the appropriate theme (`'dark'` or `'default'`), restores all processed diagrams from their stashed source, and re-runs `mermaid.run()`.
+
 > **Gotcha**: `mermaid.run()` must be called on DOM nodes, not HTML strings. The sentinel `<div class="mermaid">` must exist in the DOM before calling `run()` — hence the `nextTick()` dance after `v-html` injection.
 
 ### Image File Preview
@@ -852,6 +854,7 @@ Tests live in `webapp/e2e/` and cover core flows:
 | `retry.spec.js` | Upload failure/retry, cancel |
 | `streaming.spec.js` | Stream upload, URL path, hidden actions |
 | `customization.spec.js` | Runtime settings.json override, custom CSS/JS injection, white-label fallback |
+| `mermaid.spec.js` | Mermaid diagram rendering, source stashing, comment SVG, theme reactivity |
 
 **Server lifecycle**: Playwright's `webServer` launches `e2e/start-server.sh` which creates a fresh temp directory with clean SQLite DB + data backend, seeds an admin user, and starts `plikd`. The `globalTeardown` cleans up after the suite.
 
