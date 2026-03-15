@@ -63,35 +63,10 @@ Legacy uploads (created before version 1.4) use MD5 hashing and continue to work
 
 ## Archive Compression
 
-Plik's archive download endpoint (`GET /archive/{uploadID}/{filename}`) generates zip archives on the fly. By default, **compression is enabled** (`EnableArchiveCompression = true`) and archives use `zip.Deflate`.
+By default, archive downloads use `zip.Deflate` compression (`EnableArchiveCompression = true`). On public instances, consider disabling compression to reduce CPU load from archive generation.
 
-### Why you might disable compression
-
-When zip compression (`zip.Deflate`) is enabled, an attacker can exploit it for CPU exhaustion:
-
-1. Upload large files filled with **uncompressible random data** (up to the max file size limit)
-2. Repeatedly request the archive endpoint concurrently
-3. The server spawns goroutines that consume 100% CPU trying to compress random data
-4. On smaller servers, this easily causes a denial of service
-
-With `zip.Store`, archive generation simply copies raw bytes into the zip container — near-zero CPU regardless of file content or size.
-
-### Trade-offs
-
-| Setting | Archive size | CPU usage | Security |
-|---------|-------------|-----------|----------|
-| `true` (default) | Smaller (compressed) | High for large/random files | ⚠️ DoS risk on public instances |
-| `false` | Same as raw files | Minimal | ✅ Safe |
-
-### Configuration
-
-```toml
-EnableArchiveCompression = false    # Default: safe, no compression
-EnableArchiveCompression = true     # Enable zip.Deflate compression (use with caution)
-```
-
-::: warning
-On public-facing instances with untrusted users, set `EnableArchiveCompression = false` to prevent CPU exhaustion attacks.
+::: tip
+With compression disabled, archives use `zip.Store` (raw copy) — minimal CPU at the cost of larger downloads.
 :::
 
 ## Removable Uploads
