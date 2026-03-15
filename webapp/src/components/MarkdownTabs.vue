@@ -36,7 +36,7 @@ watch(() => props.renderedHtml, async (html) => {
   if (!html || props.modelValue !== 'preview') return
   await nextTick()
   initMermaidInElement(previewRef.value)
-})
+}, { immediate: true })
 
 // Also render when switching to the preview tab
 watch(() => props.modelValue, async (tab) => {
