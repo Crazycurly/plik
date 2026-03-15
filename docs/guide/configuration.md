@@ -48,6 +48,7 @@ PLIKD_DATA_BACKEND_CONFIG='{"Directory":"/var/files"}' ./plikd
 | `ChangelogDirectory` | `../changelog` | Release changelog directory |
 | `SourceIpHeader` | `""` | Header for real IP behind proxy (e.g., `X-Forwarded-For`) |
 | `UploadWhitelist` | `[]` | Restrict uploads to IP ranges (CIDR) |
+| `EnableArchiveCompression` | `true` | Enable zip compression for archive downloads. Set to `false` to use `zip.Store` (no compression) to prevent CPU exhaustion on public instances. See [Security — Archive Compression](/guide/security#archive-compression) |
 
 ## Limits
 

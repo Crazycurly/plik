@@ -34,6 +34,8 @@ data:
     SourceIpHeader      = {{ .Values.plikd.SourceIpHeader | quote }}
     UploadWhitelist     = {{ .Values.plikd.UploadWhitelist | toJson }}
 
+    EnableArchiveCompression = {{ .Values.plikd.EnableArchiveCompression }}
+
     MaxFileSizeStr      = {{ .Values.plikd.MaxFileSizeStr | quote }}
     MaxUserSizeStr      = {{ .Values.plikd.MaxUserSizeStr | quote }}
     MaxFilePerUpload    = {{ .Values.plikd.MaxFilePerUpload }}

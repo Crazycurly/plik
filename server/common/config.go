@@ -65,6 +65,8 @@ type Configuration struct {
 	ClientsDirectory    string   `json:"-"`
 	ChangelogDirectory  string   `json:"-"`
 
+	EnableArchiveCompression bool `json:"-"`
+
 	SourceIPHeader  string   `json:"-"`
 	UploadWhitelist []string `json:"-"`
 
@@ -160,6 +162,8 @@ func NewConfiguration() (config *Configuration) {
 	config.OvhAPIEndpoint = "https://eu.api.ovh.com/1.0"
 
 	config.OIDCProviderName = "OpenID"
+
+	config.EnableArchiveCompression = true
 
 	config.DataBackend = "file"
 
@@ -539,6 +543,7 @@ func (config *Configuration) String() string {
 	str += fmt.Sprintf("Upload extend TTL : %s\n", config.FeatureExtendTTL)
 	str += fmt.Sprintf("E2E encryption : %s\n", config.FeatureE2EE)
 	str += fmt.Sprintf("Delete account : %s\n", config.FeatureDeleteAccount)
+	str += fmt.Sprintf("Archive compression : %t\n", config.EnableArchiveCompression)
 
 	str += fmt.Sprintf("Authentication : %s\n", config.FeatureAuthentication)
 	if config.FeatureAuthentication != FeatureDisabled {
