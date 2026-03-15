@@ -21,16 +21,17 @@
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.1",
     "marked": "^17.0.1",
+    "mermaid": "^11.12.3",
     "tailwindcss": "^4.1.18",
     "vue": "^3.5.25",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vue/test-utils": "^2.2.7",
     "jsdom": "^28.1.0",
     "vite": "^7.3.1",
-    "vitest": "^4.0.18",
-    "@playwright/test": "^1.52.0"
+    "vitest": "^4.0.18"
   }
 }

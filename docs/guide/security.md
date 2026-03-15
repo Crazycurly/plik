@@ -61,6 +61,14 @@ Passwords are hashed using **bcrypt(sha256(credentials))** before storage; the p
 Legacy uploads (created before version 1.4) use MD5 hashing and continue to work until they expire.
 :::
 
+## Archive Compression
+
+By default, archive downloads use `zip.Deflate` compression (`EnableArchiveCompression = true`). On public instances, consider disabling compression to reduce CPU load from archive generation.
+
+::: tip
+With compression disabled, archives use `zip.Store` (raw copy) — minimal CPU at the cost of larger downloads.
+:::
+
 ## Removable Uploads
 
 When `FeatureRemovable` is enabled and an upload is created with `removable: true`, **anyone with the upload URL can delete the upload and its files** — no upload token or authentication is required. This is by design: the `removable` flag is intended for ephemeral, public uploads where ease of cleanup is prioritized over access control.

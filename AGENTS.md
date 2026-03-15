@@ -120,6 +120,7 @@ make vuln                   # govulncheck (report only)
 - **Error handling**: Handlers return HTTP errors; middleware chain panics on missing required context values
 - **ID generation**: Random hex strings (16 chars for files, 16 chars for uploads)
 - **Backend interface**: `data.Backend` is the storage abstraction; implementations are swappable via config
+- **Archive compression**: Enabled by default (`EnableArchiveCompression = true`). Can be disabled to `zip.Store` (no compression) on public instances to prevent CPU exhaustion DoS.
 
 ## Best Practices
 

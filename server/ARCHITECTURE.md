@@ -223,7 +223,7 @@ Each handler file contains one or more `http.Handler` functions.
 | `add_file.go` | `AddFile` | Upload file to existing upload (multipart). Detects content type via [`gabriel-vasile/mimetype`](https://github.com/gabriel-vasile/mimetype) magic-number sniffing (200+ formats). E2EE uploads are forced to `application/octet-stream` via age-header detection. On stream upload error, resets file to `missing` (retryable); on regular upload error, purges partial data and leaves file in `uploading` (not retryable). |
 | `get_upload.go` | `GetUpload` | Return upload metadata |
 | `get_file.go` | `GetFile` | Download file, handle OneShot, extend TTL, support HTTP range requests (via `http.ServeContent` for non-stream/non-oneshot). E2EE uploads: redirects webapp to download page, forces `application/octet-stream` |
-| `get_archive.go` | `GetArchive` | Download all files as zip |
+| `get_archive.go` | `GetArchive` | Download all files as zip. Compression method controlled by `EnableArchiveCompression` (default: `zip.Deflate`). Disable to prevent CPU exhaustion DoS on public instances. |
 | `remove_file.go` | `RemoveFile` | Mark file as removed. Also mapped to `DELETE /stream/...` to allow cancelling a blocked stream upload (closes the in-memory pipe). |
 | `remove_upload.go` | `RemoveUpload` | Soft-delete upload |
 | `misc.go` | `GetConfiguration`, `GetVersion`, `GetQrCode`, `Health` | Utility endpoints |

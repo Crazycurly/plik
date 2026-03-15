@@ -7,7 +7,7 @@ import { fetchAndDecrypt } from '../crypto.js'
 import { getToken, setToken } from '../tokenStore.js'
 import { config } from '../config.js'
 import { consumePendingFiles } from '../pendingUploadStore.js'
-import { renderMarkdown } from '../markdown.js'
+import { renderMarkdown, initMermaidInElement } from '../markdown.js'
 import DownloadSidebar from '../components/DownloadSidebar.vue'
 import MarkdownTabs from '../components/MarkdownTabs.vue'
 import FileRow from '../components/FileRow.vue'
@@ -31,6 +31,16 @@ const loading = ref(true)
 const error = ref(null)
 const uploadError = ref(null)
 const fileInput = ref(null)
+const commentsRef = ref(null)
+
+// Render mermaid diagrams in upload comments after the comment block mounts.
+// commentsRef is inside v-if="upload.comments" — watching the ref directly
+// ensures we run after Vue has mounted the block and injected v-html content.
+watch(commentsRef, async (el) => {
+  if (!el) return
+  await nextTick()
+  initMermaidInElement(el)
+})
 
 // Staged files pending upload
 const pendingFiles = ref([])
@@ -763,7 +773,7 @@ watch(activeFiles, (files) => {
               </svg>
               <h3 class="text-xs font-semibold text-surface-400 uppercase tracking-wider">Comment</h3>
             </div>
-            <div class="prose prose-sm max-w-none" v-html="renderMarkdown(upload.comments)" />
+            <div ref="commentsRef" class="prose prose-sm max-w-none" v-html="renderMarkdown(upload.comments)" />
           </div>
 
           <!-- E2EE Indicator -->

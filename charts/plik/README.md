@@ -113,6 +113,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions around config vs. se
 | plikd.DefaultTTLStr | string | `"30d"` | Default upload TTL (e.g. `30d`, `24h`) |
 | plikd.DownloadDomain | string | `""` | Custom download domain |
 | plikd.DownloadDomainAlias | list | `[]` | Additional download domain aliases |
+| plikd.EnableArchiveCompression | bool | `true` | Enable zip compression for archive downloads. When true (default), archives use zip.Deflate (smaller files but higher CPU usage). Set to false to use zip.Store (no compression) to prevent CPU exhaustion DoS on public instances. |
 | plikd.EnhancedWebSecurity | bool | `false` | Enable enhanced web security headers (CSP, X-Frame-Options, etc.) |
 | plikd.FeatureAuthentication | string | `"disabled"` | Enable user authentication (`enabled`, `disabled`, `forced`) |
 | plikd.FeatureClients | string | `"enabled"` | Enable pre-built CLI clients download page |

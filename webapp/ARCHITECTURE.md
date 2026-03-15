@@ -745,6 +745,22 @@ When viewing or editing a Markdown file (`.md` or `.markdown` extension), **Code
 
 Default tab for markdown files in the download viewer is **Preview**; in the paste editor it stays on **Code**.
 
+### Mermaid Diagram Rendering
+
+Fenced code blocks with language `mermaid` are rendered as interactive SVG diagrams in all Markdown preview contexts (upload comments, text-paste preview, file viewer).
+
+**Architecture**: Mermaid rendering is a two-phase process:
+1. **Parse-time** (`markdown.js`): A custom `marked` renderer detects ` ```mermaid ` blocks and outputs `<div class="mermaid">…</div>` sentinel containers instead of `<pre><code>`. These containers pass through DOMPurify unchanged.
+2. **Render-time** (`initMermaidInElement()`): After Vue injects the HTML via `v-html`, the `mermaid` library is lazy-loaded via dynamic `import()` (~2 MB, loaded only on first diagram display) and `mermaid.run()` transforms the sentinel divs into SVGs.
+
+**Integration points**:
+- `MarkdownTabs.vue` — watchers on `renderedHtml` and `modelValue` (tab switch to preview) call `initMermaidInElement()` after `nextTick`
+- `DownloadView.vue` — watcher on `upload.value?.comments` calls `initMermaidInElement()` on the comments container
+
+**Theme reactivity**: Mermaid diagrams automatically re-render when the user switches themes via `ThemePicker`. On first render, `initMermaidInElement()` stashes the original diagram source in a `data-source` attribute (since `mermaid.run()` replaces the text with SVG) and installs a `MutationObserver` on `<html data-theme="…">` (same pattern as `CodeEditor.vue`). When the theme changes, `reRenderAllMermaid()` detects the new `colorScheme`, re-initializes mermaid with the appropriate theme (`'dark'` or `'default'`), restores all processed diagrams from their stashed source, and re-runs `mermaid.run()`.
+
+> **Gotcha**: `mermaid.run()` must be called on DOM nodes, not HTML strings. The sentinel `<div class="mermaid">` must exist in the DOM before calling `run()` — hence the `nextTick()` dance after `v-html` injection.
+
 ### Image File Preview
 
 When viewing an image file (`image/*` MIME type), the file viewer renders an `<img>` tag directly from the server URL — no content fetching or text decoding required.
@@ -838,6 +854,7 @@ Tests live in `webapp/e2e/` and cover core flows:
 | `retry.spec.js` | Upload failure/retry, cancel |
 | `streaming.spec.js` | Stream upload, URL path, hidden actions |
 | `customization.spec.js` | Runtime settings.json override, custom CSS/JS injection, white-label fallback |
+| `mermaid.spec.js` | Mermaid diagram rendering, source stashing, comment SVG, theme reactivity |
 
 **Server lifecycle**: Playwright's `webServer` launches `e2e/start-server.sh` which creates a fresh temp directory with clean SQLite DB + data backend, seeds an admin user, and starts `plikd`. The `globalTeardown` cleans up after the suite.
 

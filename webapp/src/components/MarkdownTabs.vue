@@ -15,6 +15,9 @@
  * Slots:
  *   default — editor content (CodeEditor, textarea, …) shown when left tab is active
  */
+import { ref, watch, nextTick } from 'vue'
+import { initMermaidInElement } from '../markdown.js'
+
 const props = defineProps({
   modelValue: { type: String, required: true },
   leftLabel:  { type: String, default: 'Code' },
@@ -25,6 +28,22 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const leftValue = props.leftIcon === 'write' ? 'write' : 'code'
+
+const previewRef = ref(null)
+
+// Render mermaid diagrams whenever the preview HTML changes
+watch(() => props.renderedHtml, async (html) => {
+  if (!html || props.modelValue !== 'preview') return
+  await nextTick()
+  initMermaidInElement(previewRef.value)
+}, { immediate: true })
+
+// Also render when switching to the preview tab
+watch(() => props.modelValue, async (tab) => {
+  if (tab !== 'preview' || !props.renderedHtml) return
+  await nextTick()
+  initMermaidInElement(previewRef.value)
+})
 </script>
 
 <template>
@@ -66,6 +85,7 @@ const leftValue = props.leftIcon === 'write' ? 'write' : 'code'
   <!-- Preview panel -->
   <div v-if="modelValue === 'preview'" class="p-4">
     <div v-if="renderedHtml"
+         ref="previewRef"
          class="prose prose-invert prose-sm max-w-none"
          v-html="renderedHtml" />
     <p v-else class="text-sm text-surface-500 italic">Nothing to preview</p>

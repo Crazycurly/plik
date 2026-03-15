@@ -196,6 +196,11 @@ plikd:
   # -- IP whitelist for uploads (empty = allow all)
   UploadWhitelist: []
 
+  # -- Enable zip compression for archive downloads.
+  # When true (default), archives use zip.Deflate (smaller files but higher CPU usage).
+  # Set to false to use zip.Store (no compression) to prevent CPU exhaustion DoS on public instances.
+  EnableArchiveCompression: true
+
   # -- Maximum file size per upload (e.g. `10GB`, `unlimited`)
   MaxFileSizeStr: "10GB"
   # -- Maximum total size per user (e.g. `10GB`, `unlimited`)
