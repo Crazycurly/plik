@@ -33,11 +33,13 @@ const uploadError = ref(null)
 const fileInput = ref(null)
 const commentsRef = ref(null)
 
-// Render mermaid diagrams in upload comments after they are injected
-watch(() => upload.value?.comments, async (comments) => {
-  if (!comments) return
+// Render mermaid diagrams in upload comments after the comment block mounts.
+// commentsRef is inside v-if="upload.comments" — watching the ref directly
+// ensures we run after Vue has mounted the block and injected v-html content.
+watch(commentsRef, async (el) => {
+  if (!el) return
   await nextTick()
-  initMermaidInElement(commentsRef.value)
+  initMermaidInElement(el)
 })
 
 // Staged files pending upload
