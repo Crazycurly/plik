@@ -126,7 +126,17 @@ func GetArchive(ctx *context.Context, resp http.ResponseWriter, req *http.Reques
 				return
 			}
 
-			fileWriter, err := archive.Create(file.Name)
+			method := zip.Deflate // Default: compression enabled
+			if !ctx.GetConfig().EnableArchiveCompression {
+				method = zip.Store // Disable compression to prevent CPU exhaustion
+			}
+
+			header := &zip.FileHeader{
+				Name:   file.Name,
+				Method: method,
+			}
+
+			fileWriter, err := archive.CreateHeader(header)
 			if err != nil {
 				ctx.InternalServerError("error while creating zip archive", err)
 				return
