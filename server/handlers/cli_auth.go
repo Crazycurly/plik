@@ -54,7 +54,6 @@ func CLIAuthInit(ctx *context.Context, resp http.ResponseWriter, req *http.Reque
 
 	// Read request body
 	defer func() { _ = req.Body.Close() }()
-	req.Body = http.MaxBytesReader(resp, req.Body, 1048576)
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		ctx.BadRequest(fmt.Sprintf("unable to read request body : %s", err))
@@ -121,7 +120,6 @@ func CLIAuthApprove(ctx *context.Context, resp http.ResponseWriter, req *http.Re
 
 	// Read request body
 	defer func() { _ = req.Body.Close() }()
-	req.Body = http.MaxBytesReader(resp, req.Body, 1048576)
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		ctx.BadRequest(fmt.Sprintf("unable to read request body : %s", err))
@@ -203,7 +201,6 @@ func CLIAuthPoll(ctx *context.Context, resp http.ResponseWriter, req *http.Reque
 
 	// Read request body
 	defer func() { _ = req.Body.Close() }()
-	req.Body = http.MaxBytesReader(resp, req.Body, 1048576)
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		ctx.BadRequest(fmt.Sprintf("unable to read request body : %s", err))
