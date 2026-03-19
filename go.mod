@@ -20,7 +20,7 @@ require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/minio/minio-go/v7 v7.0.99
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/modelcontextprotocol/go-sdk v1.4.0
+	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/ncw/swift v1.0.53
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pilagod/gorm-cursor-paginator/v2 v2.7.0
@@ -95,7 +95,7 @@ require (
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/segmentio/asm v1.1.3 // indirect
-	github.com/segmentio/encoding v0.5.3 // indirect
+	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/tinylib/msgp v1.6.1 // indirect
