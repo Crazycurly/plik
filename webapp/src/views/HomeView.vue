@@ -76,7 +76,7 @@ async function loadUserStats() {
     try {
         userStats.value = await getUserStatistics()
     } catch (e) {
-        error.value = 'Failed to load user stats'
+        error.value = $t('homeView.failedToLoadStats')
     } finally {
         statsLoading.value = false
     }
@@ -129,7 +129,7 @@ async function loadUploads(more = false) {
         uploadsCursor.value = data.after || null
         uploadsTotal.value = data.total ?? null
     } catch (err) {
-        error.value = 'Could not load uploads'
+        error.value = $t('homeView.failedToLoadUploads')
     } finally {
         uploadsLoading.value = false
     }
@@ -137,13 +137,13 @@ async function loadUploads(more = false) {
 
 async function handleDeleteUpload(upload) {
     confirm.value = {
-        message: `Delete upload ${upload.id}?`,
+        message: $t('homeView.deleteUploadConfirm', { id: upload.id }),
         action: async () => {
             try {
                 await removeUpload(upload.id, upload.uploadToken)
                 uploads.value = uploads.value.filter(u => u.id !== upload.id)
             } catch (err) {
-                error.value = 'Could not delete upload'
+                error.value = $t('homeView.failedToDeleteUpload')
             }
             confirm.value = null
         }
@@ -151,16 +151,16 @@ async function handleDeleteUpload(upload) {
 }
 
 async function handleDeleteAllUploads() {
-    const label = tokenFilter.value ? `all uploads for token ${tokenFilter.value}` : 'ALL your uploads'
+    const label = tokenFilter.value ? $t('homeView.allUploadsForToken', { token: tokenFilter.value }) : $t('homeView.allYourUploads')
     confirm.value = {
-        message: `Delete ${label}? This cannot be undone.`,
+        message: $t('homeView.deleteAllUploadsConfirm', { label }),
         action: async () => {
             try {
                 await deleteUserUploads(tokenFilter.value)
                 uploads.value = []
                 uploadsCursor.value = null
             } catch (err) {
-                error.value = 'Could not delete uploads'
+                error.value = $t('homeView.failedToDeleteUploads')
             }
             confirm.value = null
         }
@@ -231,7 +231,7 @@ async function loadTokens(more = false) {
         }
         tokensCursor.value = data.after || null
     } catch (err) {
-        error.value = 'Could not load tokens'
+        error.value = $t('homeView.failedToLoadTokens')
     } finally {
         tokensLoading.value = false
     }
@@ -243,24 +243,24 @@ async function handleCreateToken() {
         tokens.value = [token, ...tokens.value]
         newTokenComment.value = ''
     } catch (err) {
-        error.value = 'Could not create token'
+        error.value = $t('homeView.failedToCreateToken')
     }
 }
 
 async function handleDeleteTokenUploads(token) {
     const label = token.comment || token.token.substring(0, 8) + '...'
     confirm.value = {
-        message: `Delete all uploads for token "${label}"? The token itself will not be revoked.`,
+        message: $t('homeView.deleteTokenUploadsConfirm', { label }),
         action: async () => {
             try {
                 const result = await deleteUserUploads(token.token)
                 confirm.value = null
                 // Show feedback (backend returns "X uploads removed")
-                successMessage.value = typeof result === 'string' ? result : 'Uploads removed'
+                successMessage.value = typeof result === 'string' ? result : $t('homeView.uploadsRemoved')
                 setTimeout(() => { successMessage.value = '' }, 3000)
             } catch (err) {
                 confirm.value = null
-                error.value = 'Could not delete token uploads'
+                error.value = $t('homeView.failedToDeleteTokenUploads')
             }
         }
     }
@@ -268,7 +268,7 @@ async function handleDeleteTokenUploads(token) {
 
 async function handleRevokeToken(token) {
     confirm.value = {
-        message: `Revoke token ${token.token.substring(0, 8)}...? Uploads created with this token will remain.`,
+        message: $t('homeView.revokeTokenConfirm', { token: token.token.substring(0, 8) + '...' }),
         action: async () => {
             try {
                 await revokeToken(token.token)
@@ -462,7 +462,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            Stats
+            {{ $t('homeView.stats') }}
           </button>
 
           <button @click="showUploads"
@@ -474,7 +474,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
-            Uploads
+            {{ $t('homeView.uploads') }}
           </button>
 
           <button @click="showTokens"
@@ -486,7 +486,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
-            Tokens
+            {{ $t('homeView.tokens') }}
           </button>
         </div>
 
@@ -668,9 +668,7 @@ onMounted(() => {
           <!-- Create token -->
           <div class="glass-card p-4 mb-4 space-y-3">
             <p class="text-sm text-surface-400 text-center">
-              {{ $t('homeView.tokenDescription', { config: '' }) }}
-              <span class="font-mono text-surface-300">~/.plikrc</span>
-              file.
+              {{ $t('homeView.tokenDescription', { config: '~/.plikrc' }) }}
             </p>
             <div class="flex gap-2">
               <input type="text"

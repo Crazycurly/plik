@@ -461,11 +461,11 @@ async function doUpload() {
               {{ $t('uploadView.maxPerFile', { size: humanReadableSize(effectiveMaxFileSize) }) }}
             </p>
             <p v-else-if="effectiveMaxFileSize === -1" class="text-sm text-surface-500 mt-1">
-              No file size limit
+              {{ $t('common.noFilesLimit') }}
             </p>
             <div class="flex items-center justify-center gap-3 mt-3">
               <button class="text-xs text-surface-400 hover:text-accent-400 transition-colors"
-                      title="Allow adding files to an upload after its creation"
+                      :title="$t('uploadView.createEmptyUploadTooltip')"
                       @click.stop="createEmptyUpload">
                 {{ $t('uploadView.createEmptyUpload') }}
               </button>

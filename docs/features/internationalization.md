@@ -14,6 +14,14 @@ Plik supports multiple languages in the web interface, with automatic detection 
 |------|----------|
 | `en` | English |
 | `fr` | Français |
+| `de` | Deutsch |
+| `es` | Español |
+| `it` | Italiano |
+| `pt` | Português |
+| `nl` | Nederlands |
+| `pl` | Polski |
+| `zh` | 中文 |
+| `ru` | Русский |
 
 ## Configuration
 
@@ -123,3 +131,16 @@ If you want your language available in the picker by default, the `["*"]` wildca
 ```jsonc
 "languages": ["auto", "en", "fr", "XX"]
 ```
+
+## Known Limitations
+
+::: info Server-Side Errors
+Error messages returned by the Plik server (e.g. "Invalid credentials", "Upload not found") are currently displayed in English regardless of the selected language. Only the webapp's own UI labels, buttons, and client-side error messages are fully translated. Server-side internationalization may be added in a future release.
+:::
+
+## Agent Workflows
+
+If you're using an AI coding assistant, these workflows automate the i18n process:
+
+- **`/add-language`** — End-to-end workflow: create locale file, flag SVG, register in settings/i18n, update all languagePicker sections, run tests, update docs
+- **`/review-language`** — Quality review: automated key sync, loanword audit, punctuation rules, plural form validation, contextual spot-checks

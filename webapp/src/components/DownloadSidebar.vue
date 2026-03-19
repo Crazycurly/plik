@@ -55,7 +55,7 @@ let shareTimer = null
 
 async function nativeShare() {
   try {
-    await navigator.share({ title: 'Plik Upload', url: shareUrl.value })
+    await navigator.share({ title: t('downloadSidebar.shareTitle'), url: shareUrl.value })
     shareSuccess.value = true
     clearTimeout(shareTimer)
     shareTimer = setTimeout(() => { shareSuccess.value = false }, 2000)

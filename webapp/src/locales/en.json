@@ -37,7 +37,11 @@
         "default": "default",
         "unlimited": "unlimited",
         "defaultHint": "0 = default, -1 = unlimited",
-        "defaultHintValue": "0 = default ({value}), -1 = unlimited"
+        "defaultHintValue": "0 = default ({value}), -1 = unlimited",
+        "timeDay": "{n} day | {n} days",
+        "timeHour": "{n} hour | {n} hours",
+        "timeMinute": "{n} minute | {n} minutes",
+        "timeSecond": "{n} second | {n} seconds"
     },
     "header": {
         "upload": "Upload",
@@ -49,7 +53,8 @@
         "admin": "Admin",
         "login": "Login",
         "impersonating": "Impersonating",
-        "stopImpersonating": "Stop Impersonating"
+        "stopImpersonating": "Stop Impersonating",
+        "loginFailed": "Login failed"
     },
     "uploadSidebar": {
         "uploadSettings": "Upload Settings",
@@ -100,7 +105,8 @@
         "zipArchive": "Zip Archive",
         "addFiles": "Add Files",
         "deleteUpload": "Delete Upload",
-        "shareFailed": "Share failed"
+        "shareFailed": "Share failed",
+        "shareTitle": "Share"
     },
     "fileRow": {
         "uploaded": "Uploaded",
@@ -145,7 +151,8 @@
         "pasteOrTypeHere": "Paste or type text here...",
         "commentPlaceholder": "Write a comment... (Markdown supported)",
         "commentRequiredPlaceholder": "Write a comment... (required, Markdown supported)",
-        "fileSizeError": "File \"{name}\" is too big ({size}). Max: {max}"
+        "fileSizeError": "File \"{name}\" is too big ({size}). Max: {max}",
+        "createEmptyUploadTooltip": "Allow adding files to an upload after its creation"
     },
     "downloadView": {
         "loadingUpload": "Loading upload...",
@@ -299,7 +306,9 @@
         "authorizedDescription": "Your CLI client has been authenticated. You can close this page and return to your terminal.",
         "returnToPlik": "Return to Plik",
         "authorizationFailed": "Authorization Failed",
-        "failedToApprove": "Failed to approve CLI login"
+        "failedToApprove": "Failed to approve CLI login",
+        "tryAgain": "Try Again",
+        "defaultComment": "Created from CLI client"
     },
     "errorView": {
         "goToUpload": "Go to Upload"
@@ -392,6 +401,14 @@
     "languagePicker": {
         "switchLanguage": "Switch language",
         "en": "English",
-        "fr": "Français"
+        "fr": "Français",
+        "de": "Deutsch",
+        "ru": "Русский",
+        "pt": "Português",
+        "it": "Italiano",
+        "pl": "Polski",
+        "es": "Español",
+        "zh": "中文",
+        "nl": "Nederlands"
     }
 }

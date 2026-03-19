@@ -278,10 +278,10 @@ const canRemoveFiles = computed(() =>
 const streamTimeoutLabel = computed(() => {
   const s = config.streamTimeout
   if (s <= 0) return ''
-  if (s >= 86400) return `${Math.round(s / 86400)} day${Math.round(s / 86400) > 1 ? 's' : ''}`
-  if (s >= 3600) return `${Math.round(s / 3600)} hour${Math.round(s / 3600) > 1 ? 's' : ''}`
-  if (s >= 60) return `${Math.round(s / 60)} minute${Math.round(s / 60) > 1 ? 's' : ''}`
-  return `${s} second${s > 1 ? 's' : ''}`
+  if (s >= 86400) { const n = Math.round(s / 86400); return $t('common.timeDay', { n }, n) }
+  if (s >= 3600) { const n = Math.round(s / 3600); return $t('common.timeHour', { n }, n) }
+  if (s >= 60) { const n = Math.round(s / 60); return $t('common.timeMinute', { n }, n) }
+  return $t('common.timeSecond', { n: s }, s)
 })
 
 async function fetchUpload() {
@@ -967,10 +967,10 @@ watch(activeFiles, (files) => {
             <div class="flex items-center justify-between px-1">
               <h3 class="text-sm font-medium text-surface-400">
                 <template v-if="isAddingFiles && pendingFiles.some(f => f.status === 'error') && !pendingFiles.some(f => f.status === 'uploading' || f.status === 'toUpload')">
-                  {{ pendingFiles.filter(f => f.status === 'error').length }} {{ $t('homeView.files').toLowerCase() }} failed
+                  {{ $t('downloadView.filesFailed', { count: pendingFiles.filter(f => f.status === 'error').length }, pendingFiles.filter(f => f.status === 'error').length) }}
                 </template>
                 <template v-else-if="isAddingFiles">
-                  {{ pendingFiles.filter(f => f.status !== 'uploaded').length }} {{ $t('homeView.files').toLowerCase() }} left
+                  {{ $t('downloadView.filesLeftToUpload', { count: pendingFiles.filter(f => f.status !== 'uploaded').length }, pendingFiles.filter(f => f.status !== 'uploaded').length) }}
                 </template>
                 <template v-else>
                   {{ pendingFiles.length }} {{ $t('homeView.files').toLowerCase() }}

@@ -61,7 +61,7 @@ const emit = defineEmits(['delete', 'filter-token', 'filter-user'])
                   class="shrink-0 w-4 h-4 rounded-full bg-danger-500/15 text-danger-500 text-[10px] font-bold flex items-center justify-center cursor-default"
                   :title="$t('fileRow.deleted')">d</span>
             <!-- File name: link for uploaded, strikethrough for deleted/removed, plain otherwise -->
-            <a v-if="file.status === 'uploaded'"
+            <a v-else-if="file.status === 'uploaded'"
                :href="getFileURL(upload.id, file.id, file.fileName, upload.stream)"
                class="text-surface-300 hover:text-accent-400 transition-colors truncate">
               {{ file.fileName }}
