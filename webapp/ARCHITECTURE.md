@@ -10,6 +10,7 @@
 |-------------|-------------------------------|
 | Framework   | Vue 3 (Composition API, `<script setup>`) |
 | Router      | Vue Router 4, hash history (`#/`) |
+| i18n        | vue-i18n v11 (Composition API mode, `useI18n()` / global `$t()`) |
 | Styling     | Tailwind CSS v4 (via `@import "tailwindcss"`) with custom `@utility` and `@theme` blocks |
 | Code Editor | CodeMirror 6 (`@codemirror/language-data` for syntax, `@codemirror/theme-one-dark`) |
 | Build       | Vite                          |
@@ -434,6 +435,8 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 | `themes` | array | `["*"]` | Available themes in the picker (`["*"]` = all built-ins, `[]` = no picker). Entries can be strings (`"nord"`), objects (`{ "name": "custom", "label": "My Theme" }`), or `"*"` to expand all built-ins (e.g. `["*", { "name": "acme", "label": "Acme" }]`) |
 | `defaultDarkTheme` | string | `"dark"` | Theme used by "auto" when OS prefers dark mode |
 | `defaultLightTheme` | string | `"light"` | Theme used by "auto" when OS prefers light mode |
+| `language` | string | `"auto"` | `"auto"` (detect from browser), `"en"`, `"fr"`, or any language code matching a registered locale |
+| `languages` | array | `["*"]` | Available languages in the picker (`["*"]` = all built-ins, `[]` = no picker). Entries can be strings (`"fr"`), objects (`{ "name": "de", "label": "Deutsch" }`), or `"*"` to expand all built-ins |
 | `footer` | string | `""` | Custom footer HTML (e.g. `"Powered by <a href='…'>Plik</a>"`). Takes precedence over `AbuseContact` in `plikd.cfg`. |
 
 **Footer priority**: `settings.footer` > `config.abuseContact` (`plikd.cfg`) > none. When only `AbuseContact` is set, the footer renders a default "For abuse contact &lt;mailto&gt;" template.
@@ -448,7 +451,9 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 
 Built-in themes: `solarized-dark`, `solarized-light`, `nord`, `nord-light`, `catppuccin-mocha`, `catppuccin-latte`, `matrix`, `hexless`. Dark themes may use outlined buttons (transparent bg + colored border with 40% opacity, brightening to 60% on hover) — see `TEMPLATE.css` for the pattern. Custom themes can be created by copying `themes/TEMPLATE.css`.
 
-**Theme picker** (`ThemePicker.vue`): Palette icon dropdown in the header nav bar, with "Theme" text label and dedicated separators. Lists themes from `getAvailableThemes()` (reads `settings.themes` — `["*"]` = all built-ins, `[]` = no picker). The picker is hidden when `themes.length ≤ 1`. Selection writes to localStorage (`plik-theme` key) and calls `applyTheme()` for instant switching. On boot, `loadSettings()` reads localStorage first, falling back to `settings.theme` default. The `autoListener` variable tracks the OS `prefers-color-scheme` listener and properly removes it when switching away from "auto" mode. **Server-side persistence**: For authenticated users, the theme is also stored in the `User.Theme` DB field. On login/session restore, `syncThemeFromUser()` applies the server value (server wins over localStorage). On theme change, `setUserTheme()` fires a background `patchMe()` call to persist the choice. Anonymous users use localStorage only.
+**Dropdown pickers** (`DropdownPicker.vue`): Generic shared dropdown component used by both `ThemePicker.vue` and `LanguagePicker.vue`. Handles open/close state, click-outside dismissal, scrollable option list (`max-h-80 overflow-y-auto`), checkmark for active item, optional flag images, and dropdown transition animation. Accepts props: `id`, `items`, `current`, `itemIdPrefix`, `buttonClass`, `title`, `dropdownWidth`. Provides `#icon` and default slots for each thin wrapper to supply its own icon and label text.
+
+**Theme picker** (`ThemePicker.vue`): Thin wrapper over `DropdownPicker`. Palette icon dropdown in the header nav bar, with "Theme" text label and dedicated separators. Lists themes from `getAvailableThemes()` (reads `settings.themes` — `["*"]` = all built-ins, `[]` = no picker). The picker is hidden when `themes.length ≤ 1`. Selection writes to localStorage (`plik-theme` key) and calls `applyTheme()` for instant switching. On boot, `loadSettings()` reads localStorage first, falling back to `settings.theme` default. The `autoListener` variable tracks the OS `prefers-color-scheme` listener and properly removes it when switching away from "auto" mode. **Server-side persistence**: For authenticated users, the theme is also stored in the `User.Theme` DB field. On login/session restore, `syncThemeFromUser()` applies the server value (server wins over localStorage). On theme change, `setUserTheme()` fires a background `patchMe()` call to persist the choice. Anonymous users use localStorage only.
 
 **Dark theme refinements**: The default dark theme uses semi-transparent button fills (`color-mix` at 85% for primary, 75% for danger) to reduce visual harshness. Body text defaults to `surface-200` (not `surface-100`) for reduced eye strain; `surface-100`/`surface-50` are reserved for headings and hover highlights. CodeEditor uses a single unified theme with CSS custom properties (`--color-surface-*`, `--color-accent-*`) so all themes get correct editor styling automatically — no per-theme CodeMirror overrides needed.
 
@@ -697,6 +702,72 @@ The `style.css` file defines custom utility classes via `@utility` (Tailwind v4 
 > **Note**: The `.setting-help-wrap` CSS class (not a `@utility`) controls tooltip visibility via `:hover` and `:focus-within`.
 
 > **Gotcha**: These are `@utility` blocks, NOT traditional CSS classes or Tailwind `@apply`. They follow Tailwind v4's custom utility syntax and generate single utility classes.
+
+
+---
+
+## Internationalization (i18n)
+
+### Setup
+
+- **Library**: `vue-i18n` v11, Composition API mode (`legacy: false`, `globalInjection: true`)
+- **Config**: `src/i18n.js` — creates the i18n instance, exports `setLocale()` and `getLocale()` helpers
+- **Language management**: `src/settings.js` — `BUILTIN_LANGUAGES`, `getAvailableLanguages()`, `getUserLanguage()`, `setUserLanguage()`, `syncLanguageFromUser()`, `resolveAutoLanguage()`, `currentLanguage` ref (mirrors theme pattern)
+- **Integration**: i18n registered as a Vue plugin in `main.js` (`app.use(i18n)`). Language resolved in `loadSettings()` before mount (zero flash).
+- **Persistence**: `localStorage('plik-locale')` for all users; `User.Language` DB field for authenticated users (synced on login/session restore via `syncLanguageFromUser()` in `authStore.js`)
+
+### Architecture
+
+Language management follows the **exact same pattern as themes**:
+
+1. `settings.json` declares `language` (default) and `languages` (picker list, `["*"]` = all built-in)
+2. `settings.js` owns the `BUILTIN_LANGUAGES` registry and all language logic
+3. `loadSettings()` reads localStorage → settings.json fallback, calls `applyLanguage()` before mount (resolves "auto" to browser locale, sets `currentLanguage` ref, calls `setLocale()`)
+4. `setUserLanguage()` writes localStorage, delegates to `applyLanguage()`, and fire-and-forget PATCHes `/me` for logged-in users
+5. `syncLanguageFromUser()` is called by `authStore.js` on login/session restore (server wins over localStorage)
+6. `LanguagePicker.vue` (thin wrapper over shared `DropdownPicker.vue`) uses `getAvailableLanguages()` and `currentLanguage` from `settings.js`
+
+### File Structure
+
+| File | Purpose |
+|------|---------|
+| `src/i18n.js` | vue-i18n instance, `setLocale()`, `getLocale()` |
+| `src/settings.js` | `BUILTIN_LANGUAGES`, `getAvailableLanguages()`, `getUserLanguage()`, `setUserLanguage()`, `syncLanguageFromUser()`, `resolveAutoLanguage()`, `currentLanguage` ref |
+| `src/locales/en.json` | English translations (source of truth) |
+| `src/locales/*.json` | Translations for fr, de, es, it, pt, nl, pl (must be key-synced with `en.json`) |
+| `src/__tests__/locales.test.js` | Automated key sync test — validates keys, empty values, and placeholder tokens |
+| `src/components/DropdownPicker.vue` | Generic shared dropdown (scrollbar, click-outside, transitions, flags) |
+| `src/components/LanguagePicker.vue` | Thin wrapper over `DropdownPicker`, supplies globe icon + language data |
+| `e2e/language-picker.spec.js` | Language picker e2e tests (visibility, dropdown, localStorage, wildcards, flags) |
+
+### Translation Conventions
+
+1. **Template strings**: Use `$t('namespace.key')` or <code v-pre>{{ $t('namespace.key') }}</code> in templates
+2. **Script strings**: Destructure `const { t: $t } = useI18n()` and call `$t('...')`
+3. **Parameterized**: `$t('key', { name: value })` with `{name}` placeholders in JSON
+4. **Component interpolation**: Use `<i18n-t keypath="..." tag="p">` for strings with embedded HTML/components
+5. **Utility functions**: Functions in `utils.js` (`quotaLabel`, `ttlLabel`, `defaultSizeHint`, `defaultTTLHint`) accept an optional `t` function as second argument for translation
+
+### Key Namespaces
+
+Keys are grouped by component: `common.*`, `header.*`, `uploadSidebar.*`, `downloadSidebar.*`, `fileRow.*`, `badges.*`, `uploadView.*`, `downloadView.*`, `homeView.*`, `adminView.*`, `loginView.*`, `clientsView.*`, `cliAuth.*`, `errorView.*`, `editUser.*`, `uploadCard.*`, `uploadControls.*`, `api.*`, `languagePicker.*`.
+
+### Adding a New Locale
+
+1. Copy `src/locales/en.json` → `src/locales/<code>.json` and translate all values
+2. Add the language to `BUILTIN_LANGUAGES` in `src/settings.js` (with name, label, and flag SVG)
+3. Import the locale file in `src/i18n.js` and add to the `messages` object
+
+### Gotchas
+
+- **All locale files must have identical keys to en.json** — verified automatically by `src/__tests__/locales.test.js` (run with `npm test`). The test also checks for empty values and placeholder token mismatches.
+- **Flag emojis don't render on Linux** — flags are SVG files in `webapp/public/flags/` (same pattern as themes in `themes/`)
+- **TTL_UNITS** have both `label` (English fallback) and `i18nKey` (for `$t()` in templates)
+- **`formatDate()`** uses `toLocaleDateString(undefined, ...)` which auto-localizes via the browser locale
+
+### Known Limitations
+
+- **Server-side errors are English-only**: The Go backend returns error messages in English (e.g. `"Invalid credentials"`, `"Upload not found"`). These propagate to the UI as-is. Only client-side error messages (network errors, fallback text) are translated via the `api.*` i18n keys. Server-side i18n would require a significant backend refactor and is out of scope for now.
 
 ---
 

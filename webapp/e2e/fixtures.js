@@ -137,6 +137,35 @@ export const test = base.extend({
     },
 
     /**
+     * Convenience wrapper: intercepts settings.json with language picker config.
+     * Merges `{ name: 'Plik', language: 'auto', languages }` with optional extras.
+     * Must be called BEFORE page.goto().
+     *
+     * Usage:
+     *   test('my test', async ({ page, withLanguages }) => {
+     *       await withLanguages(['en', 'fr', 'de'])
+     *       await page.goto('/')
+     *   })
+     */
+    withLanguages: async ({ page }, use) => {
+        async function withLanguages(languages, extra = {}) {
+            await page.route('**/settings.json', async (route) => {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({
+                        name: 'Plik',
+                        language: 'auto',
+                        languages,
+                        ...extra,
+                    }),
+                })
+            })
+        }
+        await use(withLanguages)
+    },
+
+    /**
      * Provides a page that is already authenticated as the admin user.
      * Login is done via the API (faster than filling the form).
      */

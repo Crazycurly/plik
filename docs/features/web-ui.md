@@ -25,7 +25,7 @@ Edit `settings.json` to change the app name, theme, background, and more. The fi
   // Path to a logo image (e.g. "/img/logo.png"). When set, replaces the text logo.
   "logo": "",
 
-  // Theme: "dark", "light", "auto" (OS preference), or a custom theme name
+  // Default theme: "dark", "light", "auto" (OS preference), or a custom theme name
   // matching a CSS file in the themes/ directory (e.g. "solarized-dark")
   "theme": "auto",
 
@@ -38,6 +38,13 @@ Edit `settings.json` to change the app name, theme, background, and more. The fi
 
   // Theme used by "auto" when the OS prefers light mode (default: "light")
   "defaultLightTheme": "light",
+
+  // Default language: "auto" (detect from browser), "en", "fr", etc.
+  // See [Internationalization](./internationalization) for details.
+  "language": "auto",
+
+  // Available languages in the picker ("*" = all built-in, [] = English only)
+  "languages": ["*"],
 
   // Background image path (e.g. "/img/background.jpg")
   "backgroundImage": "",
@@ -52,11 +59,18 @@ Edit `settings.json` to change the app name, theme, background, and more. The fi
   "customCSS": "",
 
   // Path to a custom JavaScript file (e.g. "/js/custom.js")
-  "customJS": ""
+  "customJS": "",
+
+  // Custom footer HTML (e.g. "Powered by <a href='https://plik.root.gg'>Plik</a>")
+  "footer": ""
 }
 ```
 
 Custom CSS and JS are loaded only when their path is set (empty = disabled, no extra HTTP requests).
+
+::: tip Internationalized Customizations
+The `footer` and other runtime customizations are static HTML. To make them react to language changes, use `customJS` with a MutationObserver — see [Internationalized Customizations](./internationalization#internationalized-customizations) for a worked example.
+:::
 
 To use a background image, place it at `img/background.jpg` and set `"backgroundImage": "/img/background.jpg"`.
 
@@ -142,9 +156,25 @@ docker run -p 8080:8080 \
   rootgg/plik
 ```
 
-## Features
+## Authentication
 
-### Inline File Viewer
+Plik supports local accounts, Google OAuth, GitHub OAuth, and OpenID Connect.
+
+→ [Authentication](./authentication)
+
+## Encryption
+
+Client-side end-to-end encryption using [age](https://age-encryption.org/). Files are encrypted in the browser before upload — the server never sees plaintext.
+
+→ [End-to-End Encryption](./encryption)
+
+## Internationalization
+
+The web UI supports 10 built-in languages with automatic browser detection, a language picker, and persistent user preferences.
+
+→ [Internationalization](./internationalization)
+
+## Inline File Viewer
 
 The web interface includes an inline file viewer for text files (code, logs, markdown, etc.), images, video and audio.
 

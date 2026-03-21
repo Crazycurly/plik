@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { auth, logout } from '../authStore.js'
 import { config, isFeatureEnabled } from '../config.js'
 import ErrorBanner from '../components/ErrorBanner.vue'
@@ -21,6 +22,7 @@ import UploadCard from '../components/UploadCard.vue'
 
 const router = useRouter()
 const route = useRoute()
+const { t: $t } = useI18n()
 
 // ── Display mode ──
 const tokenFilter = ref(null)
@@ -74,7 +76,7 @@ async function loadUserStats() {
     try {
         userStats.value = await getUserStatistics()
     } catch (e) {
-        error.value = 'Failed to load user stats'
+        error.value = $t('homeView.failedToLoadStats')
     } finally {
         statsLoading.value = false
     }
@@ -127,7 +129,7 @@ async function loadUploads(more = false) {
         uploadsCursor.value = data.after || null
         uploadsTotal.value = data.total ?? null
     } catch (err) {
-        error.value = 'Could not load uploads'
+        error.value = $t('homeView.failedToLoadUploads')
     } finally {
         uploadsLoading.value = false
     }
@@ -135,13 +137,13 @@ async function loadUploads(more = false) {
 
 async function handleDeleteUpload(upload) {
     confirm.value = {
-        message: `Delete upload ${upload.id}?`,
+        message: $t('homeView.deleteUploadConfirm', { id: upload.id }),
         action: async () => {
             try {
                 await removeUpload(upload.id, upload.uploadToken)
                 uploads.value = uploads.value.filter(u => u.id !== upload.id)
             } catch (err) {
-                error.value = 'Could not delete upload'
+                error.value = $t('homeView.failedToDeleteUpload')
             }
             confirm.value = null
         }
@@ -149,16 +151,16 @@ async function handleDeleteUpload(upload) {
 }
 
 async function handleDeleteAllUploads() {
-    const label = tokenFilter.value ? `all uploads for token ${tokenFilter.value}` : 'ALL your uploads'
+    const label = tokenFilter.value ? $t('homeView.allUploadsForToken', { token: tokenFilter.value }) : $t('homeView.allYourUploads')
     confirm.value = {
-        message: `Delete ${label}? This cannot be undone.`,
+        message: $t('homeView.deleteAllUploadsConfirm', { label }),
         action: async () => {
             try {
                 await deleteUserUploads(tokenFilter.value)
                 uploads.value = []
                 uploadsCursor.value = null
             } catch (err) {
-                error.value = 'Could not delete uploads'
+                error.value = $t('homeView.failedToDeleteUploads')
             }
             confirm.value = null
         }
@@ -229,7 +231,7 @@ async function loadTokens(more = false) {
         }
         tokensCursor.value = data.after || null
     } catch (err) {
-        error.value = 'Could not load tokens'
+        error.value = $t('homeView.failedToLoadTokens')
     } finally {
         tokensLoading.value = false
     }
@@ -241,24 +243,24 @@ async function handleCreateToken() {
         tokens.value = [token, ...tokens.value]
         newTokenComment.value = ''
     } catch (err) {
-        error.value = 'Could not create token'
+        error.value = $t('homeView.failedToCreateToken')
     }
 }
 
 async function handleDeleteTokenUploads(token) {
     const label = token.comment || token.token.substring(0, 8) + '...'
     confirm.value = {
-        message: `Delete all uploads for token "${label}"? The token itself will not be revoked.`,
+        message: $t('homeView.deleteTokenUploadsConfirm', { label }),
         action: async () => {
             try {
                 const result = await deleteUserUploads(token.token)
                 confirm.value = null
                 // Show feedback (backend returns "X uploads removed")
-                successMessage.value = typeof result === 'string' ? result : 'Uploads removed'
+                successMessage.value = typeof result === 'string' ? result : $t('homeView.uploadsRemoved')
                 setTimeout(() => { successMessage.value = '' }, 3000)
             } catch (err) {
                 confirm.value = null
-                error.value = 'Could not delete token uploads'
+                error.value = $t('homeView.failedToDeleteTokenUploads')
             }
         }
     }
@@ -266,13 +268,13 @@ async function handleDeleteTokenUploads(token) {
 
 async function handleRevokeToken(token) {
     confirm.value = {
-        message: `Revoke token ${token.token.substring(0, 8)}...? Uploads created with this token will remain.`,
+        message: $t('homeView.revokeTokenConfirm', { token: token.token.substring(0, 8) + '...' }),
         action: async () => {
             try {
                 await revokeToken(token.token)
                 tokens.value = tokens.value.filter(t => t.token !== token.token)
             } catch (err) {
-                error.value = 'Could not revoke token'
+                error.value = $t('homeView.failedToRevokeToken')
             }
             confirm.value = null
         }
@@ -287,14 +289,14 @@ async function handleLogout() {
 
 async function handleDeleteAccount() {
     confirm.value = {
-        message: 'Delete your account and ALL uploads? This cannot be undone.',
+        message: $t('homeView.deleteAccountConfirm'),
         action: async () => {
             try {
                 await deleteAccount()
                 auth.user = null
                 router.push('/')
             } catch (err) {
-                error.value = 'Could not delete account'
+                error.value = $t('homeView.failedToDeleteAccount')
             }
             confirm.value = null
         }
@@ -460,7 +462,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            Stats
+            {{ $t('homeView.stats') }}
           </button>
 
           <button @click="showUploads"
@@ -472,7 +474,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
-            Uploads
+            {{ $t('homeView.uploads') }}
           </button>
 
           <button @click="showTokens"
@@ -484,7 +486,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
-            Tokens
+            {{ $t('homeView.tokens') }}
           </button>
         </div>
 
@@ -497,7 +499,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            Sign out
+            {{ $t('homeView.signOut') }}
           </button>
 
           <button v-if="auth.user?.provider === 'local'"
@@ -508,7 +510,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            Edit account
+            {{ $t('homeView.editAccount') }}
           </button>
 
           <button v-if="display === 'uploads'"
@@ -519,7 +521,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            Delete uploads
+            {{ $t('homeView.deleteUploads') }}
           </button>
 
           <button v-if="isFeatureEnabled('delete_account')"
@@ -530,7 +532,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
-            Delete account
+            {{ $t('homeView.deleteAccount') }}
           </button>
         </div>
       </aside>
@@ -551,53 +553,53 @@ onMounted(() => {
 
         <!-- ─── Stats View ─── -->
         <template v-if="display === 'stats'">
-          <div v-if="statsLoading" class="text-center py-12 text-surface-500">Loading stats...</div>
+          <div v-if="statsLoading" class="text-center py-12 text-surface-500">{{ $t('homeView.loadingStats') }}</div>
 
           <div v-else class="space-y-4">
             <!-- User Configuration -->
             <div class="glass-card p-5">
-              <h3 class="text-sm text-surface-400 uppercase tracking-wider mb-4">User Configuration</h3>
+              <h3 class="text-sm text-surface-400 uppercase tracking-wider mb-4">{{ $t('homeView.userConfiguration') }}</h3>
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                 <div>
-                  <p class="text-xs text-surface-500">Max File Size</p>
-                  <p class="text-surface-200 font-medium">{{ quotaLabel(auth.user?.maxFileSize) }}</p>
-                  <p v-if="!auth.user?.maxFileSize && config.maxFileSize" class="text-xs text-surface-500">({{ quotaLabel(config.maxFileSize) }})</p>
+                  <p class="text-xs text-surface-500">{{ $t('homeView.maxFileSize') }}</p>
+                  <p class="text-surface-200 font-medium">{{ quotaLabel(auth.user?.maxFileSize, $t) }}</p>
+                  <p v-if="!auth.user?.maxFileSize && config.maxFileSize" class="text-xs text-surface-500">({{ quotaLabel(config.maxFileSize, $t) }})</p>
                 </div>
                 <div>
-                  <p class="text-xs text-surface-500">Max User Size</p>
-                  <p class="text-surface-200 font-medium">{{ quotaLabel(auth.user?.maxUserSize) }}</p>
-                  <p v-if="!auth.user?.maxUserSize && config.maxUserSize" class="text-xs text-surface-500">({{ quotaLabel(config.maxUserSize) }})</p>
+                  <p class="text-xs text-surface-500">{{ $t('homeView.maxUserSize') }}</p>
+                  <p class="text-surface-200 font-medium">{{ quotaLabel(auth.user?.maxUserSize, $t) }}</p>
+                  <p v-if="!auth.user?.maxUserSize && config.maxUserSize" class="text-xs text-surface-500">({{ quotaLabel(config.maxUserSize, $t) }})</p>
                 </div>
                 <div>
-                  <p class="text-xs text-surface-500">Default TTL</p>
-                  <p class="text-surface-200 font-medium">{{ ttlLabel(effectiveDefaultTTL) }}</p>
+                  <p class="text-xs text-surface-500">{{ $t('homeView.defaultTTL') }}</p>
+                  <p class="text-surface-200 font-medium">{{ ttlLabel(effectiveDefaultTTL, $t) }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-surface-500">Max TTL</p>
-                  <p class="text-surface-200 font-medium">{{ ttlLabel(auth.user?.maxTTL) }}</p>
-                  <p v-if="!auth.user?.maxTTL && config.maxTTL" class="text-xs text-surface-500">({{ ttlLabel(config.maxTTL) }})</p>
+                  <p class="text-xs text-surface-500">{{ $t('homeView.maxTTL') }}</p>
+                  <p class="text-surface-200 font-medium">{{ ttlLabel(auth.user?.maxTTL, $t) }}</p>
+                  <p v-if="!auth.user?.maxTTL && config.maxTTL" class="text-xs text-surface-500">({{ ttlLabel(config.maxTTL, $t) }})</p>
                 </div>
               </div>
             </div>
 
             <!-- User Statistics -->
             <div class="glass-card p-5">
-              <h3 class="text-sm text-surface-400 uppercase tracking-wider mb-4">User Statistics</h3>
+              <h3 class="text-sm text-surface-400 uppercase tracking-wider mb-4">{{ $t('homeView.userStatistics') }}</h3>
               <div v-if="userStats" class="grid grid-cols-3 gap-6 text-center">
                 <div>
                   <p class="text-2xl font-bold text-surface-200">{{ userStats.uploads }}</p>
-                  <p class="text-xs text-surface-500">Uploads</p>
+                  <p class="text-xs text-surface-500">{{ $t('homeView.uploads') }}</p>
                 </div>
                 <div>
                   <p class="text-2xl font-bold text-surface-200">{{ userStats.files }}</p>
-                  <p class="text-xs text-surface-500">Files</p>
+                  <p class="text-xs text-surface-500">{{ $t('homeView.files') }}</p>
                 </div>
                 <div>
                   <p class="text-2xl font-bold text-surface-200">{{ humanReadableSize(userStats.totalSize) }}</p>
-                  <p class="text-xs text-surface-500">Total Size</p>
+                  <p class="text-xs text-surface-500">{{ $t('homeView.totalSize') }}</p>
                 </div>
               </div>
-              <p v-else class="text-sm text-surface-500 text-center py-2">No stats available</p>
+              <p v-else class="text-sm text-surface-500 text-center py-2">{{ $t('homeView.noStatsAvailable') }}</p>
             </div>
           </div>
         </template>
@@ -631,13 +633,13 @@ onMounted(() => {
           <!-- Loading -->
           <div v-if="uploadsLoading && uploads.length === 0"
                class="text-center py-12 text-surface-500">
-            Loading uploads...
+            {{ $t('homeView.loadingUploads') }}
           </div>
 
           <!-- Empty state -->
           <div v-else-if="uploads.length === 0"
                class="text-center py-12 text-surface-500">
-            No uploads yet
+            {{ $t('homeView.noUploadsYet') }}
           </div>
 
           <!-- Upload cards -->
@@ -655,7 +657,7 @@ onMounted(() => {
                     class="w-full glass-card p-3 text-sm text-surface-400 hover:text-surface-100
                            hover:bg-surface-700/30 transition-colors text-center"
                     :disabled="uploadsLoading">
-              {{ uploadsLoading ? 'Loading...' : 'Load more uploads' }}
+              {{ uploadsLoading ? $t('common.loading') : $t('homeView.loadMoreUploads') }}
             </button>
           </div>
         </template>
@@ -666,19 +668,17 @@ onMounted(() => {
           <!-- Create token -->
           <div class="glass-card p-4 mb-4 space-y-3">
             <p class="text-sm text-surface-400 text-center">
-              Tokens authenticate the CLI client. Add them to your
-              <span class="font-mono text-surface-300">~/.plikrc</span>
-              file.
+              {{ $t('homeView.tokenDescription', { config: '~/.plikrc' }) }}
             </p>
             <div class="flex gap-2">
               <input type="text"
                      v-model="newTokenComment"
                      class="input-field flex-1"
-                     placeholder="Comment (optional)"
+                     :placeholder="$t('homeView.commentOptional')"
                      @keyup.enter="handleCreateToken" />
               <button @click="handleCreateToken"
                       class="btn-primary px-4 text-sm whitespace-nowrap">
-                Create token
+                {{ $t('homeView.createToken') }}
               </button>
             </div>
           </div>
@@ -686,13 +686,13 @@ onMounted(() => {
           <!-- Loading -->
           <div v-if="tokensLoading && tokens.length === 0"
                class="text-center py-12 text-surface-500">
-            Loading tokens...
+            {{ $t('homeView.loadingTokens') }}
           </div>
 
           <!-- Empty state -->
           <div v-else-if="tokens.length === 0"
                class="text-center py-8 text-surface-500">
-            No tokens yet
+            {{ $t('homeView.noTokensYet') }}
           </div>
 
           <!-- Token list -->
@@ -706,7 +706,7 @@ onMounted(() => {
                   <button @click="filterByToken(token.token)"
                           class="font-mono text-xs text-accent-400/70 hover:text-accent-300 transition-colors
                                  truncate text-left"
-                          :title="'Show uploads for this token'">
+                          :title="$t('homeView.showUploadsForToken')">
                     {{ token.token }}
                   </button>
                   <CopyButton :text="token.token" size="sm" />
@@ -719,13 +719,13 @@ onMounted(() => {
                       class="text-xs text-orange-400 hover:text-orange-300
                              border border-orange-500/30
                              rounded-lg px-3 py-1.5 hover:bg-amber-500/10 transition-colors shrink-0"
-                      title="Delete all uploads created with this token">
-                Delete Uploads
+                      :title="$t('homeView.deleteTokenUploads')">
+                {{ $t('homeView.deleteTokenUploads') }}
               </button>
               <button @click="handleRevokeToken(token)"
                       class="text-xs text-red-400 hover:text-red-300 border border-red-500/30
                              rounded-lg px-3 py-1.5 hover:bg-red-500/10 transition-colors shrink-0">
-                Revoke
+                {{ $t('homeView.revokeToken') }}
               </button>
             </div>
           </div>
@@ -736,7 +736,7 @@ onMounted(() => {
                     class="w-full glass-card p-3 text-sm text-surface-400 hover:text-surface-100
                            hover:bg-surface-700/30 transition-colors text-center"
                     :disabled="tokensLoading">
-              {{ tokensLoading ? 'Loading...' : 'Load more tokens' }}
+              {{ tokensLoading ? $t('common.loading') : $t('homeView.loadMoreTokens') }}
             </button>
           </div>
         </template>
@@ -754,8 +754,8 @@ onMounted(() => {
                    v-model:ttl-unit="editTTLUnit"
                    :error="editError"
                    :saving="editSaving"
-                   title="Edit Account"
-                   quota-header="Admin Settings"
+                   :title="$t('homeView.editAccountTitle')"
+                   :quota-header="$t('homeView.adminSettings')"
                    :show-quotas="auth.user?.admin"
                    @save="saveEditAccount" />
   </div>

@@ -1,6 +1,10 @@
 // Plik API Service
 // Thin fetch() wrappers for all Plik server endpoints
 
+import i18n from './i18n.js'
+
+const t = (...args) => i18n.global.t(...args)
+
 const base = window.location.origin + window.location.pathname.replace(/\/$/, '')
 
 // Impersonate state — set by authStore, injected in every request
@@ -47,11 +51,11 @@ async function apiCall(url, method = 'GET', data = null, headers = {}) {
         resp = await fetch(url, opts)
     } catch (err) {
         // Network errors (offline, DNS, CORS, server down)
-        throw { status: 0, message: 'Network error \u2014 server may be unreachable', originalError: err.message }
+        throw { status: 0, message: t('api.networkError'), originalError: err.message }
     }
 
     if (!resp.ok) {
-        let message = 'Unknown error'
+        let message = t('api.unknownError')
         try {
             const text = await resp.text()
             try {
@@ -294,7 +298,7 @@ export function uploadFile(upload, fileEntry, onProgress, basicAuth, onStart) {
                     resolve(null)
                 }
             } else {
-                let message = `Upload failed (${xhr.status})`
+                let message = t('api.uploadFailed', { status: xhr.status })
                 try {
                     const body = JSON.parse(xhr.responseText)
                     message = body.message || message
@@ -307,11 +311,11 @@ export function uploadFile(upload, fileEntry, onProgress, basicAuth, onStart) {
         })
 
         xhr.addEventListener('error', () => {
-            reject({ status: 0, message: 'Upload connection lost \u2014 check your network' })
+            reject({ status: 0, message: t('api.uploadConnectionLost') })
         })
 
         xhr.addEventListener('abort', () => {
-            reject({ status: 0, message: 'Upload cancelled', cancelled: true })
+            reject({ status: 0, message: t('api.uploadCancelled'), cancelled: true })
         })
     })
 
