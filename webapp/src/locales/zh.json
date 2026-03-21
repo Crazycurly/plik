@@ -410,5 +410,8 @@
         "pl": "Polski",
         "zh": "中文",
         "ru": "Русский"
+    },
+    "footer": {
+        "abuseContact": "如需举报滥用行为，请联系 {link}"
     }
 }

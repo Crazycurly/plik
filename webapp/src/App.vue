@@ -1,8 +1,11 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppHeader from './components/AppHeader.vue'
 import { settings } from './settings.js'
 import { config } from './config.js'
+
+const { t } = useI18n()
 
 const bgStyle = computed(() => {
     const style = {}
@@ -28,7 +31,8 @@ const hasBackground = computed(() => !!settings.backgroundImage)
 const footerHTML = computed(() => {
     if (settings.footer) return settings.footer
     if (config.abuseContact) {
-        return `For abuse contact <a href="mailto:${config.abuseContact}" class="underline hover:text-surface-200">${config.abuseContact}</a>`
+        const link = `<a href="mailto:${config.abuseContact}" class="underline hover:text-surface-200">${config.abuseContact}</a>`
+        return t('footer.abuseContact', { link })
     }
     return ''
 })

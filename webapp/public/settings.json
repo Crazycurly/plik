@@ -3,7 +3,7 @@
   "name": "Plik",
   // Path to a logo image (e.g. "/img/logo.png"). When set, replaces the text logo.
   "logo": "",
-  // Theme: "dark", "light", or "auto" (follows user's OS preference)
+  // Default theme: "dark", "light", or "auto" (follows user's OS preference)
   "theme": "auto",
   // Available themes in the picker ("*" = all built-in themes, [] = dark only)
   // Examples: ["dark", "light"] or ["dark", "catppuccin-mocha", "nord"]
@@ -14,7 +14,7 @@
   "defaultDarkTheme": "dark",
   // Theme used by "auto" when the OS prefers light mode (default: "light")
   "defaultLightTheme": "light",
-  // Language: "auto" (detect from browser), "en", "fr", etc.
+  // Default language: "auto" (detect from browser), "en", "fr", etc.
   "language": "auto",
   // Available languages in the picker ("*" = all built-in, [] = English only)
   "languages": [

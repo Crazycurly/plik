@@ -410,5 +410,8 @@
         "es": "Español",
         "zh": "中文",
         "nl": "Nederlands"
+    },
+    "footer": {
+        "abuseContact": "For abuse contact {link}"
     }
 }

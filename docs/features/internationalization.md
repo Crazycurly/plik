@@ -25,7 +25,7 @@ Plik supports multiple languages in the web interface, with automatic detection 
 
 ## Configuration
 
-Language settings are configured in `settings.json`:
+Language settings are configured in [`settings.json`](./web-ui#settings):
 
 ```jsonc
 {
@@ -39,9 +39,9 @@ Language settings are configured in `settings.json`:
 
 ### Language Picker
 
-Users can switch languages via the globe icon in the header. The selected language persists across page reloads via localStorage. For authenticated users, the preference is also saved to their account.
+Users can switch languages via the globe icon in the header. The selected language persists across page reloads via localStorage. For authenticated users, the preference is also saved to their account — it follows them across devices and browsers automatically.
 
-To control which languages appear in the picker:
+To control which languages appear in the picker, set the `languages` array in `settings.json`:
 
 ```jsonc
 // All built-in languages (default)
@@ -129,8 +129,81 @@ npm run build   # Verify production build
 If you want your language available in the picker by default, the `["*"]` wildcard in `settings.json` will automatically include it. For custom deployments, add it explicitly:
 
 ```jsonc
-"languages": ["auto", "en", "fr", "XX"]
+"languages": ["XX"]
 ```
+
+## Internationalized Customizations
+
+Runtime customizations like the `footer` in `settings.json` are static HTML — they don't change when the user switches language. To make them language-aware, use `customJS` with a [`MutationObserver`](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) that reacts to locale changes.
+
+### How It Works
+
+When the user switches language, Plik sets `document.documentElement.lang` to the new locale (e.g. `"fr"`, `"de"`). A custom script can observe this attribute and swap content accordingly.
+
+### Example: Internationalized Footer
+
+**`settings.json`**:
+
+```jsonc
+{
+  "customJS": "/js/custom.js",
+  // Fallback shown before custom.js loads
+  "footer": "For abuse contact <a href='mailto:abuse@example.com'>abuse@example.com</a>"
+}
+```
+
+**`js/custom.js`**:
+
+```javascript
+;(function () {
+    const link = '<a href="mailto:abuse@example.com" class="underline hover:text-surface-200">abuse@example.com</a>'
+
+    // Translated footer per locale — add new languages here
+    const footers = {
+        en: `For abuse contact ${link}`,
+        fr: `Pour signaler un abus, contactez ${link}`,
+        de: `Bei Missbrauch kontaktieren Sie ${link}`,
+        es: `Para reportar abuso, contacte ${link}`,
+        it: `Per segnalare un abuso, contattare ${link}`,
+        pt: `Para denunciar abuso, contacte ${link}`,
+        nl: `Voor misbruik neem contact op met ${link}`,
+        pl: `Aby zgłosić nadużycie, skontaktuj się z ${link}`,
+        zh: `如需举报滥用行为，请联系 ${link}`,
+        ru: `Для сообщения о нарушениях свяжитесь с ${link}`,
+    }
+
+    function updateFooter() {
+        const lang = document.documentElement.lang || 'en'
+        const el = document.querySelector('footer')
+        if (el) el.innerHTML = footers[lang] || footers.en
+    }
+
+    // Re-translate footer whenever the user switches language (lives for the page lifetime)
+    const langObserver = new MutationObserver(updateFooter)
+    langObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] })
+
+    // First run — wait for Vue to render the <footer> element
+    const domObserver = new MutationObserver(() => {
+        if (document.querySelector('footer')) {
+            updateFooter()
+            domObserver.disconnect()
+        }
+    })
+    domObserver.observe(document.body, { childList: true, subtree: true })
+})()
+```
+
+::: tip Docker
+Mount `custom.js` alongside `settings.json`:
+```bash
+docker run -p 8080:8080 \
+  -v ./settings.json:/home/plik/server/webapp/dist/settings.json:ro \
+  -v ./custom.js:/home/plik/server/webapp/dist/js/custom.js:ro \
+  rootgg/plik
+```
+:::
+
+This same pattern works for any element — not just the footer. Observe `document.documentElement.lang` and swap content based on the active locale.
 
 ## Known Limitations
 

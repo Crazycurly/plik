@@ -410,5 +410,8 @@
         "pl": "Polski",
         "zh": "中文",
         "ru": "Русский"
+    },
+    "footer": {
+        "abuseContact": "Para denunciar abuso, contacte {link}"
     }
 }
