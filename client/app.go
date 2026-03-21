@@ -260,14 +260,6 @@ func (cli *PlikCLI) Run(client *plik.Client) error {
 func (cli *PlikCLI) info(client *plik.Client) error {
 	cli.printAlways("Plik client version : %s\n\n", common.GetBuildInfo())
 
-	// Profile information
-	if cli.Config.ActiveProfile != "" {
-		cli.printAlways("Active profile : %s\n", cli.Config.ActiveProfile)
-	}
-	if len(cli.Config.AvailableProfiles) > 0 {
-		cli.printAlways("Available profiles : %s\n", strings.Join(cli.Config.AvailableProfiles, ", "))
-	}
-
 	cli.printAlways("Plik server url : %s\n", cli.Config.URL)
 
 	serverBuildInfo, err := client.GetServerVersion()
@@ -284,6 +276,17 @@ func (cli *PlikCLI) info(client *plik.Client) error {
 
 	cli.printAlways("\nPlik server configuration :\n")
 	cli.printAlways("%s", serverConfig.String())
+
+	// Profile information (at the end for readability)
+	if cli.Config.ActiveProfile != "" || len(cli.Config.AvailableProfiles) > 0 {
+		cli.printAlways("\n")
+	}
+	if cli.Config.ActiveProfile != "" {
+		cli.printAlways("Active profile : %s\n", cli.Config.ActiveProfile)
+	}
+	if len(cli.Config.AvailableProfiles) > 0 {
+		cli.printAlways("Available profiles : %s\n", strings.Join(cli.Config.AvailableProfiles, ", "))
+	}
 
 	return nil
 }

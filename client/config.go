@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"reflect"
@@ -18,39 +19,55 @@ import (
 	"github.com/root-gg/plik/server/common"
 )
 
-// CliConfig object
+// CliConfig holds all CLI client configuration fields.
+// Fields are grouped logically; this order determines TOML serialization order.
 type CliConfig struct {
-	Debug          bool
-	Quiet          bool
-	JSON           bool
-	Yes            bool
-	URL            string
-	OneShot        bool
-	Removable      bool
-	Stream         bool
-	Secure         bool
-	SecureMethod   string
-	SecureOptions  map[string]any
-	Archive        bool
-	ArchiveMethod  string
-	ArchiveOptions map[string]any
-	DownloadBinary string
-	Comments       string
-	Login          string
-	Password       string
-	TTL            int
-	ExtendTTL      bool
-	AutoUpdate     bool
-	Token          string
-	DisableStdin   bool
-	Insecure       bool
-	ConfigPath     string `toml:"-" profile:"-"`
+	// --- Server ---
+	URL      string // Plik server URL
+	Token    string // Authentication token (created via web UI or --login)
+	Insecure bool   // Skip TLS certificate validation
 
-	ActiveProfile     string   `toml:"-" profile:"-"`
-	AvailableProfiles []string `toml:"-" profile:"-"`
+	// --- Upload defaults ---
+	OneShot   bool   // Delete file after first download (if available server side)
+	Removable bool   // Allow anyone to delete the file (if available server side)
+	Stream    bool   // Block until remote user starts downloading (if available server side)
+	TTL       int    // Upload time-to-live in seconds (0 = server default)
+	ExtendTTL bool   // Extend expiration on access (if available server side)
+	Comments  string // Default upload comments (Markdown)
 
-	filePaths        []string
-	filenameOverride string
+	// --- Authentication ---
+	Login    string // HTTP basic auth login
+	Password string // HTTP basic auth password
+
+	// --- Archive ---
+	Archive        bool           // Archive files before upload
+	ArchiveMethod  string         // Archive backend: tar | zip
+	ArchiveOptions map[string]any // Backend-specific options (Tar, Compress, Options)
+
+	// --- Encryption ---
+	Secure        bool           // Encrypt files before upload
+	SecureMethod  string         // Crypto backend: age | openssl | pgp
+	SecureOptions map[string]any // Backend-specific options (Passphrase, Cipher, etc.)
+
+	// --- Output ---
+	Debug          bool   // Verbose debug output
+	Quiet          bool   // Suppress non-essential output
+	JSON           bool   // Output upload metadata as JSON (implies Quiet)
+	DownloadBinary string // Download command for output: curl | wget
+
+	// --- Behavior ---
+	AutoUpdate     bool   // Auto-update client binary from server
+	DisableStdin   bool   // Disable STDIN pipe input by default
+	Yes            bool   // Auto-accept confirmation prompts (non-interactive)
+	DefaultProfile string `profile:"-"` // Default profile name
+
+	// --- Runtime (not serialized, not merged from profiles) ---
+	ConfigPath        string   `toml:"-" profile:"-"` // Path to the loaded config file
+	ActiveProfile     string   `toml:"-" profile:"-"` // Resolved profile name
+	AvailableProfiles []string `toml:"-" profile:"-"` // All profile names from config
+
+	filePaths        []string // Upload file paths (from CLI args)
+	filenameOverride string   // Filename override (--name flag)
 }
 
 // PlikrcFile is the on-disk representation of .plikrc.
@@ -58,23 +75,309 @@ type CliConfig struct {
 // named profiles and a default profile selector.
 type PlikrcFile struct {
 	CliConfig
-	Profiles       map[string]CliConfig `toml:"Profiles,omitempty"`
-	DefaultProfile string               `toml:"DefaultProfile,omitempty"`
+	Profiles map[string]CliConfig `toml:"Profiles,omitempty"`
+
+	metadata toml.MetaData // unexported; set after DecodeFile, used by writeProfileSection
 }
 
 // NewUploadConfig construct a new configuration with default values
 func NewUploadConfig() (config *CliConfig) {
 	config = new(CliConfig)
+
+	// Server
 	config.URL = "http://127.0.0.1:8080"
+
+	// Archive
 	config.ArchiveMethod = "tar"
-	config.ArchiveOptions = make(map[string]any)
-	config.ArchiveOptions["Tar"] = "/bin/tar"
-	config.ArchiveOptions["Compress"] = "gzip"
-	config.ArchiveOptions["Options"] = ""
+	config.ArchiveOptions = map[string]any{
+		"Compress": "gzip",
+		"Tar":      "/bin/tar",
+		"Options":  "",
+	}
+
+	// Encryption
 	config.SecureMethod = "age"
 	config.SecureOptions = make(map[string]any)
+
+	// Output
 	config.DownloadBinary = "curl"
+
 	return
+}
+
+// configLine writes a TOML key-value pair with an inline comment, padded to
+// align comments across lines. Uses a minimum column width of 32 characters
+// for the key-value part, but always ensures at least one space before the comment.
+func configLine(w io.Writer, kv, comment string) {
+	const minCol = 32
+	pad := max(minCol-len(kv), 1)
+	fmt.Fprintf(w, "%s%*s# %s\n", kv, pad, "", comment)
+}
+
+// writeConfig writes a PlikrcFile as human-readable, commented TOML.
+// This produces the same format as the .plikrc template, with logical grouping
+// and inline comments. Used by both the first-run wizard and saveToken.
+//
+// TOML requires all bare key-value pairs (scalars) before any [Table] sections.
+// Once a [Table] header appears, all subsequent bare keys belong to that table
+// until a new section starts. Therefore we write: scalars → tables → profiles.
+func writeConfig(w io.Writer, plikrc *PlikrcFile) error {
+	c := &plikrc.CliConfig
+
+	// ── Scalar fields (must come before any [Table] section) ──
+
+	// --- Server ---
+	fmt.Fprintf(w, "# --- Server ---\n")
+	configLine(w, fmt.Sprintf("URL = %q", c.URL), "URL of the plik server")
+	configLine(w, fmt.Sprintf("Token = %q", c.Token), "Authentication token (created via web UI or --login)")
+	configLine(w, fmt.Sprintf("Insecure = %t", c.Insecure), "Skip TLS certificate validation")
+	fmt.Fprintln(w)
+
+	// --- Upload defaults ---
+	fmt.Fprintf(w, "# --- Upload defaults ---\n")
+	configLine(w, fmt.Sprintf("OneShot = %t", c.OneShot), "Delete file after first download (if available server side)")
+	configLine(w, fmt.Sprintf("Removable = %t", c.Removable), "Allow anyone to delete the file (if available server side)")
+	configLine(w, fmt.Sprintf("Stream = %t", c.Stream), "Stream upload, blocks until download starts (if available server side)")
+	configLine(w, fmt.Sprintf("TTL = %d", c.TTL), "Upload time-to-live in seconds (0 = server default)")
+	configLine(w, fmt.Sprintf("ExtendTTL = %t", c.ExtendTTL), "Extend expiration on access (if available server side)")
+	configLine(w, fmt.Sprintf("Comments = %q", c.Comments), "Default upload comments (Markdown)")
+	fmt.Fprintln(w)
+
+	// --- Authentication ---
+	fmt.Fprintf(w, "# --- Authentication ---\n")
+	configLine(w, fmt.Sprintf("Login = %q", c.Login), "HTTP basic auth login")
+	configLine(w, fmt.Sprintf("Password = %q", c.Password), "HTTP basic auth password")
+	fmt.Fprintln(w)
+
+	// --- Archive (scalars only) ---
+	fmt.Fprintf(w, "# --- Archive ---\n")
+	configLine(w, fmt.Sprintf("Archive = %t", c.Archive), "Archive files before upload")
+	configLine(w, fmt.Sprintf("ArchiveMethod = %q", c.ArchiveMethod), "Archive backend (tar | zip)")
+	fmt.Fprintln(w)
+
+	// --- Encryption (scalars only) ---
+	fmt.Fprintf(w, "# --- Encryption ---\n")
+	configLine(w, fmt.Sprintf("Secure = %t", c.Secure), "Encrypt files before upload")
+	configLine(w, fmt.Sprintf("SecureMethod = %q", c.SecureMethod), "Crypto backend (age | openssl | pgp)")
+	fmt.Fprintln(w)
+
+	// --- Output ---
+	fmt.Fprintf(w, "# --- Output ---\n")
+	configLine(w, fmt.Sprintf("Debug = %t", c.Debug), "Verbose debug output")
+	configLine(w, fmt.Sprintf("Quiet = %t", c.Quiet), "Suppress non-essential output")
+	configLine(w, fmt.Sprintf("JSON = %t", c.JSON), "Output upload metadata as JSON (implies Quiet)")
+	configLine(w, fmt.Sprintf("DownloadBinary = %q", c.DownloadBinary), "Download command for output (curl | wget)")
+	fmt.Fprintln(w)
+
+	// --- Behavior ---
+	fmt.Fprintf(w, "# --- Behavior ---\n")
+	configLine(w, fmt.Sprintf("AutoUpdate = %t", c.AutoUpdate), "Auto-update client binary from server")
+	configLine(w, fmt.Sprintf("DisableStdin = %t", c.DisableStdin), "Disable STDIN pipe input by default")
+	configLine(w, fmt.Sprintf("Yes = %t", c.Yes), "Auto-accept confirmation prompts (non-interactive)")
+	configLine(w, fmt.Sprintf("DefaultProfile = %q", c.DefaultProfile),
+		"Default profile to use (can also be set via PLIK_PROFILE env var)")
+	fmt.Fprintln(w)
+
+	// ── Table sections (must come after all scalars) ──
+
+	// [ArchiveOptions]
+	if len(c.ArchiveOptions) > 0 {
+		fmt.Fprintf(w, "[ArchiveOptions]\n")
+		writeMapSection(w, c.ArchiveOptions)
+		fmt.Fprintln(w)
+	}
+
+	// [SecureOptions]
+	if len(c.SecureOptions) > 0 {
+		fmt.Fprintf(w, "[SecureOptions]\n")
+		writeMapSection(w, c.SecureOptions)
+		fmt.Fprintln(w)
+	}
+
+	// Commented-out [SecureOptions] reference (when no active SecureOptions)
+	if len(c.SecureOptions) == 0 {
+		fmt.Fprintf(w, "# [SecureOptions]\n")
+		fmt.Fprintf(w, "#   Passphrase = \"\"             # [openssl|age] Encryption passphrase\n")
+		fmt.Fprintf(w, "#   Cipher = \"\"                 # [openssl] Cipher (e.g. aes-256-cbc)\n")
+		fmt.Fprintf(w, "#   Options = \"\"                # [openssl|pgp] Additional command line options\n")
+		fmt.Fprintln(w)
+	}
+
+	// [Profiles.*]
+	// Always write the Profiles header comment (consistent with other sections)
+	fmt.Fprintf(w, "# --- Profiles ---\n")
+	fmt.Fprintf(w, "# Named profiles let you maintain different configurations\n")
+	fmt.Fprintf(w, "# for multiple servers or use-cases. Use with: plik -P <name> file.txt\n")
+	fmt.Fprintf(w, "# Profiles inherit all top-level settings and can override any field.\n")
+
+	if len(plikrc.Profiles) > 0 {
+		// Sort profile names for deterministic output
+		names := make([]string, 0, len(plikrc.Profiles))
+		for name := range plikrc.Profiles {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+
+		for _, name := range names {
+			profile := plikrc.Profiles[name]
+			fmt.Fprintf(w, "[Profiles.%s]\n", name)
+			writeProfileSection(w, &profile, name, plikrc.metadata)
+			fmt.Fprintln(w)
+		}
+	} else {
+		// No active profiles — show commented-out examples
+		fmt.Fprintf(w, "#\n")
+		fmt.Fprintf(w, "# [Profiles.local]\n")
+		fmt.Fprintf(w, "# URL = \"http://127.0.0.1:8080\"\n")
+		fmt.Fprintf(w, "# Token = \"\"\n")
+		fmt.Fprintf(w, "# AutoUpdate = false\n")
+		fmt.Fprintf(w, "#\n")
+		fmt.Fprintf(w, "# [Profiles.work]\n")
+		fmt.Fprintf(w, "# URL = \"https://plik.work.corp\"\n")
+		fmt.Fprintf(w, "# Token = \"your-token-here\"\n")
+		fmt.Fprintf(w, "# AutoUpdate = false\n")
+		fmt.Fprintf(w, "#\n")
+		fmt.Fprintf(w, "# # Create a .zip archive instead of the default .tar.gz\n")
+		fmt.Fprintf(w, "# [Profiles.zip]\n")
+		fmt.Fprintf(w, "# Archive = true\n")
+		fmt.Fprintf(w, "# ArchiveMethod = \"zip\"\n")
+	}
+
+	return nil
+}
+
+// WritePlikrcTemplate writes the canonical .plikrc reference template.
+// It uses writeConfig with showcase defaults so the template is always
+// consistent with the serialization code (DRY).
+func WritePlikrcTemplate(w io.Writer) error {
+	config := NewUploadConfig()
+	config.URL = "https://plik.root.gg"
+	config.AutoUpdate = true
+
+	plikrc := &PlikrcFile{CliConfig: *config}
+	return writeConfig(w, plikrc)
+}
+
+// writeMapSection writes a map[string]any as indented TOML key-value pairs.
+func writeMapSection(w io.Writer, m map[string]any) {
+	// Sort keys for deterministic output
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		v := m[k]
+		switch val := v.(type) {
+		case string:
+			fmt.Fprintf(w, "  %s = %q\n", k, val)
+		case bool:
+			fmt.Fprintf(w, "  %s = %t\n", k, val)
+		case int, int64, float64:
+			fmt.Fprintf(w, "  %s = %v\n", k, val)
+		default:
+			fmt.Fprintf(w, "  %s = %q\n", k, fmt.Sprintf("%v", val))
+		}
+	}
+}
+
+// writeProfileSection writes the explicitly-defined fields of a CliConfig profile.
+// When TOML metadata is available (from DecodeFile), it uses IsDefined() to determine
+// which fields were explicitly set — preserving intentional zero values like `false` or `""`.
+// When metadata is not available (programmatic profiles), it falls back to writing
+// only non-zero fields.
+// Fields tagged `profile:"-"` or `toml:"-"` and unexported fields are skipped.
+func writeProfileSection(w io.Writer, profile *CliConfig, profileName string, md toml.MetaData) {
+	profVal := reflect.ValueOf(profile).Elem()
+	profType := profVal.Type()
+	hasMetadata := len(md.Keys()) > 0
+
+	for i := 0; i < profType.NumField(); i++ {
+		field := profType.Field(i)
+
+		// Skip unexported fields
+		if !field.IsExported() {
+			continue
+		}
+
+		// Skip fields tagged profile:"-"
+		if field.Tag.Get("profile") == "-" {
+			continue
+		}
+
+		// Skip fields tagged toml:"-"
+		if field.Tag.Get("toml") == "-" {
+			continue
+		}
+
+		fieldVal := profVal.Field(i)
+		zeroVal := reflect.Zero(field.Type)
+		isZero := reflect.DeepEqual(fieldVal.Interface(), zeroVal.Interface())
+		isDefined := hasMetadata && md.IsDefined("Profiles", profileName, field.Name)
+
+		// Write field if it was explicitly defined in TOML (preserves intentional
+		// zero values like `false`) OR if it has a non-zero value (catches
+		// programmatic additions like Token set by saveToken).
+		if !isDefined && isZero {
+			continue
+		}
+
+		// Handle map fields as TOML sub-tables
+		if field.Type.Kind() == reflect.Map {
+			if fieldVal.Len() > 0 {
+				fmt.Fprintf(w, "\n[Profiles.%s.%s]\n", profileName, field.Name)
+				writeMapSection(w, fieldVal.Interface().(map[string]any))
+			}
+			continue
+		}
+
+		// Write scalar fields
+		switch fieldVal.Kind() {
+		case reflect.String:
+			fmt.Fprintf(w, "%s = %q\n", field.Name, fieldVal.String())
+		case reflect.Bool:
+			fmt.Fprintf(w, "%s = %t\n", field.Name, fieldVal.Bool())
+		case reflect.Int, reflect.Int64:
+			fmt.Fprintf(w, "%s = %d\n", field.Name, fieldVal.Int())
+		}
+	}
+}
+
+// configFilePath returns the path to the .plikrc config file.
+// It checks $PLIKRC first, then falls back to ~/.plikrc.
+func configFilePath() string {
+	path := os.Getenv("PLIKRC")
+	if path != "" {
+		return path
+	}
+
+	home, err := homedir.Dir()
+	if err != nil {
+		home = os.Getenv("HOME")
+		if home == "" {
+			home = "."
+		}
+	}
+
+	return home + "/.plikrc"
+}
+
+// saveConfig writes a PlikrcFile to disk at the given path.
+func saveConfig(path string, plikrc *PlikrcFile) error {
+	buf := new(bytes.Buffer)
+	if err := writeConfig(buf, plikrc); err != nil {
+		return fmt.Errorf("unable to serialize config: %s", err)
+	}
+
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	if err != nil {
+		return fmt.Errorf("unable to write config file %s: %s", path, err)
+	}
+	defer f.Close()
+
+	_, err = f.Write(buf.Bytes())
+	return err
 }
 
 // LoadConfigFromFile loads a TOML config file with optional profile selection.
@@ -102,7 +405,7 @@ func LoadConfigFromFile(path string, profileName string) (*CliConfig, error) {
 		profileName = os.Getenv("PLIK_PROFILE")
 	}
 	if profileName == "" {
-		profileName = plikrc.DefaultProfile
+		profileName = config.DefaultProfile
 	}
 
 	// Apply profile if one is selected
@@ -185,20 +488,15 @@ func LoadConfig(opts docopt.Opts) (config *CliConfig, err error) {
 	path = home + "/.plikrc"
 	_, err = os.Stat(path)
 	if err == nil {
-		config, err = LoadConfigFromFile(path, profileName)
-		if err == nil {
-			return config, nil
-		}
-	} else {
-		// Load global config file from /etc directory
-		path = "/etc/plik/plikrc"
-		_, err = os.Stat(path)
-		if err == nil {
-			config, err = LoadConfigFromFile(path, profileName)
-			if err == nil {
-				return config, nil
-			}
-		}
+		// Config file found — return result or error directly
+		return LoadConfigFromFile(path, profileName)
+	}
+
+	// Load global config file from /etc directory
+	path = "/etc/plik/plikrc"
+	_, err = os.Stat(path)
+	if err == nil {
+		return LoadConfigFromFile(path, profileName)
 	}
 
 	config = NewUploadConfig()
@@ -320,21 +618,11 @@ func LoadConfig(opts docopt.Opts) (config *CliConfig, err error) {
 		config.AutoUpdate = true
 	}
 
-	// Encode in TOML (wrap in PlikrcFile for forward compatibility)
+	// Write config file
 	plikrc := &PlikrcFile{CliConfig: *config}
-	buf := new(bytes.Buffer)
-	if err = toml.NewEncoder(buf).Encode(plikrc); err != nil {
-		return nil, fmt.Errorf("Failed to serialize ~/.plikrc : %s", err)
-	}
-
-	// Write file
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
-	if err != nil {
+	if err = saveConfig(path, plikrc); err != nil {
 		return nil, fmt.Errorf("Failed to save ~/.plikrc : %s", err)
 	}
-
-	_, _ = f.Write(buf.Bytes())
-	_ = f.Close()
 
 	fmt.Println("Plik client settings successfully saved to " + path)
 	return config, nil

@@ -172,31 +172,46 @@ The client configuration is a TOML file loaded from:
 Key settings:
 
 ```toml
-Debug = false                   # be more verbose
-Quiet = false                   # be less verbose
+# --- Server ---
 URL = "https://plik.root.gg"    # URL of the plik server
-OneShot = false                 # Set the uploads to be one shot by default  (if available server side)
-Removable = false               # Set the uploads to be removable by default (if available server side)
-Stream = false                  # Set the uploads to be stream by default    (if available server side)
-Secure = false                  # Set the uploads to be encrypted by default
-SecureMethod = "age"            # Set the default encryption method (age|openssl|pgp)
-Archive = false                 # Set the uploads to be archives by default
-ArchiveMethod = "tar"           # Set the default archive method
-DownloadBinary = "curl"         # Set the default download command (curl / wget)
-Comments = ""                   # Set the default upload comments
-Login = ""                      # Set the default upload login (http basic auth)
-Password = ""                   # Set the default upload password (http basic auth)
-TTL = 0                         # Set the default upload TTL (0 for server default)
-ExtendTTL = false               # Set the uploads to extend TTL by default   (if available server side)
-AutoUpdate = true               # Enable/Disable auto update mechanism
-Token = ""                      # Set the Authentication Token (can be created from the UI)
-DisableStdin = false            # Disable STDIN input
-Insecure = false                # Disable HTTPS certificate validation
+Token = ""                      # Authentication token (created via web UI or --login)
+Insecure = false                # Skip TLS certificate validation
+
+# --- Upload defaults ---
+OneShot = false                 # Delete file after first download (if available server side)
+Removable = false               # Allow anyone to delete the file (if available server side)
+Stream = false                  # Stream upload, blocks until download starts (if available server side)
+TTL = 0                         # Upload time-to-live in seconds (0 = server default)
+ExtendTTL = false               # Extend expiration on access (if available server side)
+Comments = ""                   # Default upload comments (Markdown)
+
+# --- Authentication ---
+Login = ""                      # HTTP basic auth login
+Password = ""                   # HTTP basic auth password
+
+# --- Archive ---
+Archive = false                 # Archive files before upload
+ArchiveMethod = "tar"           # Archive backend (tar | zip)
+
+# --- Encryption ---
+Secure = false                  # Encrypt files before upload
+SecureMethod = "age"            # Crypto backend (age | openssl | pgp)
+
+# --- Output ---
+Debug = false                   # Verbose debug output
+Quiet = false                   # Suppress non-essential output
+JSON = false                    # Output upload metadata as JSON (implies Quiet)
+DownloadBinary = "curl"         # Download command for output (curl | wget)
+
+# --- Behavior ---
+AutoUpdate = true               # Auto-update client binary from server
+DisableStdin = false            # Disable STDIN pipe input by default
+Yes = false                     # Auto-accept confirmation prompts (non-interactive)
 
 [ArchiveOptions]
-  Compress = "gzip"
-  Options = ""
-  Tar = "/bin/tar"
+  Compress = "gzip"             # Compression codec
+  Tar = "/bin/tar"              # Path to tar binary
+  Options = ""                  # Additional command line options
 ```
 
 See the [full .plikrc template](https://github.com/root-gg/plik/blob/master/client/.plikrc) for all available options.
@@ -214,9 +229,7 @@ Add `[Profiles.<name>]` sections to your `.plikrc`. Each profile inherits all to
 URL = "https://plik.root.gg"
 Token = "your-default-token"
 AutoUpdate = true
-
-# Optional: default profile to use (can also be set via PLIK_PROFILE env var)
-# DefaultProfile = "work"
+DefaultProfile = "local"        # Optional (can also be set via PLIK_PROFILE env var)
 
 [Profiles.local]
 URL = "http://127.0.0.1:8080"
@@ -227,6 +240,11 @@ AutoUpdate = false              # don't auto-update from local dev server
 URL = "https://plik.work.corp"
 Token = "your-token-here"
 AutoUpdate = false              # don't auto-update from work server
+
+# Create a .zip archive instead of the default .tar.gz
+[Profiles.zip]
+Archive = true
+ArchiveMethod = "zip"
 ```
 
 ### Using Profiles

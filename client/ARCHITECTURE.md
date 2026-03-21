@@ -64,7 +64,11 @@ Config is a TOML file loaded from (in order):
 2. `~/.plikrc`
 3. `/etc/plik/plikrc`
 
-Key config fields: `URL` (server), `Token` (user authentication token), archive/crypto defaults.
+`CliConfig` fields are grouped logically: Server, Upload defaults, Authentication, Archive, Encryption, Output, Behavior, Runtime. This order determines both the struct layout and the TOML serialization order produced by `writeConfig()`.
+
+**`writeConfig()`** produces human-readable, commented TOML matching the `.plikrc` template format. It writes all scalar fields first, then `[Table]` sections (`[ArchiveOptions]`, `[SecureOptions]`, `[Profiles.*]`) — this ordering is required by TOML spec. The `configLine()` helper handles column-aligned inline comments. Used by both the first-run wizard and `saveToken()` in `login.go`.
+
+**`WritePlikrcTemplate()`** generates the canonical `client/.plikrc` reference template. It calls `writeConfig()` with showcase defaults (DRY — same code path, different values). The `TestPlikrcTemplate_UpToDate` test compares the generated output against the committed file and rewrites it if stale. CI catches drift via `git diff --exit-code`.
 
 #### Multi-Profile Support
 

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/docopt/docopt-go"
@@ -644,4 +646,376 @@ URL = "http://localhost:8080"
 	require.NoError(t, err)
 	require.Equal(t, "chacha20", config.SecureOptions["Cipher"], "Profile should override Cipher")
 	require.Nil(t, config.SecureOptions["Passphrase"], "Passphrase should NOT be inherited (full override)")
+}
+
+// ---------- writeConfig tests ----------
+
+func TestWriteConfig_Structure(t *testing.T) {
+	config := NewUploadConfig()
+	config.URL = "https://plik.example.com"
+	config.Token = "test-token"
+	config.AutoUpdate = true
+
+	plikrc := &PlikrcFile{CliConfig: *config}
+	buf := new(bytes.Buffer)
+	err := writeConfig(buf, plikrc)
+	require.NoError(t, err)
+
+	output := buf.String()
+
+	// Verify section headers are present and in order
+	sections := []string{
+		"# --- Server ---",
+		"# --- Upload defaults ---",
+		"# --- Authentication ---",
+		"# --- Archive ---",
+		"# --- Encryption ---",
+		"# --- Output ---",
+		"# --- Behavior ---",
+	}
+	lastIdx := -1
+	for _, section := range sections {
+		idx := strings.Index(output, section)
+		require.NotEqual(t, -1, idx, "missing section: %s", section)
+		require.Greater(t, idx, lastIdx, "section %q should be after previous section", section)
+		lastIdx = idx
+	}
+
+	// Verify inline comments are present
+	require.Contains(t, output, "# URL of the plik server")
+	require.Contains(t, output, "# Authentication token")
+	require.Contains(t, output, "# Auto-update client binary")
+
+	// Verify values are written correctly
+	require.Contains(t, output, `URL = "https://plik.example.com"`)
+	require.Contains(t, output, `Token = "test-token"`)
+	require.Contains(t, output, `AutoUpdate = true`)
+}
+
+func TestWriteConfig_EmptySecureOptionsOmitted(t *testing.T) {
+	config := NewUploadConfig()
+	plikrc := &PlikrcFile{CliConfig: *config}
+
+	buf := new(bytes.Buffer)
+	err := writeConfig(buf, plikrc)
+	require.NoError(t, err)
+
+	output := buf.String()
+
+	// Empty SecureOptions should NOT produce an active [SecureOptions] block
+	// but SHOULD produce a commented-out reference section
+	require.Contains(t, output, "# [SecureOptions]")
+	require.Contains(t, output, "#   Passphrase")
+
+	// ArchiveOptions with values should produce an active block
+	require.Contains(t, output, "[ArchiveOptions]")
+	require.Contains(t, output, `Compress = "gzip"`)
+
+	// No active profiles → should produce commented-out profile example
+	require.Contains(t, output, "# [Profiles.local]")
+	require.Contains(t, output, "# [Profiles.work]")
+}
+
+func TestWriteConfig_RoundTrip(t *testing.T) {
+	// Write a config, then load it back and verify values are preserved
+	config := NewUploadConfig()
+	config.URL = "https://plik.example.com"
+	config.Token = "round-trip-token"
+	config.OneShot = true
+	config.TTL = 7200
+	config.AutoUpdate = false
+	config.Quiet = true
+	config.JSON = true
+	config.Yes = true
+
+	plikrc := &PlikrcFile{CliConfig: *config}
+
+	buf := new(bytes.Buffer)
+	err := writeConfig(buf, plikrc)
+	require.NoError(t, err)
+
+	// Write to a temp file and load it back
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err = os.WriteFile(path, buf.Bytes(), 0600)
+	require.NoError(t, err)
+
+	loaded, err := LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+
+	require.Equal(t, "https://plik.example.com", loaded.URL)
+	require.Equal(t, "round-trip-token", loaded.Token)
+	require.True(t, loaded.OneShot)
+	require.Equal(t, 7200, loaded.TTL)
+	require.False(t, loaded.AutoUpdate)
+	require.True(t, loaded.Quiet)
+	require.True(t, loaded.JSON)
+	require.True(t, loaded.Yes)
+	require.Equal(t, "gzip", loaded.ArchiveOptions["Compress"])
+	require.Equal(t, "/bin/tar", loaded.ArchiveOptions["Tar"])
+}
+
+func TestWriteConfig_WithProfiles(t *testing.T) {
+	config := NewUploadConfig()
+	config.URL = "https://plik.example.com"
+	config.DefaultProfile = "local"
+
+	profile := CliConfig{
+		URL:   "http://localhost:8080",
+		Token: "local-token",
+	}
+
+	plikrc := &PlikrcFile{
+		CliConfig: *config,
+		Profiles: map[string]CliConfig{
+			"local": profile,
+		},
+	}
+
+	buf := new(bytes.Buffer)
+	err := writeConfig(buf, plikrc)
+	require.NoError(t, err)
+
+	output := buf.String()
+	require.Contains(t, output, `DefaultProfile = "local"`)
+	require.Contains(t, output, "[Profiles.local]")
+	require.Contains(t, output, `URL = "http://localhost:8080"`)
+
+	// Round-trip: write then load
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err = os.WriteFile(path, buf.Bytes(), 0600)
+	require.NoError(t, err)
+
+	loaded, err := LoadConfigFromFile(path, "local")
+	require.NoError(t, err)
+	require.Equal(t, "http://localhost:8080", loaded.URL)
+	require.Equal(t, "local-token", loaded.Token)
+}
+
+func TestPlikrcTemplate_UpToDate(t *testing.T) {
+	// Generate the canonical .plikrc template from code
+	buf := new(bytes.Buffer)
+	err := WritePlikrcTemplate(buf)
+	require.NoError(t, err)
+
+	// Write the generated template to client/.plikrc.
+	// CI catches drift via `git diff --exit-code` after running tests.
+	committedPath := filepath.Join(".", ".plikrc")
+	err = os.WriteFile(committedPath, buf.Bytes(), 0644)
+	require.NoError(t, err, "unable to write client/.plikrc")
+
+	// Read back and verify the file was written correctly
+	written, err := os.ReadFile(committedPath)
+	require.NoError(t, err)
+	require.Equal(t, buf.String(), string(written), "client/.plikrc content mismatch after write")
+}
+
+func TestWriteConfig_SparseProfiles(t *testing.T) {
+	// A profile with just Archive=true and ArchiveMethod="zip" should
+	// produce only those fields — not all 23 CliConfig zero-value fields.
+	config := NewUploadConfig()
+	config.URL = "https://plik.example.com"
+
+	zipProfile := CliConfig{
+		Archive:       true,
+		ArchiveMethod: "zip",
+	}
+
+	plikrc := &PlikrcFile{
+		CliConfig: *config,
+		Profiles: map[string]CliConfig{
+			"zip": zipProfile,
+		},
+	}
+
+	buf := new(bytes.Buffer)
+	err := writeConfig(buf, plikrc)
+	require.NoError(t, err)
+
+	output := buf.String()
+
+	// Verify the profile header is present
+	require.Contains(t, output, "[Profiles.zip]")
+
+	// Verify only the non-zero fields are written
+	require.Contains(t, output, "Archive = true")
+	require.Contains(t, output, `ArchiveMethod = "zip"`)
+
+	// Verify zero-value fields are NOT written in the profile section
+	// Extract just the profile section for focused assertions
+	profileStart := strings.Index(output, "[Profiles.zip]")
+	require.NotEqual(t, -1, profileStart)
+	profileSection := output[profileStart:]
+
+	// These zero-value fields should NOT appear in the profile
+	require.NotContains(t, profileSection, "URL =")
+	require.NotContains(t, profileSection, "Token =")
+	require.NotContains(t, profileSection, "OneShot =")
+	require.NotContains(t, profileSection, "Debug =")
+	require.NotContains(t, profileSection, "AutoUpdate =")
+
+	// Round-trip: verify it still loads and works
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err = os.WriteFile(path, buf.Bytes(), 0600)
+	require.NoError(t, err)
+
+	loaded, err := LoadConfigFromFile(path, "zip")
+	require.NoError(t, err)
+	require.True(t, loaded.Archive)
+	require.Equal(t, "zip", loaded.ArchiveMethod)
+	// Inherited from base config
+	require.Equal(t, "https://plik.example.com", loaded.URL)
+}
+
+func TestSaveToken_PreservesProfiles(t *testing.T) {
+	// Write a config with a sparse "zip" profile, then call saveToken
+	// with a different profile ("zip") and verify the profile stays sparse.
+	config := NewUploadConfig()
+	config.URL = "https://plik.example.com"
+	config.Token = "original-token"
+
+	zipProfile := CliConfig{
+		Archive:       true,
+		ArchiveMethod: "zip",
+	}
+
+	plikrc := &PlikrcFile{
+		CliConfig: *config,
+		Profiles: map[string]CliConfig{
+			"zip": zipProfile,
+		},
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := saveConfig(path, plikrc)
+	require.NoError(t, err)
+
+	// Now saveToken with profile "zip"
+	cfg := &CliConfig{
+		ConfigPath:    path,
+		ActiveProfile: "zip",
+	}
+	err = saveToken(cfg, "new-zip-token")
+	require.NoError(t, err)
+
+	// Read back the file and verify the profile is still sparse
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	output := string(content)
+
+	// Profile should have the new token and the archive fields
+	profileStart := strings.Index(output, "[Profiles.zip]")
+	require.NotEqual(t, -1, profileStart)
+	profileSection := output[profileStart:]
+
+	require.Contains(t, profileSection, `Token = "new-zip-token"`)
+	require.Contains(t, profileSection, "Archive = true")
+	require.Contains(t, profileSection, `ArchiveMethod = "zip"`)
+
+	// Zero-value fields should NOT appear
+	require.NotContains(t, profileSection, "OneShot =")
+	require.NotContains(t, profileSection, "Debug =")
+	require.NotContains(t, profileSection, "AutoUpdate =")
+
+	// Top-level token should be preserved
+	require.Contains(t, output, `Token = "original-token"`)
+}
+
+func TestSaveToken_ProfileNotFound(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.example.com"
+
+[Profiles.local]
+URL = "http://127.0.0.1:8080"
+`), 0600)
+	require.NoError(t, err)
+
+	before, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	cfg := &CliConfig{
+		ConfigPath:    path,
+		ActiveProfile: "nonexistent",
+	}
+	err = saveToken(cfg, "some-token")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "nonexistent")
+
+	// File must be unchanged
+	after, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, string(before), string(after), "file should not be modified on error")
+}
+
+func TestSaveToken_NoProfilesDefined(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	err := os.WriteFile(path, []byte(`URL = "https://plik.example.com"`), 0600)
+	require.NoError(t, err)
+
+	cfg := &CliConfig{
+		ConfigPath:    path,
+		ActiveProfile: "local",
+	}
+	err = saveToken(cfg, "some-token")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no profiles defined")
+}
+
+func TestDefaultProfile_ResolutionPrecedence(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.example.com"
+DefaultProfile = "local"
+
+[Profiles.local]
+OneShot = true
+
+[Profiles.work]
+OneShot = false
+`), 0600)
+	require.NoError(t, err)
+
+	// (a) Explicit profile wins over DefaultProfile
+	config, err := LoadConfigFromFile(path, "work")
+	require.NoError(t, err)
+	require.Equal(t, "work", config.ActiveProfile)
+	require.False(t, config.OneShot, "explicit -P work should win")
+
+	// (b) PLIK_PROFILE env var wins over DefaultProfile (when no explicit flag)
+	t.Setenv("PLIK_PROFILE", "work")
+	config, err = LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+	require.Equal(t, "work", config.ActiveProfile)
+	require.False(t, config.OneShot, "PLIK_PROFILE env var should win over DefaultProfile")
+	t.Setenv("PLIK_PROFILE", "") // unset for step (c) — t.Setenv restores at test end, not mid-test
+
+	// (c) DefaultProfile used when no flag and no env var
+	config, err = LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+	require.Equal(t, "local", config.ActiveProfile)
+	require.True(t, config.OneShot, "DefaultProfile should be used when nothing else set")
+}
+
+func TestLoadConfigFromFile_InvalidTOML(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.example.com"
+this is not valid toml !!!
+`), 0600)
+	require.NoError(t, err)
+
+	_, err = LoadConfigFromFile(path, "")
+	require.Error(t, err, "invalid TOML should return error")
 }

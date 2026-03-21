@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/mitchellh/go-homedir"
 
 	"github.com/root-gg/plik/plik"
 )
@@ -162,58 +161,39 @@ func pollForToken(client *plik.Client, serverURL, code, secret string) (string, 
 }
 
 func saveToken(cfg *CliConfig, token string) error {
-	cfg.Token = token
-
-	// Find the config file path
-	path := os.Getenv("PLIKRC")
+	// Use the path from the loaded config, or derive it
+	path := cfg.ConfigPath
 	if path == "" {
-		home, err := homedir.Dir()
-		if err != nil {
-			home = os.Getenv("HOME")
-			if home == "" {
-				home = "."
-			}
-		}
-		path = home + "/.plikrc"
+		path = configFilePath()
 	}
 
 	// Load the existing config file to preserve profiles
 	var plikrc PlikrcFile
 	plikrc.CliConfig = *NewUploadConfig()
 	if _, err := os.Stat(path); err == nil {
-		if _, err := toml.DecodeFile(path, &plikrc); err != nil {
+		md, err := toml.DecodeFile(path, &plikrc)
+		if err != nil {
 			return fmt.Errorf("unable to read existing config: %s", err)
 		}
+		plikrc.metadata = md
 	}
 
 	// Save token to the active profile or the top-level config
-	if cfg.ActiveProfile != "" && plikrc.Profiles != nil {
-		if profile, ok := plikrc.Profiles[cfg.ActiveProfile]; ok {
-			profile.Token = token
-			plikrc.Profiles[cfg.ActiveProfile] = profile
-		} else {
-			// Profile not found — save to top-level
-			plikrc.CliConfig.Token = token
+	if cfg.ActiveProfile != "" {
+		if plikrc.Profiles == nil {
+			return fmt.Errorf("profile %q not found in config (no profiles defined)", cfg.ActiveProfile)
 		}
+		profile, ok := plikrc.Profiles[cfg.ActiveProfile]
+		if !ok {
+			return fmt.Errorf("profile %q not found in config", cfg.ActiveProfile)
+		}
+		profile.Token = token
+		plikrc.Profiles[cfg.ActiveProfile] = profile
 	} else {
 		plikrc.CliConfig.Token = token
 	}
 
-	// Encode in TOML
-	buf := new(bytes.Buffer)
-	if err := toml.NewEncoder(buf).Encode(&plikrc); err != nil {
-		return fmt.Errorf("unable to serialize config: %s", err)
-	}
-
-	// Write file
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-	if err != nil {
-		return fmt.Errorf("unable to write config file: %s", err)
-	}
-	defer f.Close()
-
-	_, err = f.Write(buf.Bytes())
-	return err
+	return saveConfig(path, &plikrc)
 }
 
 func openBrowser(url string) {
