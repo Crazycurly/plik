@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/root-gg/utils"
@@ -258,6 +259,14 @@ func (cli *PlikCLI) Run(client *plik.Client) error {
 
 func (cli *PlikCLI) info(client *plik.Client) error {
 	cli.printAlways("Plik client version : %s\n\n", common.GetBuildInfo())
+
+	// Profile information
+	if cli.Config.ActiveProfile != "" {
+		cli.printAlways("Active profile : %s\n", cli.Config.ActiveProfile)
+	}
+	if len(cli.Config.AvailableProfiles) > 0 {
+		cli.printAlways("Available profiles : %s\n", strings.Join(cli.Config.AvailableProfiles, ", "))
+	}
 
 	cli.printAlways("Plik server url : %s\n", cli.Config.URL)
 

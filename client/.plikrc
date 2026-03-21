@@ -23,3 +23,19 @@ Insecure = false                # Disable HTTPS certificate validation
   Compress = "gzip"
   Options = ""
   Tar = "/bin/tar"
+
+# Optional: named profiles let you maintain different configurations
+# for multiple servers or use-cases. Use with: plik -P <name> file.txt
+# Profiles inherit all top-level settings and can override any field.
+#
+# DefaultProfile = "work"        # Optional: default profile to use (can also be set via PLIK_PROFILE env var)
+#
+# [Profiles.local]
+# URL = "http://127.0.0.1:8080"
+# Token = ""
+# AutoUpdate = false
+#
+# [Profiles.work]
+# URL = "https://plik.work.corp"
+# Token = "your-token-here"
+# AutoUpdate = false

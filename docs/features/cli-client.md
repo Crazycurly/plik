@@ -61,6 +61,7 @@ Options:
   --passphrase PASSPHRASE   [openssl|age] Passphrase or '-' to be prompted for a passphrase
   --recipient RECIPIENT     [pgp|age] Set recipient ( pgp: name, age: @github_user, ssh://host, URL, ssh key, or age1... )
   --secure-options OPTIONS  [openssl|pgp] Additional command line options
+  -P, --profile PROFILE     Use a named profile from ~/.plikrc (see Profiles section)
   --insecure                (TLS) Do not verify the server's certificate chain and hostname
   --update                  Update client
   --login                   Authenticate with the Plik server via browser
@@ -199,6 +200,70 @@ Insecure = false                # Disable HTTPS certificate validation
 ```
 
 See the [full .plikrc template](https://github.com/root-gg/plik/blob/master/client/.plikrc) for all available options.
+
+## Profiles
+
+Profiles let you maintain configurations for multiple servers (or different defaults for the same server) and switch between them with a single flag.
+
+### Defining Profiles
+
+Add `[Profiles.<name>]` sections to your `.plikrc`. Each profile inherits all top-level settings and can override any field:
+
+```toml
+# ~/.plikrc — shared defaults
+URL = "https://plik.root.gg"
+Token = "your-default-token"
+AutoUpdate = true
+
+# Optional: default profile to use (can also be set via PLIK_PROFILE env var)
+# DefaultProfile = "work"
+
+[Profiles.local]
+URL = "http://127.0.0.1:8080"
+Token = ""                      # no auth for local dev
+AutoUpdate = false              # don't auto-update from local dev server
+
+[Profiles.work]
+URL = "https://plik.work.corp"
+Token = "your-token-here"
+AutoUpdate = false              # don't auto-update from work server
+```
+
+### Using Profiles
+
+```bash
+# Use the "local" profile
+plik -P local file.txt
+
+# Use the long form
+plik --profile work file.txt
+
+# Set a default via environment variable
+export PLIK_PROFILE=work
+plik file.txt     # uses "work" profile
+
+# CLI flags still override profile settings
+plik -P work --server https://other.example.com file.txt
+
+# Login to a specific profile
+plik --login -P work
+```
+
+### Profile Selection Precedence
+
+When multiple sources specify a profile, the following precedence applies (highest to lowest):
+
+1. `--profile` / `-P` CLI flag
+2. `PLIK_PROFILE` environment variable
+3. `DefaultProfile` field in the config file
+
+::: tip Backward Compatible
+Existing flat `.plikrc` files (without any `[Profiles]` sections) continue to work exactly as before. Profiles are entirely opt-in.
+:::
+
+::: warning Nested Sections
+`[ArchiveOptions]` and `[SecureOptions]` are **fully replaced** when overridden in a profile — individual keys are not merged. If a profile defines `[Profiles.local.ArchiveOptions]`, it must include all desired keys.
+:::
 
 ## Tips & Tricks
 

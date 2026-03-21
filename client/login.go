@@ -177,9 +177,31 @@ func saveToken(cfg *CliConfig, token string) error {
 		path = home + "/.plikrc"
 	}
 
+	// Load the existing config file to preserve profiles
+	var plikrc PlikrcFile
+	plikrc.CliConfig = *NewUploadConfig()
+	if _, err := os.Stat(path); err == nil {
+		if _, err := toml.DecodeFile(path, &plikrc); err != nil {
+			return fmt.Errorf("unable to read existing config: %s", err)
+		}
+	}
+
+	// Save token to the active profile or the top-level config
+	if cfg.ActiveProfile != "" && plikrc.Profiles != nil {
+		if profile, ok := plikrc.Profiles[cfg.ActiveProfile]; ok {
+			profile.Token = token
+			plikrc.Profiles[cfg.ActiveProfile] = profile
+		} else {
+			// Profile not found — save to top-level
+			plikrc.CliConfig.Token = token
+		}
+	} else {
+		plikrc.CliConfig.Token = token
+	}
+
 	// Encode in TOML
 	buf := new(bytes.Buffer)
-	if err := toml.NewEncoder(buf).Encode(cfg); err != nil {
+	if err := toml.NewEncoder(buf).Encode(&plikrc); err != nil {
 		return fmt.Errorf("unable to serialize config: %s", err)
 	}
 

@@ -44,6 +44,7 @@ Options:
   --passphrase PASSPHRASE   [openssl|age] Passphrase or '-' to be prompted for a passphrase
   --recipient RECIPIENT     [pgp|age] Set recipient ( pgp: name, age: @github_user, ssh://host, URL, ssh key, or age1... )
   --secure-options OPTIONS  [openssl|pgp] Additional command line options
+  -P, --profile PROFILE     Use a named profile from ~/.plikrc (see Profiles section)
   --insecure                (TLS) Do not verify the server's certificate chain and hostname
   --update                  Update client
   --login                   Authenticate CLI with the server (opens browser)
@@ -129,6 +130,9 @@ Options:
 		if arguments["--server"] != nil && arguments["--server"].(string) != "" {
 			fmt.Fprintf(os.Stderr, "Cannot use --login with --server: the login flow saves the token to ~/.plikrc and must use the server URL configured there.\n")
 			os.Exit(1)
+		}
+		if config.ActiveProfile != "" {
+			fmt.Fprintf(os.Stderr, "Authenticating profile %q (%s)...\n", config.ActiveProfile, config.URL)
 		}
 		err = login(config, client)
 		if err != nil {

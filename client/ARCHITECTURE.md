@@ -24,6 +24,7 @@ client/
 ├── z2_e2e_options_test.go  ← upload option tests (oneshot, ttl, quiet, JSON, etc.)
 ├── z3_e2e_archive_test.go  ← archive backend tests (tar, zip)
 ├── z4_e2e_crypto_test.go   ← crypto backend tests (openssl, pgp, age)
+├── z5_e2e_profiles_test.go ← profile e2e tests (upload, inheritance, info)
 ├── .plikrc          ← example client configuration
 └── plik.sh          ← bash upload wrapper
 ```
@@ -64,6 +65,27 @@ Config is a TOML file loaded from (in order):
 3. `/etc/plik/plikrc`
 
 Key config fields: `URL` (server), `Token` (user authentication token), archive/crypto defaults.
+
+#### Multi-Profile Support
+
+The config file supports named profiles via `[Profiles.<name>]` TOML sections. Each profile can override any subset of the top-level fields. An on-disk config file is represented by `PlikrcFile`, which embeds `CliConfig` (base fields) plus `Profiles map[string]CliConfig` and `DefaultProfile string`.
+
+**Profile selection precedence** (highest to lowest):
+1. `--profile` / `-P` CLI flag
+2. `PLIK_PROFILE` environment variable
+3. `DefaultProfile` field in config file
+
+**Config layering** (highest to lowest):
+1. CLI flags (`--server`, `--token`, etc.)
+2. Selected profile's fields
+3. Top-level config fields
+4. Built-in defaults (`NewUploadConfig()`)
+
+**Merge semantics**: `mergeProfile()` uses `toml.MetaData.IsDefined()` to apply only fields explicitly set in the profile section. This distinguishes "not present" from "set to zero value" (e.g., `Token = ""` in a profile clears the base token).
+
+The runtime `CliConfig` carries `ActiveProfile` (the resolved profile name) and `AvailableProfiles` (list of all profiles defined in the config) — both are `toml:"-"` and not serialized.
+
+Existing flat configs (no `[Profiles]` sections) are 100% backward compatible.
 
 ### CLI Login (`login.go`)
 
@@ -138,6 +160,7 @@ End-to-end tests run against an ephemeral `plikd` server (started in `TestMain`)
 | `z2_e2e_options_test.go` | Oneshot, removable, stream, TTL, password, comments, quiet, JSON, not-secure, error paths |
 | `z3_e2e_archive_test.go` | Tar (single, multi, dir, compression, options, name), zip (single, dir, options, name, dir+name) |
 | `z4_e2e_crypto_test.go` | OpenSSL (auto/custom/prompted passphrase + decrypt round-trip, cipher, options), PGP (encrypt+decrypt), Age (passphrase + decrypt round-trip, recipient + decrypt) |
+| `z5_e2e_profiles_test.go` | Profile upload (settings flow through), base config inheritance, info output with/without profiles |
 
 Tests requiring external binaries (`tar`, `zip`, `gpg`, `age`, `openssl`) use `requireBinary()` to fail immediately if unavailable.
 

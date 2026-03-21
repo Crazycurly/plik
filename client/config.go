@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -21,6 +23,7 @@ type CliConfig struct {
 	Debug          bool
 	Quiet          bool
 	JSON           bool
+	Yes            bool
 	URL            string
 	OneShot        bool
 	Removable      bool
@@ -41,11 +44,22 @@ type CliConfig struct {
 	Token          string
 	DisableStdin   bool
 	Insecure       bool
-	Yes            bool
-	ConfigPath     string `toml:"-"` // path to the config file that was loaded (not serialized)
+	ConfigPath     string `toml:"-" profile:"-"`
+
+	ActiveProfile     string   `toml:"-" profile:"-"`
+	AvailableProfiles []string `toml:"-" profile:"-"`
 
 	filePaths        []string
 	filenameOverride string
+}
+
+// PlikrcFile is the on-disk representation of .plikrc.
+// It embeds CliConfig for the top-level (default) fields and adds optional
+// named profiles and a default profile selector.
+type PlikrcFile struct {
+	CliConfig
+	Profiles       map[string]CliConfig `toml:"Profiles,omitempty"`
+	DefaultProfile string               `toml:"DefaultProfile,omitempty"`
 }
 
 // NewUploadConfig construct a new configuration with default values
@@ -63,11 +77,45 @@ func NewUploadConfig() (config *CliConfig) {
 	return
 }
 
-// LoadConfigFromFile load TOML config file
-func LoadConfigFromFile(path string) (*CliConfig, error) {
-	config := NewUploadConfig()
-	if _, err := toml.DecodeFile(path, config); err != nil {
+// LoadConfigFromFile loads a TOML config file with optional profile selection.
+// If profileName is empty, the profile is resolved from PLIK_PROFILE env var
+// or the DefaultProfile field in the config file.
+func LoadConfigFromFile(path string, profileName string) (*CliConfig, error) {
+	var plikrc PlikrcFile
+	plikrc.CliConfig = *NewUploadConfig()
+
+	md, err := toml.DecodeFile(path, &plikrc)
+	if err != nil {
 		return nil, fmt.Errorf("Failed to deserialize ~/.plikrc : %s", err)
+	}
+
+	config := &plikrc.CliConfig
+
+	// Populate available profile names (sorted for stable output)
+	for name := range plikrc.Profiles {
+		config.AvailableProfiles = append(config.AvailableProfiles, name)
+	}
+	sort.Strings(config.AvailableProfiles)
+
+	// Resolve profile name: CLI flag > env var > config DefaultProfile
+	if profileName == "" {
+		profileName = os.Getenv("PLIK_PROFILE")
+	}
+	if profileName == "" {
+		profileName = plikrc.DefaultProfile
+	}
+
+	// Apply profile if one is selected
+	if profileName != "" {
+		profile, ok := plikrc.Profiles[profileName]
+		if !ok {
+			if len(config.AvailableProfiles) == 0 {
+				return nil, fmt.Errorf("Profile %q not found (no profiles defined in config)", profileName)
+			}
+			return nil, fmt.Errorf("Profile %q not found (available: %s)", profileName, strings.Join(config.AvailableProfiles, ", "))
+		}
+		mergeProfile(config, &profile, md, profileName)
+		config.ActiveProfile = profileName
 	}
 
 	// Sanitize URL
@@ -78,9 +126,42 @@ func LoadConfigFromFile(path string) (*CliConfig, error) {
 	return config, nil
 }
 
+// mergeProfile overlays explicitly-set profile fields onto the base config.
+// It uses TOML metadata to distinguish "field not present" from "field set to zero value".
+// Fields tagged `profile:"-"` and unexported fields are skipped.
+func mergeProfile(base *CliConfig, profile *CliConfig, md toml.MetaData, profileName string) {
+	baseVal := reflect.ValueOf(base).Elem()
+	profVal := reflect.ValueOf(profile).Elem()
+	baseType := baseVal.Type()
+
+	for i := 0; i < baseType.NumField(); i++ {
+		field := baseType.Field(i)
+
+		// Skip unexported fields
+		if !field.IsExported() {
+			continue
+		}
+
+		// Skip fields tagged profile:"-"
+		if field.Tag.Get("profile") == "-" {
+			continue
+		}
+
+		if md.IsDefined("Profiles", profileName, field.Name) {
+			baseVal.Field(i).Set(profVal.Field(i))
+		}
+	}
+}
+
 // LoadConfig creates a new default configuration and override it with .plikrc file.
 // If .plikrc does not exist, ask domain, and create a new one in user HOMEDIR
 func LoadConfig(opts docopt.Opts) (config *CliConfig, err error) {
+	// Resolve profile name from CLI flag (env var / config default handled in LoadConfigFromFile)
+	var profileName string
+	if opts["--profile"] != nil && opts["--profile"].(string) != "" {
+		profileName = opts["--profile"].(string)
+	}
+
 	// Load config file from environment variable
 	path := os.Getenv("PLIKRC")
 	if path != "" {
@@ -88,7 +169,7 @@ func LoadConfig(opts docopt.Opts) (config *CliConfig, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("Plikrc file %s not found", path)
 		}
-		return LoadConfigFromFile(path)
+		return LoadConfigFromFile(path, profileName)
 	}
 
 	// Detect home dir
@@ -104,7 +185,7 @@ func LoadConfig(opts docopt.Opts) (config *CliConfig, err error) {
 	path = home + "/.plikrc"
 	_, err = os.Stat(path)
 	if err == nil {
-		config, err = LoadConfigFromFile(path)
+		config, err = LoadConfigFromFile(path, profileName)
 		if err == nil {
 			return config, nil
 		}
@@ -113,7 +194,7 @@ func LoadConfig(opts docopt.Opts) (config *CliConfig, err error) {
 		path = "/etc/plik/plikrc"
 		_, err = os.Stat(path)
 		if err == nil {
-			config, err = LoadConfigFromFile(path)
+			config, err = LoadConfigFromFile(path, profileName)
 			if err == nil {
 				return config, nil
 			}
@@ -239,9 +320,10 @@ func LoadConfig(opts docopt.Opts) (config *CliConfig, err error) {
 		config.AutoUpdate = true
 	}
 
-	// Encode in TOML
+	// Encode in TOML (wrap in PlikrcFile for forward compatibility)
+	plikrc := &PlikrcFile{CliConfig: *config}
 	buf := new(bytes.Buffer)
-	if err = toml.NewEncoder(buf).Encode(config); err != nil {
+	if err = toml.NewEncoder(buf).Encode(plikrc); err != nil {
 		return nil, fmt.Errorf("Failed to serialize ~/.plikrc : %s", err)
 	}
 

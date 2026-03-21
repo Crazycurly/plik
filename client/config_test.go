@@ -39,6 +39,8 @@ func makeOpts() docopt.Opts {
 		"--passphrase":      nil,
 		"--recipient":       nil,
 		"--secure-options":  nil,
+		"-P":                nil,
+		"--profile":         nil,
 		"--insecure":        false,
 		"--update":          false,
 		"--login":           false,
@@ -284,7 +286,7 @@ DownloadBinary = "wget"
 `), 0600)
 	require.NoError(t, err)
 
-	config, err := LoadConfigFromFile(path)
+	config, err := LoadConfigFromFile(path, "")
 	require.NoError(t, err)
 	require.Equal(t, "https://upload.example.com", config.URL)
 	require.True(t, config.OneShot)
@@ -293,7 +295,7 @@ DownloadBinary = "wget"
 }
 
 func TestLoadConfigFromFile_MissingFile(t *testing.T) {
-	_, err := LoadConfigFromFile("/nonexistent/plikrc")
+	_, err := LoadConfigFromFile("/nonexistent/plikrc", "")
 	require.Error(t, err)
 }
 
@@ -305,7 +307,7 @@ URL = "https://upload.example.com/"
 `), 0600)
 	require.NoError(t, err)
 
-	config, err := LoadConfigFromFile(path)
+	config, err := LoadConfigFromFile(path, "")
 	require.NoError(t, err)
 	require.Equal(t, "https://upload.example.com", config.URL, "trailing slash should be stripped")
 	require.Equal(t, path, config.ConfigPath, "ConfigPath should be set to the loaded file")
@@ -346,4 +348,300 @@ func TestUnmarshalArgs_FilenameOverride(t *testing.T) {
 	err := config.UnmarshalArgs(opts)
 	require.NoError(t, err)
 	require.Equal(t, "custom-name.txt", config.filenameOverride)
+}
+
+// --- Profile tests ---
+
+func TestLoadConfigFromFile_WithProfiles(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+Token = "base-token"
+OneShot = false
+
+[Profiles.local]
+URL = "http://127.0.0.1:8080"
+
+[Profiles.staging]
+URL = "https://staging.example.com"
+Token = "staging-token"
+OneShot = true
+`), 0600)
+	require.NoError(t, err)
+
+	// Load with "local" profile
+	config, err := LoadConfigFromFile(path, "local")
+	require.NoError(t, err)
+	require.Equal(t, "http://127.0.0.1:8080", config.URL)
+	require.Equal(t, "base-token", config.Token, "Token should be inherited from base")
+	require.False(t, config.OneShot, "OneShot should be inherited from base")
+	require.Equal(t, "local", config.ActiveProfile)
+
+	// Load with "staging" profile
+	config, err = LoadConfigFromFile(path, "staging")
+	require.NoError(t, err)
+	require.Equal(t, "https://staging.example.com", config.URL)
+	require.Equal(t, "staging-token", config.Token)
+	require.True(t, config.OneShot)
+	require.Equal(t, "staging", config.ActiveProfile)
+}
+
+func TestLoadConfigFromFile_ProfileExplicitEmpty(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+Token = "base-token"
+
+[Profiles.local]
+URL = "http://127.0.0.1:8080"
+Token = ""
+`), 0600)
+	require.NoError(t, err)
+
+	config, err := LoadConfigFromFile(path, "local")
+	require.NoError(t, err)
+	require.Equal(t, "http://127.0.0.1:8080", config.URL)
+	require.Equal(t, "", config.Token, "Explicit empty Token in profile should clear base")
+}
+
+func TestLoadConfigFromFile_ProfileInheritsBase(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+Token = "base-token"
+DownloadBinary = "wget"
+TTL = 3600
+SecureMethod = "pgp"
+
+[Profiles.minimal]
+URL = "http://localhost:9090"
+`), 0600)
+	require.NoError(t, err)
+
+	config, err := LoadConfigFromFile(path, "minimal")
+	require.NoError(t, err)
+	require.Equal(t, "http://localhost:9090", config.URL)
+	require.Equal(t, "base-token", config.Token, "Token should be inherited")
+	require.Equal(t, "wget", config.DownloadBinary, "DownloadBinary should be inherited")
+	require.Equal(t, 3600, config.TTL, "TTL should be inherited")
+	require.Equal(t, "pgp", config.SecureMethod, "SecureMethod should be inherited")
+}
+
+func TestLoadConfigFromFile_DefaultProfile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://default.example.com"
+DefaultProfile = "prod"
+
+[Profiles.prod]
+URL = "https://prod.example.com"
+Token = "prod-token"
+
+[Profiles.dev]
+URL = "http://localhost:8080"
+`), 0600)
+	require.NoError(t, err)
+
+	// No profile specified — should use DefaultProfile
+	config, err := LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+	require.Equal(t, "https://prod.example.com", config.URL)
+	require.Equal(t, "prod-token", config.Token)
+	require.Equal(t, "prod", config.ActiveProfile)
+}
+
+func TestLoadConfigFromFile_MissingProfile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+
+[Profiles.local]
+URL = "http://127.0.0.1:8080"
+`), 0600)
+	require.NoError(t, err)
+
+	_, err = LoadConfigFromFile(path, "nonexistent")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `Profile "nonexistent" not found`)
+	require.Contains(t, err.Error(), "local")
+}
+
+func TestLoadConfigFromFile_MissingProfile_NoProfilesDefined(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+`), 0600)
+	require.NoError(t, err)
+
+	_, err = LoadConfigFromFile(path, "nonexistent")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `Profile "nonexistent" not found`)
+	require.Contains(t, err.Error(), "no profiles defined")
+}
+
+func TestLoadConfigFromFile_NoProfiles_BackwardCompat(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://upload.example.com"
+OneShot = true
+TTL = 3600
+DownloadBinary = "wget"
+`), 0600)
+	require.NoError(t, err)
+
+	// No profile — should work exactly as before
+	config, err := LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+	require.Equal(t, "https://upload.example.com", config.URL)
+	require.True(t, config.OneShot)
+	require.Equal(t, 3600, config.TTL)
+	require.Equal(t, "wget", config.DownloadBinary)
+	require.Equal(t, "", config.ActiveProfile)
+	require.Empty(t, config.AvailableProfiles)
+}
+
+func TestLoadConfig_EnvProfile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+Token = "base-token"
+
+[Profiles.envtest]
+URL = "http://env-test.local:8080"
+Token = "env-token"
+`), 0600)
+	require.NoError(t, err)
+
+	// Set PLIK_PROFILE env var
+	t.Setenv("PLIK_PROFILE", "envtest")
+	t.Setenv("PLIKRC", path)
+
+	opts := makeOpts()
+	opts["--quiet"] = true
+	config, err := LoadConfig(opts)
+	require.NoError(t, err)
+	require.Equal(t, "http://env-test.local:8080", config.URL)
+	require.Equal(t, "env-token", config.Token)
+	require.Equal(t, "envtest", config.ActiveProfile)
+}
+
+func TestLoadConfigFromFile_AvailableProfiles(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+
+[Profiles.alpha]
+URL = "http://alpha.local"
+
+[Profiles.beta]
+URL = "http://beta.local"
+`), 0600)
+	require.NoError(t, err)
+
+	config, err := LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+	require.Len(t, config.AvailableProfiles, 2)
+	require.Contains(t, config.AvailableProfiles, "alpha")
+	require.Contains(t, config.AvailableProfiles, "beta")
+}
+
+func TestLoadConfigFromFile_ProfileBooleanOverride(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+OneShot = false
+Stream = false
+
+[Profiles.ogg]
+OneShot = true
+Stream = true
+`), 0600)
+	require.NoError(t, err)
+
+	config, err := LoadConfigFromFile(path, "ogg")
+	require.NoError(t, err)
+	require.True(t, config.OneShot, "Profile should enable OneShot")
+	require.True(t, config.Stream, "Profile should enable Stream")
+}
+
+func TestLoadConfigFromFile_ProfileArchiveOptionsFullOverride(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+
+[ArchiveOptions]
+  Compress = "gzip"
+  Tar = "/bin/tar"
+
+[Profiles.custom]
+URL = "http://localhost:8080"
+
+[Profiles.custom.ArchiveOptions]
+  Compress = "xz"
+`), 0600)
+	require.NoError(t, err)
+
+	// Profile overrides ArchiveOptions — full replacement, NOT merge
+	config, err := LoadConfigFromFile(path, "custom")
+	require.NoError(t, err)
+	require.Equal(t, "xz", config.ArchiveOptions["Compress"], "Profile should override Compress")
+	require.Nil(t, config.ArchiveOptions["Tar"], "Tar should NOT be inherited (full override)")
+}
+
+func TestLoadConfigFromFile_ProfileArchiveOptionsInherited(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+
+[ArchiveOptions]
+  Compress = "gzip"
+  Tar = "/bin/tar"
+
+[Profiles.minimal]
+URL = "http://localhost:8080"
+`), 0600)
+	require.NoError(t, err)
+
+	// Profile does NOT define ArchiveOptions — should inherit from base
+	config, err := LoadConfigFromFile(path, "minimal")
+	require.NoError(t, err)
+	require.Equal(t, "gzip", config.ArchiveOptions["Compress"], "Compress should be inherited")
+	require.Equal(t, "/bin/tar", config.ArchiveOptions["Tar"], "Tar should be inherited")
+}
+
+func TestLoadConfigFromFile_ProfileSecureOptionsFullOverride(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+
+[SecureOptions]
+  Cipher = "aes-256-cbc"
+  Passphrase = "secret"
+
+[Profiles.custom]
+URL = "http://localhost:8080"
+
+[Profiles.custom.SecureOptions]
+  Cipher = "chacha20"
+`), 0600)
+	require.NoError(t, err)
+
+	// Profile overrides SecureOptions — full replacement, NOT merge
+	config, err := LoadConfigFromFile(path, "custom")
+	require.NoError(t, err)
+	require.Equal(t, "chacha20", config.SecureOptions["Cipher"], "Profile should override Cipher")
+	require.Nil(t, config.SecureOptions["Passphrase"], "Passphrase should NOT be inherited (full override)")
 }
