@@ -75,19 +75,25 @@ Config is a TOML file loaded from (in order):
 The config file supports named profiles via `[Profiles.<name>]` TOML sections. Each profile can override any subset of the top-level fields. An on-disk config file is represented by `PlikrcFile`, which embeds `CliConfig` (base fields) plus `Profiles map[string]CliConfig` and `DefaultProfile string`.
 
 **Profile selection precedence** (highest to lowest):
-1. `--profile` / `-P` CLI flag
-2. `PLIK_PROFILE` environment variable
-3. `DefaultProfile` field in config file
+1. `--profile` / `-P` CLI flag (supports comma-separated names for composition)
+2. `PLIK_PROFILE` environment variable (also supports comma-separated names)
+3. `DefaultProfile` field in config file (also supports comma-separated names)
+
+**Profile composition**: `plik -P work,zip` applies profiles left-to-right over the base config. Last one wins on conflicts; non-overlapping fields from all profiles survive. Implemented via `parseProfiles()` (split + trim + dedup) and the composition loop in `LoadConfigFromFile`.
 
 **Config layering** (highest to lowest):
 1. CLI flags (`--server`, `--token`, etc.)
-2. Selected profile's fields
+2. Selected profile(s) fields (composed left-to-right)
 3. Top-level config fields
 4. Built-in defaults (`NewUploadConfig()`)
 
 **Merge semantics**: `mergeProfile()` uses `toml.MetaData.IsDefined()` to apply only fields explicitly set in the profile section. This distinguishes "not present" from "set to zero value" (e.g., `Token = ""` in a profile clears the base token).
 
-The runtime `CliConfig` carries `ActiveProfile` (the resolved profile name) and `AvailableProfiles` (list of all profiles defined in the config) — both are `toml:"-"` and not serialized.
+**Key helpers**:
+- `parseProfiles(input string) []string` — splits a comma-separated profile string into a deduplicated ordered list. Trims whitespace, drops empty segments.
+- `SingleProfile() (string, error)` — returns the single active profile name, or errors if multiple profiles are active. Used as the DRY gate by `--login` (in `plik.go`) and `saveToken` (in `login.go`) which require exactly one profile to know where to write the token.
+
+The runtime `CliConfig` carries `ActiveProfiles []string` (the resolved profile name(s)) and `AvailableProfiles []string` (list of all profiles defined in the config) — both are `toml:"-"` and not serialized. `DefaultProfile string` (the file-level default) stays a plain string in the config struct.
 
 Existing flat configs (no `[Profiles]` sections) are 100% backward compatible.
 

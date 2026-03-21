@@ -378,7 +378,7 @@ OneShot = true
 	require.Equal(t, "http://127.0.0.1:8080", config.URL)
 	require.Equal(t, "base-token", config.Token, "Token should be inherited from base")
 	require.False(t, config.OneShot, "OneShot should be inherited from base")
-	require.Equal(t, "local", config.ActiveProfile)
+	require.Equal(t, []string{"local"}, config.ActiveProfiles)
 
 	// Load with "staging" profile
 	config, err = LoadConfigFromFile(path, "staging")
@@ -386,7 +386,7 @@ OneShot = true
 	require.Equal(t, "https://staging.example.com", config.URL)
 	require.Equal(t, "staging-token", config.Token)
 	require.True(t, config.OneShot)
-	require.Equal(t, "staging", config.ActiveProfile)
+	require.Equal(t, []string{"staging"}, config.ActiveProfiles)
 }
 
 func TestLoadConfigFromFile_ProfileExplicitEmpty(t *testing.T) {
@@ -453,7 +453,7 @@ URL = "http://localhost:8080"
 	require.NoError(t, err)
 	require.Equal(t, "https://prod.example.com", config.URL)
 	require.Equal(t, "prod-token", config.Token)
-	require.Equal(t, "prod", config.ActiveProfile)
+	require.Equal(t, []string{"prod"}, config.ActiveProfiles)
 }
 
 func TestLoadConfigFromFile_MissingProfile(t *testing.T) {
@@ -505,7 +505,7 @@ DownloadBinary = "wget"
 	require.True(t, config.OneShot)
 	require.Equal(t, 3600, config.TTL)
 	require.Equal(t, "wget", config.DownloadBinary)
-	require.Equal(t, "", config.ActiveProfile)
+	require.Empty(t, config.ActiveProfiles)
 	require.Empty(t, config.AvailableProfiles)
 }
 
@@ -532,7 +532,7 @@ Token = "env-token"
 	require.NoError(t, err)
 	require.Equal(t, "http://env-test.local:8080", config.URL)
 	require.Equal(t, "env-token", config.Token)
-	require.Equal(t, "envtest", config.ActiveProfile)
+	require.Equal(t, []string{"envtest"}, config.ActiveProfiles)
 }
 
 func TestLoadConfigFromFile_AvailableProfiles(t *testing.T) {
@@ -895,8 +895,8 @@ func TestSaveToken_PreservesProfiles(t *testing.T) {
 
 	// Now saveToken with profile "zip"
 	cfg := &CliConfig{
-		ConfigPath:    path,
-		ActiveProfile: "zip",
+		ConfigPath:     path,
+		ActiveProfiles: []string{"zip"},
 	}
 	err = saveToken(cfg, "new-zip-token")
 	require.NoError(t, err)
@@ -940,8 +940,8 @@ URL = "http://127.0.0.1:8080"
 	require.NoError(t, err)
 
 	cfg := &CliConfig{
-		ConfigPath:    path,
-		ActiveProfile: "nonexistent",
+		ConfigPath:     path,
+		ActiveProfiles: []string{"nonexistent"},
 	}
 	err = saveToken(cfg, "some-token")
 	require.Error(t, err)
@@ -961,8 +961,8 @@ func TestSaveToken_NoProfilesDefined(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := &CliConfig{
-		ConfigPath:    path,
-		ActiveProfile: "local",
+		ConfigPath:     path,
+		ActiveProfiles: []string{"local"},
 	}
 	err = saveToken(cfg, "some-token")
 	require.Error(t, err)
@@ -988,21 +988,21 @@ OneShot = false
 	// (a) Explicit profile wins over DefaultProfile
 	config, err := LoadConfigFromFile(path, "work")
 	require.NoError(t, err)
-	require.Equal(t, "work", config.ActiveProfile)
+	require.Equal(t, []string{"work"}, config.ActiveProfiles)
 	require.False(t, config.OneShot, "explicit -P work should win")
 
 	// (b) PLIK_PROFILE env var wins over DefaultProfile (when no explicit flag)
 	t.Setenv("PLIK_PROFILE", "work")
 	config, err = LoadConfigFromFile(path, "")
 	require.NoError(t, err)
-	require.Equal(t, "work", config.ActiveProfile)
+	require.Equal(t, []string{"work"}, config.ActiveProfiles)
 	require.False(t, config.OneShot, "PLIK_PROFILE env var should win over DefaultProfile")
 	t.Setenv("PLIK_PROFILE", "") // unset for step (c) — t.Setenv restores at test end, not mid-test
 
 	// (c) DefaultProfile used when no flag and no env var
 	config, err = LoadConfigFromFile(path, "")
 	require.NoError(t, err)
-	require.Equal(t, "local", config.ActiveProfile)
+	require.Equal(t, []string{"local"}, config.ActiveProfiles)
 	require.True(t, config.OneShot, "DefaultProfile should be used when nothing else set")
 }
 
@@ -1018,4 +1018,123 @@ this is not valid toml !!!
 
 	_, err = LoadConfigFromFile(path, "")
 	require.Error(t, err, "invalid TOML should return error")
+}
+
+// ─── Profile composition tests ──────────────────────────────────────────────
+
+func TestParseProfiles_Basic(t *testing.T) {
+	require.Equal(t, []string{"work", "zip"}, parseProfiles("work,zip"))
+}
+
+func TestParseProfiles_Single(t *testing.T) {
+	require.Equal(t, []string{"work"}, parseProfiles("work"))
+}
+
+func TestParseProfiles_Dedup(t *testing.T) {
+	require.Equal(t, []string{"work", "zip"}, parseProfiles("work,work,zip"))
+}
+
+func TestParseProfiles_EmptySegments(t *testing.T) {
+	require.Equal(t, []string{"work", "zip"}, parseProfiles(",work,,zip,"))
+}
+
+func TestParseProfiles_Whitespace(t *testing.T) {
+	require.Equal(t, []string{"work", "zip"}, parseProfiles("work, zip"))
+}
+
+func TestComposition_OverrideOrder(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://base.example.com"
+Token = "base-token"
+
+[Profiles.work]
+URL = "https://work.example.com"
+Token = "work-token"
+OneShot = true
+
+[Profiles.zip]
+URL = "https://zip.example.com"
+Archive = true
+ArchiveMethod = "zip"
+`), 0600)
+	require.NoError(t, err)
+
+	// work, then zip — zip.URL wins, but work.OneShot survives
+	config, err := LoadConfigFromFile(path, "work,zip")
+	require.NoError(t, err)
+	require.Equal(t, "https://zip.example.com", config.URL, "zip URL should win (last)")
+	require.Equal(t, "work-token", config.Token, "work Token should survive (zip doesn't set it)")
+	require.True(t, config.OneShot, "work OneShot should survive")
+	require.True(t, config.Archive, "zip Archive should be set")
+	require.Equal(t, "zip", config.ArchiveMethod)
+	require.Equal(t, []string{"work", "zip"}, config.ActiveProfiles)
+}
+
+func TestComposition_ReverseOrder(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://base.example.com"
+
+[Profiles.work]
+URL = "https://work.example.com"
+
+[Profiles.zip]
+URL = "https://zip.example.com"
+`), 0600)
+	require.NoError(t, err)
+
+	// zip first, then work — work.URL wins
+	config, err := LoadConfigFromFile(path, "zip,work")
+	require.NoError(t, err)
+	require.Equal(t, "https://work.example.com", config.URL)
+	require.Equal(t, []string{"zip", "work"}, config.ActiveProfiles)
+}
+
+func TestComposition_InvalidProfileInChain(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://base.example.com"
+
+[Profiles.work]
+URL = "https://work.example.com"
+`), 0600)
+	require.NoError(t, err)
+
+	_, err = LoadConfigFromFile(path, "work,typo,zip")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "typo")
+}
+
+func TestSaveToken_RejectsMultipleProfiles(t *testing.T) {
+	cfg := &CliConfig{
+		ActiveProfiles: []string{"work", "zip"},
+	}
+	err := saveToken(cfg, "some-token")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "single profile")
+}
+
+// TestComposition_CommaInProfileNameRejected verifies that a profile name
+// containing a comma is treated as composition: "us,east" becomes ["us", "east"].
+// TOML itself also rejects commas in unquoted table headers, so a profile named
+// "us,east" cannot exist in a .plikrc file.
+func TestComposition_CommaInProfileNameRejected(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://base.example.com"
+
+[Profiles.work]
+URL = "https://work.example.com"
+`), 0600)
+	require.NoError(t, err)
+
+	// "us,east" is treated as composition "us" + "east", neither of which exist
+	_, err = LoadConfigFromFile(path, "us,east")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not found")
 }

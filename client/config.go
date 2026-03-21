@@ -63,7 +63,7 @@ type CliConfig struct {
 
 	// --- Runtime (not serialized, not merged from profiles) ---
 	ConfigPath        string   `toml:"-" profile:"-"` // Path to the loaded config file
-	ActiveProfile     string   `toml:"-" profile:"-"` // Resolved profile name
+	ActiveProfiles    []string `toml:"-" profile:"-"` // Resolved profile name(s) (set after loading)
 	AvailableProfiles []string `toml:"-" profile:"-"` // All profile names from config
 
 	filePaths        []string // Upload file paths (from CLI args)
@@ -408,17 +408,20 @@ func LoadConfigFromFile(path string, profileName string) (*CliConfig, error) {
 		profileName = config.DefaultProfile
 	}
 
-	// Apply profile if one is selected
+	// Apply profile(s) if selected — composition: merge left-to-right, last wins
 	if profileName != "" {
-		profile, ok := plikrc.Profiles[profileName]
-		if !ok {
-			if len(config.AvailableProfiles) == 0 {
-				return nil, fmt.Errorf("Profile %q not found (no profiles defined in config)", profileName)
+		profileNames := parseProfiles(profileName)
+		for _, name := range profileNames {
+			profile, ok := plikrc.Profiles[name]
+			if !ok {
+				if len(config.AvailableProfiles) == 0 {
+					return nil, fmt.Errorf("Profile %q not found (no profiles defined in config)", name)
+				}
+				return nil, fmt.Errorf("Profile %q not found (available: %s)", name, strings.Join(config.AvailableProfiles, ", "))
 			}
-			return nil, fmt.Errorf("Profile %q not found (available: %s)", profileName, strings.Join(config.AvailableProfiles, ", "))
+			mergeProfile(config, &profile, md, name)
 		}
-		mergeProfile(config, &profile, md, profileName)
-		config.ActiveProfile = profileName
+		config.ActiveProfiles = profileNames
 	}
 
 	// Sanitize URL
@@ -427,6 +430,37 @@ func LoadConfigFromFile(path string, profileName string) (*CliConfig, error) {
 	config.ConfigPath = path
 
 	return config, nil
+}
+
+// parseProfiles splits a comma-separated profile string into a deduplicated,
+// ordered list. Empty segments (from leading/trailing/double commas) are dropped.
+func parseProfiles(input string) []string {
+	parts := strings.Split(input, ",")
+	seen := make(map[string]bool, len(parts))
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" || seen[p] {
+			continue
+		}
+		seen[p] = true
+		result = append(result, p)
+	}
+	return result
+}
+
+// SingleProfile returns the single active profile name, or an error if
+// multiple profiles are active. Used as a gate for operations that require
+// exactly one profile (e.g. --login, saveToken).
+func (c *CliConfig) SingleProfile() (string, error) {
+	if len(c.ActiveProfiles) > 1 {
+		return "", fmt.Errorf("this operation requires a single profile (got: %s)",
+			strings.Join(c.ActiveProfiles, ", "))
+	}
+	if len(c.ActiveProfiles) == 1 {
+		return c.ActiveProfiles[0], nil
+	}
+	return "", nil
 }
 
 // mergeProfile overlays explicitly-set profile fields onto the base config.

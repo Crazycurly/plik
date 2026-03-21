@@ -267,6 +267,36 @@ plik -P work --server https://other.example.com file.txt
 plik --login -P work
 ```
 
+### Profile Composition
+
+Combine profiles with commas — they merge **left-to-right** (last wins on conflicts):
+
+```bash
+# Use work server settings, then add zip archive override
+plik -P work,zip file.txt
+
+# Compose three profiles
+plik -P local,openssl,oneshot file.txt
+```
+
+`DefaultProfile` and `PLIK_PROFILE` also support composition:
+
+```toml
+DefaultProfile = "work,zip"
+```
+
+```bash
+PLIK_PROFILE=local,openssl plik file.txt
+```
+
+::: tip Last wins
+Profiles are applied left-to-right. If `work` sets `URL = "https://work.corp"` and `zip` also sets `URL`, `zip`'s value wins. Fields only set by one profile are always preserved.
+:::
+
+::: warning --login requires a single profile
+`plik -P work,zip --login` will error — the login flow saves a token to exactly one profile section and can't know which to use with multiple profiles.
+:::
+
 ### Profile Selection Precedence
 
 When multiple sources specify a profile, the following precedence applies (highest to lowest):

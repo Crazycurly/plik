@@ -178,17 +178,23 @@ func saveToken(cfg *CliConfig, token string) error {
 		plikrc.metadata = md
 	}
 
-	// Save token to the active profile or the top-level config
-	if cfg.ActiveProfile != "" {
+	// Save token to the active profile or the top-level config.
+	// Requires exactly one profile — can't save a token when multiple profiles
+	// are active (they may target different servers).
+	profileName, err := cfg.SingleProfile()
+	if err != nil {
+		return fmt.Errorf("--login: %s", err)
+	}
+	if profileName != "" {
 		if plikrc.Profiles == nil {
-			return fmt.Errorf("profile %q not found in config (no profiles defined)", cfg.ActiveProfile)
+			return fmt.Errorf("profile %q not found in config (no profiles defined)", profileName)
 		}
-		profile, ok := plikrc.Profiles[cfg.ActiveProfile]
+		profile, ok := plikrc.Profiles[profileName]
 		if !ok {
-			return fmt.Errorf("profile %q not found in config", cfg.ActiveProfile)
+			return fmt.Errorf("profile %q not found in config", profileName)
 		}
 		profile.Token = token
-		plikrc.Profiles[cfg.ActiveProfile] = profile
+		plikrc.Profiles[profileName] = profile
 	} else {
 		plikrc.CliConfig.Token = token
 	}

@@ -145,7 +145,7 @@ OneShot = true
 	// Load without explicit profile — DefaultProfile should kick in
 	config, err := LoadConfigFromFile(plikrc, "")
 	require.NoError(t, err)
-	require.Equal(t, "oneshot", config.ActiveProfile, "DefaultProfile should set ActiveProfile")
+	require.Equal(t, []string{"oneshot"}, config.ActiveProfiles, "DefaultProfile should set ActiveProfiles")
 	require.True(t, config.OneShot, "profile OneShot should be merged")
 
 	config.URL = testServerURL
@@ -182,7 +182,7 @@ URL = "https://also-overridden.example.com"
 	// Load with explicit profile — should override DefaultProfile
 	config, err := LoadConfigFromFile(plikrc, "plain")
 	require.NoError(t, err)
-	require.Equal(t, "plain", config.ActiveProfile, "explicit profile should win over DefaultProfile")
+	require.Equal(t, []string{"plain"}, config.ActiveProfiles, "explicit profile should win over DefaultProfile")
 	require.False(t, config.OneShot, "plain profile should not inherit OneShot from oneshot profile")
 
 	config.URL = testServerURL
@@ -226,8 +226,8 @@ ArchiveMethod = "zip"
 
 	// Simulate plik -P local --login completing auth
 	cfg := &CliConfig{
-		ConfigPath:    plikrc,
-		ActiveProfile: "local",
+		ConfigPath:     plikrc,
+		ActiveProfiles: []string{"local"},
 	}
 	err = saveToken(cfg, "new-local-token")
 	require.NoError(t, err)
@@ -267,4 +267,79 @@ ArchiveMethod = "zip"
 // findProfileSection returns the byte offset of [Profiles.<name>] in output, or -1.
 func findProfileSection(output, name string) int {
 	return strings.Index(output, "[Profiles."+name+"]")
+}
+
+// TestCLI_Profile_Composition_Upload verifies that composing two profiles
+// produces the correct merged config (last-wins for overlapping fields,
+// non-overlapping fields from each profile survive).
+func TestCLI_Profile_Composition_Upload(t *testing.T) {
+	dir := t.TempDir()
+	createTestFile(t, dir, "FILE1", testContent)
+
+	plikrc := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(plikrc, []byte(`
+URL = "https://should-be-overridden.example.com"
+
+[Profiles.oneshot]
+OneShot = true
+
+[Profiles.removable]
+Removable = true
+`), 0600)
+	require.NoError(t, err)
+
+	// Compose: oneshot first, then removable — both flags should be set
+	config, err := LoadConfigFromFile(plikrc, "oneshot,removable")
+	require.NoError(t, err)
+	require.True(t, config.OneShot, "OneShot from first profile should survive")
+	require.True(t, config.Removable, "Removable from second profile should be set")
+	require.Equal(t, []string{"oneshot", "removable"}, config.ActiveProfiles)
+
+	config.URL = testServerURL
+	config.Quiet = true
+
+	result := runCLI(t, config, map[string]any{
+		"FILE": []string{dir + "/FILE1"},
+	})
+
+	meta := getUploadMetadata(t, result.Stdout)
+	require.Equal(t, true, meta["oneShot"], "composed oneShot should reach server")
+	require.Equal(t, true, meta["removable"], "composed removable should reach server")
+}
+
+// TestCLI_Profile_Composition_DefaultProfile verifies that DefaultProfile
+// supports comma-separated names for composition.
+func TestCLI_Profile_Composition_DefaultProfile(t *testing.T) {
+	dir := t.TempDir()
+	createTestFile(t, dir, "FILE1", testContent)
+
+	plikrc := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(plikrc, []byte(`
+URL = "https://should-be-overridden.example.com"
+DefaultProfile = "oneshot,removable"
+
+[Profiles.oneshot]
+OneShot = true
+
+[Profiles.removable]
+Removable = true
+`), 0600)
+	require.NoError(t, err)
+
+	config, err := LoadConfigFromFile(plikrc, "")
+	require.NoError(t, err)
+	require.True(t, config.OneShot, "OneShot from composed DefaultProfile")
+	require.True(t, config.Removable, "Removable from composed DefaultProfile")
+	require.Equal(t, []string{"oneshot", "removable"}, config.ActiveProfiles)
+
+	config.URL = testServerURL
+	config.Quiet = true
+
+	result := runCLI(t, config, map[string]any{
+		"FILE": []string{dir + "/FILE1"},
+	})
+
+	meta := getUploadMetadata(t, result.Stdout)
+	require.Equal(t, true, meta["oneShot"], "composed oneShot from DefaultProfile should reach server")
+	require.Equal(t, true, meta["removable"], "composed removable from DefaultProfile should reach server")
 }

@@ -278,11 +278,15 @@ func (cli *PlikCLI) info(client *plik.Client) error {
 	cli.printAlways("%s", serverConfig.String())
 
 	// Profile information (at the end for readability)
-	if cli.Config.ActiveProfile != "" || len(cli.Config.AvailableProfiles) > 0 {
+	if len(cli.Config.ActiveProfiles) > 0 || len(cli.Config.AvailableProfiles) > 0 {
 		cli.printAlways("\n")
 	}
-	if cli.Config.ActiveProfile != "" {
-		cli.printAlways("Active profile : %s\n", cli.Config.ActiveProfile)
+	if len(cli.Config.ActiveProfiles) > 0 {
+		label := "Active profile"
+		if len(cli.Config.ActiveProfiles) > 1 {
+			label = "Active profiles"
+		}
+		cli.printAlways("%s : %s\n", label, strings.Join(cli.Config.ActiveProfiles, ", "))
 	}
 	if len(cli.Config.AvailableProfiles) > 0 {
 		cli.printAlways("Available profiles : %s\n", strings.Join(cli.Config.AvailableProfiles, ", "))

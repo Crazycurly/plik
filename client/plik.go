@@ -131,8 +131,13 @@ Options:
 			fmt.Fprintf(os.Stderr, "Cannot use --login with --server: the login flow saves the token to ~/.plikrc and must use the server URL configured there.\n")
 			os.Exit(1)
 		}
-		if config.ActiveProfile != "" {
-			fmt.Fprintf(os.Stderr, "Authenticating profile %q (%s)...\n", config.ActiveProfile, config.URL)
+		// --login requires a single profile: it saves a token to one profile section
+		if _, err := config.SingleProfile(); err != nil {
+			fmt.Fprintf(os.Stderr, "Cannot use --login with multiple profiles: %s\n", err)
+			os.Exit(1)
+		}
+		if len(config.ActiveProfiles) == 1 {
+			fmt.Fprintf(os.Stderr, "Authenticating profile %q (%s)...\n", config.ActiveProfiles[0], config.URL)
 		}
 		err = login(config, client)
 		if err != nil {
