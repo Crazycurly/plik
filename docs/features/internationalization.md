@@ -12,16 +12,17 @@ Plik supports multiple languages in the web interface, with automatic detection 
 
 | Code | Language |
 |------|----------|
-| `en` | English |
-| `fr` | Français |
 | `de` | Deutsch |
+| `en` | English |
 | `es` | Español |
+| `fr` | Français |
 | `it` | Italiano |
-| `pt` | Português |
 | `nl` | Nederlands |
 | `pl` | Polski |
-| `zh` | 中文 |
+| `pt` | Português |
 | `ru` | Русский |
+| `sv` | Svenska |
+| `zh` | 中文 |
 
 ## Configuration
 

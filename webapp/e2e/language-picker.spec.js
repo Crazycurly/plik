@@ -208,3 +208,30 @@ test.describe('Language Picker — layout', () => {
         await expect(flagImg).toHaveCount(1)
     })
 })
+
+test.describe('Language Picker — ordering', () => {
+    test('languages are listed in alphabetical order by code (auto first)', async ({ page, withLanguages }) => {
+        await withLanguages(['*'])
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Open the language picker dropdown
+        await page.locator('#language-picker-toggle').click()
+
+        // Collect all language option IDs in DOM order
+        const items = page.locator('[id^="lang-option-"]')
+        await expect(items.first()).toBeVisible({ timeout: 3_000 })
+
+        const ids = await items.evaluateAll(els =>
+            els.map(el => el.id.replace('lang-option-', ''))
+        )
+
+        // 'auto' must be first
+        expect(ids[0]).toBe('auto')
+
+        // The rest must be in alphabetical order
+        const langCodes = ids.slice(1)
+        const sorted = [...langCodes].sort()
+        expect(langCodes).toEqual(sorted)
+    })
+})

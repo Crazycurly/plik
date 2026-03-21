@@ -402,16 +402,17 @@
     },
     "languagePicker": {
         "switchLanguage": "Switch language",
-        "en": "English",
-        "fr": "Français",
         "de": "Deutsch",
-        "ru": "Русский",
-        "pt": "Português",
-        "it": "Italiano",
-        "pl": "Polski",
+        "en": "English",
         "es": "Español",
-        "zh": "中文",
-        "nl": "Nederlands"
+        "fr": "Français",
+        "it": "Italiano",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "pt": "Português",
+        "ru": "Русский",
+        "sv": "Svenska",
+        "zh": "中文"
     },
     "footer": {
         "abuseContact": "For abuse contact {link}"

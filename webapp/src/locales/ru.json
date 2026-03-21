@@ -402,16 +402,17 @@
     },
     "languagePicker": {
         "switchLanguage": "Сменить язык",
-        "en": "English",
-        "fr": "Français",
         "de": "Deutsch",
+        "en": "English",
         "es": "Español",
+        "fr": "Français",
         "it": "Italiano",
-        "pt": "Português",
         "nl": "Nederlands",
         "pl": "Polski",
-        "zh": "中文",
-        "ru": "Русский"
+        "pt": "Português",
+        "ru": "Русский",
+        "sv": "Svenska",
+        "zh": "中文"
     },
     "footer": {
         "abuseContact": "Для сообщения о нарушениях свяжитесь с {link}"
