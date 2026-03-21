@@ -451,7 +451,9 @@ The webapp loads instance-level settings from `/settings.json` at startup (JSONC
 
 Built-in themes: `solarized-dark`, `solarized-light`, `nord`, `nord-light`, `catppuccin-mocha`, `catppuccin-latte`, `matrix`, `hexless`. Dark themes may use outlined buttons (transparent bg + colored border with 40% opacity, brightening to 60% on hover) — see `TEMPLATE.css` for the pattern. Custom themes can be created by copying `themes/TEMPLATE.css`.
 
-**Theme picker** (`ThemePicker.vue`): Palette icon dropdown in the header nav bar, with "Theme" text label and dedicated separators. Lists themes from `getAvailableThemes()` (reads `settings.themes` — `["*"]` = all built-ins, `[]` = no picker). The picker is hidden when `themes.length ≤ 1`. Selection writes to localStorage (`plik-theme` key) and calls `applyTheme()` for instant switching. On boot, `loadSettings()` reads localStorage first, falling back to `settings.theme` default. The `autoListener` variable tracks the OS `prefers-color-scheme` listener and properly removes it when switching away from "auto" mode. **Server-side persistence**: For authenticated users, the theme is also stored in the `User.Theme` DB field. On login/session restore, `syncThemeFromUser()` applies the server value (server wins over localStorage). On theme change, `setUserTheme()` fires a background `patchMe()` call to persist the choice. Anonymous users use localStorage only.
+**Dropdown pickers** (`DropdownPicker.vue`): Generic shared dropdown component used by both `ThemePicker.vue` and `LanguagePicker.vue`. Handles open/close state, click-outside dismissal, scrollable option list (`max-h-80 overflow-y-auto`), checkmark for active item, optional flag images, and dropdown transition animation. Accepts props: `id`, `items`, `current`, `itemIdPrefix`, `buttonClass`, `title`, `dropdownWidth`. Provides `#icon` and default slots for each thin wrapper to supply its own icon and label text.
+
+**Theme picker** (`ThemePicker.vue`): Thin wrapper over `DropdownPicker`. Palette icon dropdown in the header nav bar, with "Theme" text label and dedicated separators. Lists themes from `getAvailableThemes()` (reads `settings.themes` — `["*"]` = all built-ins, `[]` = no picker). The picker is hidden when `themes.length ≤ 1`. Selection writes to localStorage (`plik-theme` key) and calls `applyTheme()` for instant switching. On boot, `loadSettings()` reads localStorage first, falling back to `settings.theme` default. The `autoListener` variable tracks the OS `prefers-color-scheme` listener and properly removes it when switching away from "auto" mode. **Server-side persistence**: For authenticated users, the theme is also stored in the `User.Theme` DB field. On login/session restore, `syncThemeFromUser()` applies the server value (server wins over localStorage). On theme change, `setUserTheme()` fires a background `patchMe()` call to persist the choice. Anonymous users use localStorage only.
 
 **Dark theme refinements**: The default dark theme uses semi-transparent button fills (`color-mix` at 85% for primary, 75% for danger) to reduce visual harshness. Body text defaults to `surface-200` (not `surface-100`) for reduced eye strain; `surface-100`/`surface-50` are reserved for headings and hover highlights. CodeEditor uses a single unified theme with CSS custom properties (`--color-surface-*`, `--color-accent-*`) so all themes get correct editor styling automatically — no per-theme CodeMirror overrides needed.
 
@@ -734,7 +736,9 @@ Language management follows the **exact same pattern as themes**:
 | `src/locales/en.json` | English translations (source of truth) |
 | `src/locales/*.json` | Translations for fr, de, es, it, pt, nl, pl (must be key-synced with `en.json`) |
 | `src/__tests__/locales.test.js` | Automated key sync test — validates keys, empty values, and placeholder tokens |
-| `src/components/LanguagePicker.vue` | Dropdown with inline SVG flags, uses `settings.js` |
+| `src/components/DropdownPicker.vue` | Generic shared dropdown (scrollbar, click-outside, transitions, flags) |
+| `src/components/LanguagePicker.vue` | Thin wrapper over `DropdownPicker`, supplies globe icon + language data |
+| `e2e/language-picker.spec.js` | Language picker e2e tests (visibility, dropdown, localStorage, wildcards, flags) |
 
 ### Translation Conventions
 

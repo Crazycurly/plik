@@ -82,14 +82,14 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
 
         <!-- Separator + Theme picker -->
         <template v-if="showThemePicker">
-          <div class="w-px h-5 bg-surface-700/50 mx-1"></div>
+          <div class="w-px h-5 bg-surface-700/50 mx-0.5"></div>
           <ThemePicker>
             <span>{{ $t('header.theme') }}</span>
           </ThemePicker>
         </template>
 
         <template v-if="showLanguagePicker">
-          <div class="w-px h-5 bg-surface-700/50 mx-1"></div>
+          <div class="w-px h-5 bg-surface-700/50 mx-0.5"></div>
           <LanguagePicker>
             <span>{{ $t('header.language') }}</span>
           </LanguagePicker>
@@ -97,7 +97,7 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
 
         <!-- Separator before auth -->
         <div v-if="isFeatureEnabled('authentication')"
-             class="w-px h-5 bg-surface-700/50 mx-1"></div>
+             class="w-px h-5 bg-surface-700/50 mx-0.5"></div>
 
         <!-- Logged in: Username link -->
         <router-link v-if="auth.user"
