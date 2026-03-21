@@ -42,7 +42,7 @@ frontend:
 ###
 server:
 	@server/gen_build_info.sh info
-	@echo "Building Plik server"
+	@echo "Building Plik server → ./server/plikd"
 	@cd server && $(GO_BUILD) -o plikd
 
 ###
@@ -50,7 +50,7 @@ server:
 ###
 client:
 	@server/gen_build_info.sh info
-	@echo "Building Plik client"
+	@echo "Building Plik client → ./client/plik"
 	@cd client && $(GO_BUILD) -o plik ./
 
 ###
