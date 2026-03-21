@@ -63,6 +63,7 @@ To use a separate configuration file, set the `PLIKRC` environment variable:
 | `upload_file` | Upload a single file by absolute path |
 | `upload_files` | Upload multiple files by paths in a single upload |
 | `server_info` | Get server version, configuration, and capabilities |
+| `list_profiles` | List available profiles from `~/.plikrc` with their server URLs |
 
 ### Common Parameters
 
@@ -79,9 +80,24 @@ All upload tools accept these optional parameters:
 | `login` | string | HTTP basic auth username |
 | `password` | string | HTTP basic auth password |
 | `token` | string | Authentication token (overrides ~/.plikrc token) |
+| `profile` | string | Profile name from `~/.plikrc` (supports composition: `"work,zip"`) |
 
 > [!NOTE]
 > Some parameters may not be available depending on server configuration. Use `server_info` to check which features are enabled.
+
+### Using Profiles
+
+If you have [profiles](/features/cli-client#profiles) defined in `~/.plikrc`, the MCP server can target different servers per upload:
+
+```jsonc
+// Upload to the "work" server
+{"tool": "upload_file", "input": {"path": "/tmp/report.pdf", "profile": "work"}}
+
+// Compose profiles: work server + zip archive settings
+{"tool": "upload_file", "input": {"path": "/tmp/report.pdf", "profile": "work,zip"}}
+```
+
+Use `list_profiles` to discover available profiles and their URLs. Omitting `profile` uses the default server (from startup config or `DefaultProfile`).
 
 ### Tool Response
 

@@ -380,16 +380,27 @@ func saveConfig(path string, plikrc *PlikrcFile) error {
 	return err
 }
 
-// LoadConfigFromFile loads a TOML config file with optional profile selection.
-// If profileName is empty, the profile is resolved from PLIK_PROFILE env var
-// or the DefaultProfile field in the config file.
-func LoadConfigFromFile(path string, profileName string) (*CliConfig, error) {
+// loadPlikrc reads and decodes a PlikrcFile from the given path.
+// It returns the parsed PlikrcFile and TOML metadata for field-presence checks.
+func loadPlikrc(path string) (*PlikrcFile, toml.MetaData, error) {
 	var plikrc PlikrcFile
 	plikrc.CliConfig = *NewUploadConfig()
 
 	md, err := toml.DecodeFile(path, &plikrc)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to deserialize ~/.plikrc : %s", err)
+		return nil, md, fmt.Errorf("Failed to deserialize ~/.plikrc : %s", err)
+	}
+
+	return &plikrc, md, nil
+}
+
+// LoadConfigFromFile reads, parses, and resolves a Plik CLI configuration.
+// It loads the base config, applies profile(s) if selected, and returns
+// the fully-merged CliConfig ready for use.
+func LoadConfigFromFile(path string, profileName string) (*CliConfig, error) {
+	plikrc, md, err := loadPlikrc(path)
+	if err != nil {
+		return nil, err
 	}
 
 	config := &plikrc.CliConfig

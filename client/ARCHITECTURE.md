@@ -144,11 +144,16 @@ Uses the official [Go MCP SDK](https://github.com/modelcontextprotocol/go-sdk) (
 | `upload_text` | Upload inline text content as a named file |
 | `upload_file` | Upload a single file by path |
 | `upload_files` | Upload multiple files by paths in a single upload |
-| `server_info` | Get server version, config, and capabilities |
+| `server_info` | Get server version, config, capabilities, and profile info |
+| `list_profiles` | List available profiles from `~/.plikrc` with their URLs |
 
 **Prompts:** `upload_guide`
 
-All upload tools use `plik.UploadParams` via struct embedding and return `UploadWithURL` — the standard `common.Upload` metadata enriched with computed URLs.
+**Profile awareness:** All upload tools accept an optional `profile` parameter to target a different server. `clientForProfile()` resolves the profile by re-reading `~/.plikrc` and building a new `plik.Client` with `clientFromConfig()`, which carries over all upload defaults (OneShot, TTL, Token, etc.) from the resolved config.
+
+**Safety gate:** If the MCP server is started with `-P <profile>`, the `profile` parameter on tools is rejected — the server is locked to the startup profile(s).
+
+**`loadPlikrc()`** (in `config.go`): Factored out of `LoadConfigFromFile` to allow `list_profiles` to read profile definitions without triggering the full resolution/merge logic.
 
 ---
 
