@@ -129,3 +129,21 @@ describe('locale key sync', () => {
         })
     }
 })
+
+describe('languagePicker key ordering', () => {
+    const allLocaleFiles = readdirSync(LOCALES_DIR).filter(f => f.endsWith('.json'))
+
+    for (const file of allLocaleFiles) {
+        it(`${file} has languagePicker keys in alphabetical order`, () => {
+            const data = loadLocale(file)
+            const picker = data.languagePicker
+            expect(picker).toBeDefined()
+
+            // Get language code keys (everything except switchLanguage)
+            const langKeys = Object.keys(picker).filter(k => k !== 'switchLanguage')
+            const sorted = [...langKeys].sort()
+
+            expect(langKeys).toEqual(sorted)
+        })
+    }
+})

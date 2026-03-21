@@ -402,17 +402,17 @@
     },
     "languagePicker": {
         "switchLanguage": "Zmień język",
-        "en": "English",
-        "fr": "Français",
         "de": "Deutsch",
+        "en": "English",
         "es": "Español",
+        "fr": "Français",
         "it": "Italiano",
-        "pt": "Português",
         "nl": "Nederlands",
         "pl": "Polski",
+        "pt": "Português",
+        "ru": "Русский",
         "sv": "Svenska",
-        "zh": "中文",
-        "ru": "Русский"
+        "zh": "中文"
     },
     "footer": {
         "abuseContact": "Aby zgłosić nadużycie, skontaktuj się z {link}"

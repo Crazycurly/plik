@@ -23,17 +23,17 @@ const BUILTIN_THEMES = [
 // Flags are SVG files in webapp/public/flags/ (same pattern as themes in themes/).
 export const BUILTIN_LANGUAGES = [
     { name: 'auto', label: 'Auto' },
-    { name: 'en', label: 'English', flag: '/flags/en.svg' },
-    { name: 'fr', label: 'Français', flag: '/flags/fr.svg' },
     { name: 'de', label: 'Deutsch', flag: '/flags/de.svg' },
+    { name: 'en', label: 'English', flag: '/flags/en.svg' },
     { name: 'es', label: 'Español', flag: '/flags/es.svg' },
+    { name: 'fr', label: 'Français', flag: '/flags/fr.svg' },
     { name: 'it', label: 'Italiano', flag: '/flags/it.svg' },
-    { name: 'pt', label: 'Português', flag: '/flags/pt.svg' },
     { name: 'nl', label: 'Nederlands', flag: '/flags/nl.svg' },
     { name: 'pl', label: 'Polski', flag: '/flags/pl.svg' },
+    { name: 'pt', label: 'Português', flag: '/flags/pt.svg' },
+    { name: 'ru', label: 'Русский', flag: '/flags/ru.svg' },
     { name: 'sv', label: 'Svenska', flag: '/flags/sv.svg' },
     { name: 'zh', label: '中文', flag: '/flags/zh.svg' },
-    { name: 'ru', label: 'Русский', flag: '/flags/ru.svg' },
 ]
 
 const STORAGE_KEY = 'plik-theme'
@@ -285,7 +285,8 @@ export function resolveAutoLanguage() {
     const available = getAvailableLanguages()
     // Only match against concrete languages (not 'auto')
     if (lang && available.some(l => l.name === lang)) return lang
-    // Fallback: first non-auto language, or 'en'
+    // Fallback: prefer 'en', then first non-auto language
+    if (available.some(l => l.name === 'en')) return 'en'
     const first = available.find(l => l.name !== 'auto')
     return first ? first.name : 'en'
 }
@@ -314,7 +315,9 @@ export function getUserLanguage() {
         return settings.language
     }
 
-    // Neither stored nor default is valid — use first available
+    // Neither stored nor default is valid — prefer 'auto', then 'en', then first available
+    if (available.some(l => l.name === 'auto')) return 'auto'
+    if (available.some(l => l.name === 'en')) return 'en'
     return available.length > 0 ? available[0].name : 'auto'
 }
 
