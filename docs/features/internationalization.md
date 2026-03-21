@@ -20,6 +20,7 @@ Plik supports multiple languages in the web interface, with automatic detection 
 | `pt` | Português |
 | `nl` | Nederlands |
 | `pl` | Polski |
+| `sv` | Svenska |
 | `zh` | 中文 |
 | `ru` | Русский |
 

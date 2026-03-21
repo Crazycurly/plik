@@ -31,6 +31,7 @@ export const BUILTIN_LANGUAGES = [
     { name: 'pt', label: 'Português', flag: '/flags/pt.svg' },
     { name: 'nl', label: 'Nederlands', flag: '/flags/nl.svg' },
     { name: 'pl', label: 'Polski', flag: '/flags/pl.svg' },
+    { name: 'sv', label: 'Svenska', flag: '/flags/sv.svg' },
     { name: 'zh', label: '中文', flag: '/flags/zh.svg' },
     { name: 'ru', label: 'Русский', flag: '/flags/ru.svg' },
 ]

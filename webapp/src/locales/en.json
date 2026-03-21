@@ -405,13 +405,14 @@
         "en": "English",
         "fr": "Français",
         "de": "Deutsch",
-        "ru": "Русский",
-        "pt": "Português",
-        "it": "Italiano",
-        "pl": "Polski",
         "es": "Español",
+        "it": "Italiano",
+        "pt": "Português",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "sv": "Svenska",
         "zh": "中文",
-        "nl": "Nederlands"
+        "ru": "Русский"
     },
     "footer": {
         "abuseContact": "For abuse contact {link}"
