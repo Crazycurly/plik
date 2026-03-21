@@ -283,7 +283,9 @@
         "loginFailed": "Inloggen mislukt",
         "googleLoginFailed": "Inloggen met Google mislukt",
         "ovhLoginFailed": "Inloggen met OVH mislukt",
-        "oidcLoginFailed": "OIDC-inloggen mislukt"
+        "oidcLoginFailed": "OIDC-inloggen mislukt",
+        "signInWithGithub": "Inloggen met GitHub",
+        "githubLoginFailed": "GitHub-inloggen mislukt"
     },
     "clientsView": {
         "title": "CLI-clients",

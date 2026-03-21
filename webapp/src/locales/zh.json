@@ -283,7 +283,9 @@
         "loginFailed": "登录失败",
         "googleLoginFailed": "Google 登录失败",
         "ovhLoginFailed": "OVH 登录失败",
-        "oidcLoginFailed": "OIDC 登录失败"
+        "oidcLoginFailed": "OIDC 登录失败",
+        "signInWithGithub": "使用 GitHub 登录",
+        "githubLoginFailed": "GitHub 登录失败"
     },
     "clientsView": {
         "title": "CLI 客户端",

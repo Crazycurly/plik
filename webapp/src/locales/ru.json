@@ -283,7 +283,9 @@
         "loginFailed": "Ошибка входа",
         "googleLoginFailed": "Ошибка входа через Google",
         "ovhLoginFailed": "Ошибка входа через OVH",
-        "oidcLoginFailed": "Ошибка входа через OIDC"
+        "oidcLoginFailed": "Ошибка входа через OIDC",
+        "signInWithGithub": "Войти через GitHub",
+        "githubLoginFailed": "Ошибка входа через GitHub"
     },
     "clientsView": {
         "title": "CLI-клиенты",

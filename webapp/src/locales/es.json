@@ -283,7 +283,9 @@
         "loginFailed": "Inicio de sesión fallido",
         "googleLoginFailed": "Inicio de sesión con Google fallido",
         "ovhLoginFailed": "Inicio de sesión con OVH fallido",
-        "oidcLoginFailed": "Inicio de sesión OIDC fallido"
+        "oidcLoginFailed": "Inicio de sesión OIDC fallido",
+        "signInWithGithub": "Iniciar sesión con GitHub",
+        "githubLoginFailed": "Inicio de sesión con GitHub fallido"
     },
     "clientsView": {
         "title": "Clientes CLI",

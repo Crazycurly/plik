@@ -283,7 +283,9 @@
         "loginFailed": "Anmeldung fehlgeschlagen",
         "googleLoginFailed": "Google-Anmeldung fehlgeschlagen",
         "ovhLoginFailed": "OVH-Anmeldung fehlgeschlagen",
-        "oidcLoginFailed": "OIDC-Anmeldung fehlgeschlagen"
+        "oidcLoginFailed": "OIDC-Anmeldung fehlgeschlagen",
+        "signInWithGithub": "Mit GitHub anmelden",
+        "githubLoginFailed": "GitHub-Anmeldung fehlgeschlagen"
     },
     "clientsView": {
         "title": "CLI-Clients",

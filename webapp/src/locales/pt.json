@@ -283,7 +283,9 @@
         "loginFailed": "Falha no login",
         "googleLoginFailed": "Falha no login com Google",
         "ovhLoginFailed": "Falha no login com OVH",
-        "oidcLoginFailed": "Falha no login OIDC"
+        "oidcLoginFailed": "Falha no login OIDC",
+        "signInWithGithub": "Entrar com GitHub",
+        "githubLoginFailed": "Falha no login com GitHub"
     },
     "clientsView": {
         "title": "Clientes CLI",
