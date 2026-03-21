@@ -720,10 +720,10 @@ Language management follows the **exact same pattern as themes**:
 
 1. `settings.json` declares `language` (default) and `languages` (picker list, `["*"]` = all built-in)
 2. `settings.js` owns the `BUILTIN_LANGUAGES` registry and all language logic
-3. `loadSettings()` reads localStorage → settings.json fallback, resolves "auto" to browser locale, calls `setLocale()` before mount
-4. `setUserLanguage()` writes localStorage, updates `currentLanguage` ref, calls `setLocale()`, and fire-and-forget PATCHes `/me` for logged-in users
+3. `loadSettings()` reads localStorage → settings.json fallback, calls `applyLanguage()` before mount (resolves "auto" to browser locale, sets `currentLanguage` ref, calls `setLocale()`)
+4. `setUserLanguage()` writes localStorage, delegates to `applyLanguage()`, and fire-and-forget PATCHes `/me` for logged-in users
 5. `syncLanguageFromUser()` is called by `authStore.js` on login/session restore (server wins over localStorage)
-6. `LanguagePicker.vue` uses `getAvailableLanguages()` and `currentLanguage` from `settings.js`
+6. `LanguagePicker.vue` (thin wrapper over shared `DropdownPicker.vue`) uses `getAvailableLanguages()` and `currentLanguage` from `settings.js`
 
 ### File Structure
 

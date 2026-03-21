@@ -318,10 +318,22 @@ export function getUserLanguage() {
 }
 
 /**
- * Set the user's language preference — writes to localStorage and applies immediately.
- * When logged in, also persists to the server (fire-and-forget).
- * @param {string} name - language name ('auto', 'en', 'fr', etc.)
- * @param {object} opts
+ * Apply a language: set the reactive ref and configure vue-i18n.
+ * Symmetrical with applyTheme() — resolves 'auto' to a concrete locale.
+ * @param {string} name - language code or 'auto'
+ */
+export async function applyLanguage(name) {
+    currentLanguage.value = name
+    const effectiveLocale = name === 'auto' ? resolveAutoLanguage() : name
+    const { setLocale } = await import('./i18n.js')
+    setLocale(effectiveLocale)
+}
+
+/**
+ * Save the user's preferred language and apply it.
+ * Writes to localStorage, sets the reactive ref, applies the locale to vue-i18n,
+ * and optionally persists to the backend.
+ * @param {string} name - language code or 'auto'
  * @param {boolean} opts.skipSync - if true, skip server persistence (used when applying server value)
  */
 export async function setUserLanguage(name, { skipSync = false } = {}) {
@@ -330,12 +342,8 @@ export async function setUserLanguage(name, { skipSync = false } = {}) {
     } catch {
         // localStorage unavailable
     }
-    currentLanguage.value = name
 
-    // Apply the effective locale (resolve 'auto' to concrete language)
-    const effectiveLocale = name === 'auto' ? resolveAutoLanguage() : name
-    const { setLocale } = await import('./i18n.js')
-    setLocale(effectiveLocale)
+    await applyLanguage(name)
 
     // Persist to backend if logged in (fire-and-forget)
     if (!skipSync) {
@@ -389,14 +397,8 @@ export async function loadSettings() {
     // Apply theme before anything renders
     await applyTheme(theme)
 
-    // Resolve language: localStorage > settings.json default
-    const language = getUserLanguage()
-    currentLanguage.value = language
-
-    // Apply language before Vue mounts
-    const effectiveLocale = language === 'auto' ? resolveAutoLanguage() : language
-    const { setLocale } = await import('./i18n.js')
-    setLocale(effectiveLocale)
+    // Resolve and apply language before Vue mounts
+    await applyLanguage(getUserLanguage())
 
     // Set page title (stays empty if no custom settings — white-label safe)
     document.title = settings.name
