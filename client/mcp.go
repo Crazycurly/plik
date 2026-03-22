@@ -21,14 +21,14 @@ type UploadTextInput struct {
 	plik.UploadParams
 	Filename string `json:"filename" jsonschema:"Name for the uploaded file (e.g. snippet.go)"`
 	Content  string `json:"content" jsonschema:"Text content to upload"`
-	Profile  string `json:"profile,omitempty" jsonschema:"Profile name from .plikrc (e.g. 'work'). Supports composition ('work,zip'). Omit to use the default."`
+	Profile  string `json:"profile,omitempty" jsonschema:"Profile name from .plikrc (e.g. 'work'). Supports composition ('work,zip'). Omit to use the default. Call list_profiles first to discover available names when the user specifies a target server or context."`
 }
 
 // UploadFileInput is the input schema for the upload_file tool
 type UploadFileInput struct {
 	plik.UploadParams
 	Path    string `json:"path" jsonschema:"Absolute path to the file to upload"`
-	Profile string `json:"profile,omitempty" jsonschema:"Profile name from .plikrc (e.g. 'work'). Supports composition ('work,zip'). Omit to use the default."`
+	Profile string `json:"profile,omitempty" jsonschema:"Profile name from .plikrc (e.g. 'work'). Supports composition ('work,zip'). Omit to use the default. Call list_profiles first to discover available names when the user specifies a target server or context."`
 }
 
 // UploadFilesInput is the input schema for the upload_files tool
@@ -303,6 +303,14 @@ func makeListProfilesHandler(baseCfg *CliConfig) mcp.ToolHandlerFor[ListProfiles
 
 var uploadGuidePrompt = `You have access to Plik file upload tools. Here's how to use them:
 
+## Choosing the right server (do this first!)
+The user may have multiple Plik servers configured as profiles in ~/.plikrc (e.g. "local" for a local
+dev server, "work" for a corporate server). When the user mentions a target like "locally", "to work",
+"on staging", or any specific server — call list_profiles FIRST to discover available profiles and
+their server URLs, then pass the matching profile name to the upload tool.
+
+If the user doesn't specify a target, omit the profile parameter to use the default server.
+
 ## Uploading text content
 Use the upload_text tool to upload generated text, code snippets, logs, or any text content.
 This avoids creating temporary files on the filesystem.
@@ -314,6 +322,7 @@ There is no file size limit.
 
 ## Upload options
 All upload tools support these optional parameters:
+- profile: Target a specific server profile (call list_profiles to discover available names)
 - ttl: Time to live in seconds (0 = server default)
 - one_shot: Delete the file after it's downloaded once
 - removable: Allow anyone to delete the file
@@ -325,11 +334,8 @@ All upload tools support these optional parameters:
 
 Note: Some features may or may not be enabled on the server. Use the server_info tool to discover the server configuration.
 
-## Using profiles
-If the user has multiple profiles defined in ~/.plikrc, you can target a specific server
-by passing the "profile" parameter on any upload tool. Use the list_profiles tool to discover
-available profiles and their server URLs. Profile composition is supported: profile "work,zip"
-applies the work profile settings first, then zip overrides on top.
+Profile composition is supported: profile "work,zip" applies the work profile settings first,
+then zip overrides on top.
 
 ## Getting server info
 Use the server_info tool to check the server's configuration, version, and capabilities.
@@ -379,17 +385,17 @@ func newMCPServer(baseCfg *CliConfig) *mcp.Server {
 	// Register tools
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "upload_text",
-		Description: "Upload text content as a file to Plik. Use this to upload generated text, code snippets, or any text content without creating temporary files.",
+		Description: "Upload text content as a file to Plik. Use this to upload generated text, code snippets, or any text content without creating temporary files. Accepts an optional 'profile' to target a specific server (call list_profiles to discover available profiles).",
 	}, makeUploadTextHandler(baseCfg))
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "upload_file",
-		Description: "Upload a single file from a local filesystem path to Plik.",
+		Description: "Upload a single file from a local filesystem path to Plik. Accepts an optional 'profile' to target a specific server (call list_profiles to discover available profiles).",
 	}, makeUploadFileHandler(baseCfg))
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "upload_files",
-		Description: "Upload multiple files from local filesystem paths to Plik in a single upload.",
+		Description: "Upload multiple files from local filesystem paths to Plik in a single upload. Accepts an optional 'profile' to target a specific server (call list_profiles to discover available profiles).",
 	}, makeUploadFilesHandler(baseCfg))
 
 	mcp.AddTool(server, &mcp.Tool{
@@ -399,7 +405,7 @@ func newMCPServer(baseCfg *CliConfig) *mcp.Server {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_profiles",
-		Description: "List available profiles from ~/.plikrc with their server URLs. Use this to discover which profiles can be passed to upload tools.",
+		Description: "List available profiles from ~/.plikrc with their server URLs. Call this BEFORE uploading when the user mentions a specific server or target (e.g. 'locally', 'to work', 'on staging'). Use the returned profile names as the 'profile' parameter on upload tools.",
 	}, makeListProfilesHandler(baseCfg))
 
 	// Register prompts
