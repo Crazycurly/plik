@@ -49,7 +49,7 @@ Core types used throughout the server:
 | `upload.go` | `Upload` struct — container for files with TTL, options, password, E2EE scheme |
 | `file.go` | `File` struct + status constants (`missing`/`uploading`/`uploaded`/`removed`/`deleted`) |
 | `user.go` | `User` struct + provider constants (`local`/`google`/`ovh`/`oidc`/`github`), includes `Theme` field for webapp theme preference |
-| `token.go` | `Token` struct — UUID-based upload tokens |
+| `token.go` | `Token` struct — prefixed opaque tokens (`plik_` + Base62 random + CRC32 checksum). Backward-compatible with legacy UUIDv4 tokens. |
 | `cli_auth_session.go` | `CLIAuthSession` struct — ephemeral device auth sessions for CLI login |
 | `config.go` | `Configuration` struct — TOML parsing + env var override |
 | `feature_flags.go` | Feature flag types: `disabled`/`enabled`/`default`/`forced` |
@@ -233,7 +233,7 @@ Each handler file contains one or more `http.Handler` functions.
 | `oidc.go` | `OIDCLogin`, `OIDCCallback` | OpenID Connect |
 | `github.go` | `GitHubLogin`, `GitHubCallback` | GitHub OAuth (optional org restriction) |
 | `cli_auth.go` | `CLIAuthInit`, `CLIAuthApprove`, `CLIAuthPoll` | CLI device auth flow |
-| `me.go` | `UserInfo`, `PatchMe`, `DeleteAccount`, `GetUserStatistics`, `GetUserUploads`, `RemoveUserUploads` | Current user; token filter param is UUID-validated (no DB lookup, works for revoked tokens) |
+| `me.go` | `UserInfo`, `PatchMe`, `DeleteAccount`, `GetUserStatistics`, `GetUserUploads`, `RemoveUserUploads` | Current user; token filter param accepts both prefixed and legacy UUID formats (no DB lookup, works for revoked tokens) |
 | `token.go` | `GetUserTokens`, `CreateToken`, `RevokeToken` | Token management |
 | `user.go` | `GetUsers`, `CreateUser`, `UpdateUser` | User management |
 | `admin.go` | `GetServerStatistics`, `GetUploads` | Admin endpoints |

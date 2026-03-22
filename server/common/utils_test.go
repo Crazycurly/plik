@@ -154,3 +154,32 @@ func TestSanitizeFilenameForDisposition(t *testing.T) {
 	// Multiple BiDi overrides are stripped
 	require.Equal(t, "safe.txt", SanitizeFilenameForDisposition("\u202A\u202Bsafe\u2066.\u2069txt\u202C"))
 }
+
+func TestGenerateRandomID(t *testing.T) {
+	// Correct length
+	for _, length := range []int{0, 1, 8, 16, 32, 64, 128} {
+		id := GenerateRandomID(length)
+		require.Equal(t, length, len(id), "unexpected length for GenerateRandomID(%d)", length)
+	}
+
+	// All characters are within Base62Charset
+	id := GenerateRandomID(1000)
+	for i, c := range id {
+		require.Contains(t, Base62Charset, string(c), "char %d (%q) not in Base62Charset", i, c)
+	}
+
+	// Uniqueness (no collisions in 1000 IDs of length 16)
+	seen := make(map[string]struct{}, 1000)
+	for range 1000 {
+		s := GenerateRandomID(16)
+		_, exists := seen[s]
+		require.False(t, exists, "duplicate ID: %s", s)
+		seen[s] = struct{}{}
+	}
+}
+
+func BenchmarkGenerateRandomID(b *testing.B) {
+	for b.Loop() {
+		GenerateRandomID(32)
+	}
+}

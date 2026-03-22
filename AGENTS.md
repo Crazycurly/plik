@@ -107,6 +107,7 @@ make vuln                   # govulncheck (report only)
 | `server/common/config.go` | Config struct + parsing + env var override logic |
 | `server/common/file.go` | File model + status constants |
 | `server/common/upload.go` | Upload model |
+| `server/common/token.go` | Token model + prefixed opaque token generation (`plik_` + Base62 + CRC32 checksum) |
 | `server/metadata/upload.go` | Upload queries, `UploadFilters` struct for filtering by user/token/badge settings |
 | `server/handlers/misc.go` | Shared helpers: `parseBoolFilter`, `parseBadgeFilters` (badge filter struct from request) |
 | `webapp/src/components/UploadControls.vue` | Shared sort/order/badge-filter control bar used by AdminView and HomeView |
@@ -118,7 +119,7 @@ make vuln                   # govulncheck (report only)
 - **Feature flags**: Four states — `disabled`, `enabled` (opt-in), `default` (opt-out), `forced`
 - **Special values**: `0` = use server default, `-1` = unlimited (for file size, TTL, etc.)
 - **Error handling**: Handlers return HTTP errors; middleware chain panics on missing required context values
-- **ID generation**: Random hex strings (16 chars for files, 16 chars for uploads)
+- **ID generation**: Random hex strings (16 chars for files, 16 chars for uploads); CLI tokens use prefixed opaque format (`plik_` + 30 Base62 + 6 CRC32, 41 chars total)
 - **Backend interface**: `data.Backend` is the storage abstraction; implementations are swappable via config
 - **Archive compression**: Enabled by default (`EnableArchiveCompression = true`). Can be disabled to `zip.Store` (no compression) on public instances to prevent CPU exhaustion DoS.
 

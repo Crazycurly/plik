@@ -1,6 +1,7 @@
 package common
 
 import (
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -9,6 +10,47 @@ import (
 
 	"github.com/root-gg/utils"
 )
+
+// Base62Charset is the character set for Base62 encoding.
+// Used by GenerateRandomID and token checksum encoding.
+const Base62Charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+// GenerateRandomID generates a cryptographically random Base62 string of the specified length.
+//
+// It uses crypto/rand.Read (CSPRNG) with rejection sampling to avoid modulo bias:
+//   - A random byte can hold values 0–255 (256 possible values)
+//   - Our charset has 62 characters, and 256 is not evenly divisible by 62
+//   - 256 % 62 = 8, so a naive b%62 would make the first 8 characters ~25% more likely
+//   - We reject bytes ≥ 248 (the largest multiple of 62 ≤ 256), giving perfectly uniform output
+//   - Rejection rate is only 8/256 ≈ 3.1%, so the loop almost never needs a second pass
+func GenerateRandomID(length int) string {
+	if length == 0 {
+		return ""
+	}
+
+	result := make([]byte, length)
+
+	// Double-size buffer to account for rejected bytes (~3.1% rejection rate)
+	raw := make([]byte, length*2)
+
+	filled := 0
+	for filled < length {
+		if _, err := rand.Read(raw); err != nil {
+			panic(fmt.Sprintf("failed to generate random ID: %s", err))
+		}
+		for _, b := range raw {
+			if b < 248 { // Reject bytes 248–255 to avoid modulo bias
+				result[filled] = Base62Charset[b%62]
+				filled++
+				if filled == length {
+					break
+				}
+			}
+		}
+	}
+
+	return string(result)
+}
 
 // IsPlikWebapp checks if the request comes from the Plik web application
 func IsPlikWebapp(req *http.Request) bool {

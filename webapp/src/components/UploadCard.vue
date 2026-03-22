@@ -35,7 +35,7 @@ const emit = defineEmits(['delete', 'filter-token', 'filter-user'])
           {{ $t('uploadCard.token') }}
           <button @click="emit('filter-token', upload.token)"
                   class="text-accent-400 hover:text-accent-300 transition-colors">
-            {{ tokenLabel || upload.token?.substring(0, 8) + '...' }}
+            {{ tokenLabel || upload.token }}
           </button>
         </p>
       </div>

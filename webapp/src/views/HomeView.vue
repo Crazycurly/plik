@@ -91,7 +91,7 @@ const effectiveDefaultTTL = computed(() => {
     return cfgTTL
 })
 
-// ── Token lookup map (token UUID → comment) ──
+// ── Token lookup map (token → comment) ──
 const tokenMap = computed(() => {
     const map = {}
     for (const t of tokens.value) {
@@ -104,7 +104,7 @@ function tokenLabel(tokenStr) {
     if (!tokenStr) return ''
     const comment = tokenMap.value[tokenStr]
     if (comment) return comment
-    return tokenStr.substring(0, 8) + '...'
+    return tokenStr
 }
 
 // ── Uploads API ──
@@ -248,7 +248,7 @@ async function handleCreateToken() {
 }
 
 async function handleDeleteTokenUploads(token) {
-    const label = token.comment || token.token.substring(0, 8) + '...'
+    const label = token.comment || token.token
     confirm.value = {
         message: $t('homeView.deleteTokenUploadsConfirm', { label }),
         action: async () => {
@@ -268,7 +268,7 @@ async function handleDeleteTokenUploads(token) {
 
 async function handleRevokeToken(token) {
     confirm.value = {
-        message: $t('homeView.revokeTokenConfirm', { token: token.token.substring(0, 8) + '...' }),
+        message: $t('homeView.revokeTokenConfirm', { token: token.token }),
         action: async () => {
             try {
                 await revokeToken(token.token)
@@ -623,7 +623,7 @@ onMounted(() => {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                   </svg>
-                  token: <span class="font-mono text-accent-400">{{ tokenFilter.substring(0, 12) }}...</span>
+                  token: <span class="font-mono text-accent-400 truncate max-w-[20ch] inline-block align-bottom" :title="tokenFilter">{{ tokenFilter }}</span>
                   <button @click="clearTokenFilter" class="text-surface-500 hover:text-surface-100">×</button>
                 </div>
               </div>

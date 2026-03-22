@@ -1,17 +1,10 @@
 package common
 
 import (
-	"crypto/rand"
-	"fmt"
-	"math/big"
 	"slices"
 	"time"
 
 	"gorm.io/gorm"
-)
-
-var (
-	randRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 )
 
 // Upload object
@@ -118,22 +111,6 @@ func (upload *Upload) Sanitize(config *Configuration) {
 	for _, file := range upload.Files {
 		file.Sanitize()
 	}
-}
-
-// GenerateRandomID generates a random string with specified length.
-// Used to generate upload id, tokens, ...
-func GenerateRandomID(length int) string {
-	max := *big.NewInt(int64(len(randRunes)))
-	b := make([]rune, length)
-	for i := range b {
-		n, err := rand.Int(rand.Reader, &max)
-		if err != nil {
-			panic(fmt.Sprintf("failed to generate random ID : %s", err))
-		}
-		b[i] = randRunes[n.Int64()]
-	}
-
-	return string(b)
 }
 
 // ExtendExpirationDate extends the upload expiration date by TTL
