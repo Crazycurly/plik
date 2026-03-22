@@ -86,17 +86,14 @@ func ValidateTokenChecksum(token string) bool {
 	return checksumStr == expectedStr
 }
 
-// base62Chars is the character set for Base62 encoding (same as randRunes in upload.go)
-const base62Chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
 // encodeBase62 encodes a uint32 value as a Base62 string, zero-padded to the given length.
 func encodeBase62(value uint32, length int) string {
 	v := uint64(value)
-	base := uint64(len(base62Chars))
+	base := uint64(len(Base62Charset))
 
 	result := make([]byte, length)
 	for i := length - 1; i >= 0; i-- {
-		result[i] = base62Chars[v%base]
+		result[i] = Base62Charset[v%base]
 		v /= base
 	}
 
