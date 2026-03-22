@@ -195,6 +195,31 @@ func TestUnmarshalArgs_ServerOverride(t *testing.T) {
 	require.Equal(t, "https://plik.example.com", config.URL)
 }
 
+func TestUnmarshalArgs_ServerClearsToken(t *testing.T) {
+	config := NewUploadConfig()
+	config.Token = "should-be-cleared"
+	opts := makeOpts()
+	opts["--server"] = "https://other.example.com"
+
+	err := config.UnmarshalArgs(opts)
+	require.NoError(t, err)
+	require.Equal(t, "https://other.example.com", config.URL)
+	require.Equal(t, "", config.Token, "--server should clear token to prevent leakage")
+}
+
+func TestUnmarshalArgs_ServerWithToken(t *testing.T) {
+	config := NewUploadConfig()
+	config.Token = "should-be-cleared"
+	opts := makeOpts()
+	opts["--server"] = "https://other.example.com"
+	opts["--token"] = "explicit-token"
+
+	err := config.UnmarshalArgs(opts)
+	require.NoError(t, err)
+	require.Equal(t, "https://other.example.com", config.URL)
+	require.Equal(t, "explicit-token", config.Token, "--token should override the cleared value")
+}
+
 // --- Secure mode ---
 
 func TestUnmarshalArgs_SecureEnabled(t *testing.T) {

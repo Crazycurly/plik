@@ -45,7 +45,7 @@ Options:
   --extend-ttl              Extend upload expiration date by TTL when accessed
   -n, --name NAME           Set file name when piping from STDIN
   --stdin                   Enable pipe from stdin explicitly when DisableStdin is set in .plikrc
-  --server SERVER           Overrides server url
+  --server SERVER           Overrides server url (clears token; use --token to set explicitly)
   --token TOKEN             Specify an upload token ( if '-' prompt for value )
   --comments COMMENT        Set comments of the upload ( MarkDown compatible )
   -p                        Protect the upload with login and password ( be prompted )

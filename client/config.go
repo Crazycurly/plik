@@ -209,6 +209,7 @@ func writeConfig(w io.Writer, plikrc *PlikrcFile) error {
 	fmt.Fprintf(w, "# Named profiles let you maintain different configurations\n")
 	fmt.Fprintf(w, "# for multiple servers or use-cases. Use with: plik -P <name> file.txt\n")
 	fmt.Fprintf(w, "# Profiles inherit all top-level settings and can override any field.\n")
+	fmt.Fprintf(w, "# If a profile sets URL, it *must* also set Token (use Token = \"\" for anonymous).\n")
 
 	if len(plikrc.Profiles) > 0 {
 		// Sort profile names for deterministic output
@@ -706,6 +707,13 @@ func (config *CliConfig) UnmarshalArgs(opts docopt.Opts) (err error) {
 	// Plik server url
 	if opts["--server"] != nil && opts["--server"].(string) != "" {
 		config.URL = opts["--server"].(string)
+		if config.Token != "" {
+			config.Token = ""
+			// Only warn if --token is not also provided (it will restore the value later)
+			if opts["--token"] == nil || opts["--token"].(string) == "" {
+				fmt.Fprintf(os.Stderr, "Warning: --server overrides URL — token cleared (use --token to set explicitly)\n")
+			}
+		}
 	}
 
 	// Paths
