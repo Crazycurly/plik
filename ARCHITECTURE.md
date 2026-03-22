@@ -23,7 +23,7 @@ Plik is a temporary file upload system with three main components:
 | `Upload` | `server/common` | Container for files — has TTL, options (OneShot, Stream, Removable), password protection, E2EE scheme |
 | `File` | `server/common` | Individual file within an upload — has status, size, type, md5 |
 | `User` | `server/common` | Authenticated user (local, Google, GitHub, OVH, OIDC) — has quotas |
-| `Token` | `server/common` | Upload token (UUID) — authenticates CLI clients on behalf of a user |
+| `Token` | `server/common` | Upload token (prefixed opaque: `plik_` + Base62 + CRC32) — authenticates CLI clients on behalf of a user |
 
 ---
 
@@ -293,7 +293,8 @@ When processing a request, limits are resolved via the custom `Context`:
 
 ### CLI Token (per-user)
 1. Authenticated user creates a CLI token via `POST /me/token`
-2. Token (UUID) sent in `X-PlikToken` header or stored in `.plikrc` config
+2. Token (prefixed opaque: `plik_` + 30 Base62 random chars + 6 Base62 CRC32 checksum, 41 chars total) sent in `X-PlikToken` header or stored in `.plikrc` config
+   - Legacy UUIDv4 tokens remain accepted for backward compatibility
 3. Authenticates CLI clients on behalf of a user — uploads are linked to the user's account for quota tracking
 
 ### CLI Device Auth Flow

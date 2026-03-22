@@ -2,9 +2,27 @@ package common
 
 import (
 	"fmt"
+	"hash/crc32"
+	"strings"
 	"time"
+)
 
-	uuid "github.com/nu7hatch/gouuid"
+const (
+	// TokenPrefix is the fixed prefix for all new Plik CLI tokens.
+	// Enables secret scanners to identify leaked tokens and improves human recognition.
+	TokenPrefix = "plik_"
+
+	// TokenRandomLength is the number of Base62 random characters in the token body.
+	// 30 chars of Base62 ≈ 178 bits of entropy.
+	TokenRandomLength = 30
+
+	// TokenChecksumLength is the number of Base62 characters used for the CRC32 checksum.
+	// CRC32 produces a 32-bit value; 6 Base62 chars can represent up to ~47 bits (62^6 ≈ 5.7×10^10 > 2^32).
+	TokenChecksumLength = 6
+
+	// TokenTotalLength is the total length of a prefixed token:
+	// len("plik_") + 30 + 6 = 41
+	TokenTotalLength = len(TokenPrefix) + TokenRandomLength + TokenChecksumLength
 )
 
 // Token provide a very basic authentication mechanism
@@ -24,11 +42,82 @@ func NewToken() (t *Token) {
 	return t
 }
 
-// Initialize generate the token uuid and sets the creation date
+// Initialize generate the prefixed token string and sets the creation date
 func (t *Token) Initialize() {
-	token, err := uuid.NewV4()
-	if err != nil {
-		panic(fmt.Errorf("unable to generate token uuid %s", err))
+	t.Token = GeneratePrefixedToken()
+}
+
+// GeneratePrefixedToken creates a new token in the format: plik_<30 Base62 random chars><6 Base62 CRC32 checksum>
+func GeneratePrefixedToken() string {
+	// Generate the random body
+	body := GenerateRandomID(TokenRandomLength)
+
+	// Build the prefix + body string to checksum
+	payload := TokenPrefix + body
+
+	// Compute CRC32 checksum of the payload
+	checksum := crc32.ChecksumIEEE([]byte(payload))
+
+	// Encode CRC32 as Base62 (zero-padded to TokenChecksumLength chars)
+	checksumStr := encodeBase62(checksum, TokenChecksumLength)
+
+	return payload + checksumStr
+}
+
+// ValidateTokenChecksum checks if a token has a valid plik_ prefix and matching CRC32 checksum.
+// Returns false for legacy UUIDv4 tokens (no prefix) without error.
+func ValidateTokenChecksum(token string) bool {
+	if !strings.HasPrefix(token, TokenPrefix) {
+		return false
 	}
-	t.Token = token.String()
+
+	if len(token) != TokenTotalLength {
+		return false
+	}
+
+	// Split into payload (prefix + random body) and checksum
+	payload := token[:len(TokenPrefix)+TokenRandomLength]
+	checksumStr := token[len(TokenPrefix)+TokenRandomLength:]
+
+	// Recompute and compare
+	expected := crc32.ChecksumIEEE([]byte(payload))
+	expectedStr := encodeBase62(expected, TokenChecksumLength)
+
+	return checksumStr == expectedStr
+}
+
+// base62Chars is the character set for Base62 encoding (same as randRunes in upload.go)
+const base62Chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+// encodeBase62 encodes a uint32 value as a Base62 string, zero-padded to the given length.
+func encodeBase62(value uint32, length int) string {
+	v := uint64(value)
+	base := uint64(len(base62Chars))
+
+	result := make([]byte, length)
+	for i := length - 1; i >= 0; i-- {
+		result[i] = base62Chars[v%base]
+		v /= base
+	}
+
+	return string(result)
+}
+
+// FormatTokenForDisplay returns a human-friendly truncated version of a token.
+// For prefixed tokens: "plik_aBcDeFgH…"
+// For legacy UUIDs:    "550e8400…"
+// Available for server-side usage (e.g., plikd token list CLI output).
+func FormatTokenForDisplay(token string, maxChars int) string {
+	if len(token) <= maxChars {
+		return token
+	}
+
+	if strings.HasPrefix(token, TokenPrefix) {
+		// Show prefix + first N chars of the random body
+		remaining := max(maxChars-len(TokenPrefix), 1)
+		end := min(len(TokenPrefix)+remaining, len(token))
+		return token[:end] + "…"
+	}
+
+	return fmt.Sprintf("%s…", token[:maxChars])
 }

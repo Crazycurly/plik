@@ -227,8 +227,18 @@ func DeleteAccount(ctx *context.Context, resp http.ResponseWriter, req *http.Req
 // uuidRe matches a UUID v4 string (8-4-4-4-12 hex).
 var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
+// isValidTokenFormat checks if a token string is a valid token format.
+// Accepts both legacy UUIDv4 tokens and new prefixed opaque tokens (plik_...).
+// For prefixed tokens, the CRC32 checksum is verified to catch typos early.
+func isValidTokenFormat(token string) bool {
+	if uuidRe.MatchString(token) {
+		return true
+	}
+	return common.ValidateTokenChecksum(token)
+}
+
 // getUserAndTokenStr extracts the authenticated user and an optional token
-// query parameter (validated as a UUID string, no DB lookup).
+// query parameter (validated format, no DB lookup).
 // This allows filtering by revoked tokens — the token doesn't need to exist.
 func getUserAndTokenStr(ctx *context.Context, req *http.Request) (user *common.User, tokenStr string, err error) {
 	user = ctx.GetUser()
@@ -237,7 +247,7 @@ func getUserAndTokenStr(ctx *context.Context, req *http.Request) (user *common.U
 	}
 
 	tokenStr = req.URL.Query().Get("token")
-	if tokenStr != "" && !uuidRe.MatchString(tokenStr) {
+	if tokenStr != "" && !isValidTokenFormat(tokenStr) {
 		return nil, "", common.NewHTTPError("invalid token format", nil, http.StatusBadRequest)
 	}
 
