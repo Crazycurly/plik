@@ -50,6 +50,7 @@ URL = "https://base.example.com"
 
 [Profiles.work]
 URL = "https://work.example.com"
+Token = ""
 `), 0600)
 	require.NoError(t, err)
 
@@ -70,9 +71,11 @@ URL = "https://base.example.com"
 
 [Profiles.work]
 URL = "https://work.example.com"
+Token = ""
 
 [Profiles.local]
 URL = "http://localhost:8080"
+Token = ""
 `), 0600)
 	require.NoError(t, err)
 
@@ -126,9 +129,11 @@ DefaultProfile = "work"
 
 [Profiles.work]
 URL = "https://work.example.com"
+Token = ""
 
 [Profiles.local]
 URL = "http://localhost:8080"
+Token = ""
 
 [Profiles.zip]
 Archive = true

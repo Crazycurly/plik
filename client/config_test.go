@@ -364,6 +364,7 @@ OneShot = false
 
 [Profiles.local]
 URL = "http://127.0.0.1:8080"
+Token = ""
 
 [Profiles.staging]
 URL = "https://staging.example.com"
@@ -376,7 +377,7 @@ OneShot = true
 	config, err := LoadConfigFromFile(path, "local")
 	require.NoError(t, err)
 	require.Equal(t, "http://127.0.0.1:8080", config.URL)
-	require.Equal(t, "base-token", config.Token, "Token should be inherited from base")
+	require.Equal(t, "", config.Token, "Token should be cleared — profile defined URL with Token = empty")
 	require.False(t, config.OneShot, "OneShot should be inherited from base")
 	require.Equal(t, []string{"local"}, config.ActiveProfiles)
 
@@ -420,13 +421,14 @@ SecureMethod = "pgp"
 
 [Profiles.minimal]
 URL = "http://localhost:9090"
+Token = "minimal-token"
 `), 0600)
 	require.NoError(t, err)
 
 	config, err := LoadConfigFromFile(path, "minimal")
 	require.NoError(t, err)
 	require.Equal(t, "http://localhost:9090", config.URL)
-	require.Equal(t, "base-token", config.Token, "Token should be inherited")
+	require.Equal(t, "minimal-token", config.Token, "Token should come from profile")
 	require.Equal(t, "wget", config.DownloadBinary, "DownloadBinary should be inherited")
 	require.Equal(t, 3600, config.TTL, "TTL should be inherited")
 	require.Equal(t, "pgp", config.SecureMethod, "SecureMethod should be inherited")
@@ -445,6 +447,7 @@ Token = "prod-token"
 
 [Profiles.dev]
 URL = "http://localhost:8080"
+Token = ""
 `), 0600)
 	require.NoError(t, err)
 
@@ -464,6 +467,7 @@ URL = "https://plik.root.gg"
 
 [Profiles.local]
 URL = "http://127.0.0.1:8080"
+Token = ""
 `), 0600)
 	require.NoError(t, err)
 
@@ -507,6 +511,63 @@ DownloadBinary = "wget"
 	require.Equal(t, "wget", config.DownloadBinary)
 	require.Empty(t, config.ActiveProfiles)
 	require.Empty(t, config.AvailableProfiles)
+}
+
+func TestValidateProfile_URLWithoutToken(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://base.example.com"
+Token = "base-secret"
+
+[Profiles.leak]
+URL = "https://evil.example.com"
+`), 0600)
+	require.NoError(t, err)
+
+	_, err = LoadConfigFromFile(path, "leak")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `"leak"`)
+	require.Contains(t, err.Error(), "defines URL but not Token")
+}
+
+func TestValidateProfile_URLWithEmptyToken(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://base.example.com"
+Token = "base-secret"
+
+[Profiles.anon]
+URL = "https://public.example.com"
+Token = ""
+`), 0600)
+	require.NoError(t, err)
+
+	config, err := LoadConfigFromFile(path, "anon")
+	require.NoError(t, err)
+	require.Equal(t, "https://public.example.com", config.URL)
+	require.Equal(t, "", config.Token, "empty token should not inherit base token")
+}
+
+func TestValidateProfile_NoURL(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://base.example.com"
+Token = "base-secret"
+
+[Profiles.zip]
+Archive = true
+ArchiveMethod = "zip"
+`), 0600)
+	require.NoError(t, err)
+
+	// Profile without URL should pass validation — no risk of token leakage
+	config, err := LoadConfigFromFile(path, "zip")
+	require.NoError(t, err)
+	require.Equal(t, "https://base.example.com", config.URL)
+	require.Equal(t, "base-secret", config.Token, "token should be inherited when URL is not changed")
 }
 
 func TestLoadConfig_EnvProfile(t *testing.T) {
@@ -588,6 +649,7 @@ URL = "https://plik.root.gg"
 
 [Profiles.custom]
 URL = "http://localhost:8080"
+Token = ""
 
 [Profiles.custom.ArchiveOptions]
   Compress = "xz"
@@ -613,6 +675,7 @@ URL = "https://plik.root.gg"
 
 [Profiles.minimal]
 URL = "http://localhost:8080"
+Token = ""
 `), 0600)
 	require.NoError(t, err)
 
@@ -635,6 +698,7 @@ URL = "https://plik.root.gg"
 
 [Profiles.custom]
 URL = "http://localhost:8080"
+Token = ""
 
 [Profiles.custom.SecureOptions]
   Cipher = "chacha20"
@@ -1056,6 +1120,7 @@ OneShot = true
 
 [Profiles.zip]
 URL = "https://zip.example.com"
+Token = "zip-token"
 Archive = true
 ArchiveMethod = "zip"
 `), 0600)
@@ -1065,7 +1130,7 @@ ArchiveMethod = "zip"
 	config, err := LoadConfigFromFile(path, "work,zip")
 	require.NoError(t, err)
 	require.Equal(t, "https://zip.example.com", config.URL, "zip URL should win (last)")
-	require.Equal(t, "work-token", config.Token, "work Token should survive (zip doesn't set it)")
+	require.Equal(t, "zip-token", config.Token, "zip Token should win (last)")
 	require.True(t, config.OneShot, "work OneShot should survive")
 	require.True(t, config.Archive, "zip Archive should be set")
 	require.Equal(t, "zip", config.ArchiveMethod)
@@ -1080,9 +1145,11 @@ URL = "https://base.example.com"
 
 [Profiles.work]
 URL = "https://work.example.com"
+Token = "work-token"
 
 [Profiles.zip]
 URL = "https://zip.example.com"
+Token = "zip-token"
 `), 0600)
 	require.NoError(t, err)
 
@@ -1101,6 +1168,7 @@ URL = "https://base.example.com"
 
 [Profiles.work]
 URL = "https://work.example.com"
+Token = ""
 `), 0600)
 	require.NoError(t, err)
 
@@ -1130,6 +1198,7 @@ URL = "https://base.example.com"
 
 [Profiles.work]
 URL = "https://work.example.com"
+Token = ""
 `), 0600)
 	require.NoError(t, err)
 

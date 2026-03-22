@@ -87,7 +87,7 @@ The config file supports named profiles via `[Profiles.<name>]` TOML sections. E
 3. Top-level config fields
 4. Built-in defaults (`NewUploadConfig()`)
 
-**Merge semantics**: `mergeProfile()` uses `toml.MetaData.IsDefined()` to apply only fields explicitly set in the profile section. This distinguishes "not present" from "set to zero value" (e.g., `Token = ""` in a profile clears the base token).
+**Merge semantics**: `mergeProfile()` uses `toml.MetaData.IsDefined()` to apply only fields explicitly set in the profile section. This distinguishes "not present" from "set to zero value" (e.g., `Token = ""` in a profile clears the base token). `validateProfile()` enforces that any profile defining `URL` must also define `Token` to prevent credential leakage to a different server.
 
 **Key helpers**:
 - `parseProfiles(input string) []string` — splits a comma-separated profile string into a deduplicated ordered list. Trims whitespace, drops empty segments.

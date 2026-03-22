@@ -222,7 +222,7 @@ Profiles let you maintain configurations for multiple servers (or different defa
 
 ### Defining Profiles
 
-Add `[Profiles.<name>]` sections to your `.plikrc`. Each profile inherits all top-level settings and can override any field:
+Add `[Profiles.<name>]` sections to your `.plikrc`. Each profile inherits all top-level settings and can override any field. If a profile sets `URL`, it *must* also set `Token` (use `Token = ""` for anonymous) to prevent credential leakage:
 
 ```toml
 # ~/.plikrc — shared defaults

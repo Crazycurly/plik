@@ -49,6 +49,7 @@ DefaultProfile = ""             # Default profile to use (can also be set via PL
 # Named profiles let you maintain different configurations
 # for multiple servers or use-cases. Use with: plik -P <name> file.txt
 # Profiles inherit all top-level settings and can override any field.
+# If a profile sets URL, it *must* also set Token (use Token = "" for anonymous).
 #
 # [Profiles.local]
 # URL = "http://127.0.0.1:8080"

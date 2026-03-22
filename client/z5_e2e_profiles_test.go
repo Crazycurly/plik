@@ -54,6 +54,7 @@ TTL = 3600
 
 [Profiles.minimal]
 URL = "http://also-overridden.local"
+Token = ""
 `), 0600)
 	require.NoError(t, err)
 
@@ -84,9 +85,11 @@ URL = "https://should-be-overridden.example.com"
 
 [Profiles.local]
 URL = "http://localhost:8080"
+Token = ""
 
 [Profiles.work]
 URL = "https://plik.work.corp"
+Token = ""
 `), 0600)
 	require.NoError(t, err)
 
@@ -176,6 +179,7 @@ OneShot = true
 
 [Profiles.plain]
 URL = "https://also-overridden.example.com"
+Token = ""
 `), 0600)
 	require.NoError(t, err)
 

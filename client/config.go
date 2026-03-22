@@ -430,6 +430,9 @@ func LoadConfigFromFile(path string, profileName string) (*CliConfig, error) {
 				}
 				return nil, fmt.Errorf("Profile %q not found (available: %s)", name, strings.Join(config.AvailableProfiles, ", "))
 			}
+			if err := validateProfile(md, name); err != nil {
+				return nil, err
+			}
 			mergeProfile(config, &profile, md, name)
 		}
 		config.ActiveProfiles = profileNames
@@ -472,6 +475,16 @@ func (c *CliConfig) SingleProfile() (string, error) {
 		return c.ActiveProfiles[0], nil
 	}
 	return "", nil
+}
+
+// validateProfile checks that a profile doesn't inherit sensitive fields by accident.
+// If a profile changes the server URL, it *must* also define Token (even Token = "")
+// to prevent the base config's token from leaking to a different server.
+func validateProfile(md toml.MetaData, profileName string) error {
+	if md.IsDefined("Profiles", profileName, "URL") && !md.IsDefined("Profiles", profileName, "Token") {
+		return fmt.Errorf("profile %q defines URL but not Token — add Token = \"\" for anonymous or set your token to prevent credential leakage", profileName)
+	}
+	return nil
 }
 
 // mergeProfile overlays explicitly-set profile fields onto the base config.
