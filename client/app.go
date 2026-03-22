@@ -58,15 +58,6 @@ func (cli *PlikCLI) Run(client *plik.Client) error {
 	}
 
 	upload := client.NewUpload()
-	upload.Token = cli.Config.Token
-	upload.TTL = cli.Config.TTL
-	upload.ExtendTTL = cli.Config.ExtendTTL
-	upload.Stream = cli.Config.Stream
-	upload.OneShot = cli.Config.OneShot
-	upload.Removable = cli.Config.Removable
-	upload.Comments = cli.Config.Comments
-	upload.Login = cli.Config.Login
-	upload.Password = cli.Config.Password
 
 	if len(cli.Config.filePaths) == 0 {
 		if cli.Config.DisableStdin {

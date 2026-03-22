@@ -485,6 +485,32 @@ func (c *CliConfig) SingleProfile() (string, error) {
 	return "", nil
 }
 
+// NewClient creates a plik.Client from this config with upload defaults
+// set on the client. plik.Client.NewUpload() inherits them automatically
+// via the embedded *UploadParams copy.
+func (c *CliConfig) NewClient(name string) *plik.Client {
+	client := plik.NewClient(c.URL)
+	client.Debug = c.Debug
+	client.ClientName = name
+
+	// Upload defaults — NewUpload() copies these via embedded *UploadParams
+	client.Token = c.Token
+	client.Stream = c.Stream
+	client.OneShot = c.OneShot
+	client.Removable = c.Removable
+	client.TTL = c.TTL
+	client.ExtendTTL = c.ExtendTTL
+	client.Comments = c.Comments
+	client.Login = c.Login
+	client.Password = c.Password
+
+	if c.Insecure {
+		client.Insecure()
+	}
+
+	return client
+}
+
 // validateProfile checks that a profile doesn't inherit sensitive fields by accident.
 // If a profile changes the server URL, it *must* also define Token (even Token = "")
 // to prevent the base config's token from leaking to a different server.

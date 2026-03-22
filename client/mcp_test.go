@@ -11,13 +11,19 @@ import (
 )
 
 func TestClientForProfile_Empty(t *testing.T) {
-	cfg := &CliConfig{ConfigPath: "/nonexistent"}
-	defaultClient := clientFromConfig(cfg)
-
-	// Empty profile should return the default client
-	client, err := clientForProfile(cfg, defaultClient, "")
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://base.example.com"
+`), 0600)
 	require.NoError(t, err)
-	require.Same(t, defaultClient, client, "empty profile should return same pointer")
+
+	cfg := &CliConfig{ConfigPath: path}
+
+	// Empty profile should reload from disk and return a working client
+	client, err := clientForProfile(cfg, "")
+	require.NoError(t, err)
+	require.Equal(t, "https://base.example.com", client.URL)
 }
 
 func TestClientForProfile_ValidProfile(t *testing.T) {
@@ -33,11 +39,9 @@ Token = "work-token-123"
 	require.NoError(t, err)
 
 	cfg := &CliConfig{ConfigPath: path, URL: "https://base.example.com"}
-	defaultClient := clientFromConfig(cfg)
 
-	client, err := clientForProfile(cfg, defaultClient, "work")
+	client, err := clientForProfile(cfg, "work")
 	require.NoError(t, err)
-	require.NotSame(t, defaultClient, client, "profile client should be a different pointer")
 	require.Equal(t, "https://work.example.com", client.URL)
 	require.Equal(t, "work-token-123", client.Token)
 }
@@ -55,9 +59,8 @@ Token = ""
 	require.NoError(t, err)
 
 	cfg := &CliConfig{ConfigPath: path}
-	defaultClient := clientFromConfig(cfg)
 
-	_, err = clientForProfile(cfg, defaultClient, "typo")
+	_, err = clientForProfile(cfg, "typo")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "typo")
 	require.Contains(t, err.Error(), "not found")
@@ -81,17 +84,16 @@ Token = ""
 
 	// Simulate MCP started with -P work
 	cfg := &CliConfig{ConfigPath: path, ActiveProfiles: []string{"work"}, ProfileSource: "flag"}
-	defaultClient := clientFromConfig(cfg)
 
 	// Switching to a different profile should be rejected
-	_, err = clientForProfile(cfg, defaultClient, "local")
+	_, err = clientForProfile(cfg, "local")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "profile switching is locked by -P work")
 
-	// Empty profile (use default) should still work
-	client, err := clientForProfile(cfg, defaultClient, "")
+	// Empty profile (reload same profile) should still work
+	client, err := clientForProfile(cfg, "")
 	require.NoError(t, err)
-	require.Same(t, defaultClient, client)
+	require.Equal(t, "https://work.example.com", client.URL)
 }
 
 func TestClientForProfile_DefaultProfileAllowsSwitch(t *testing.T) {
@@ -112,10 +114,9 @@ Token = ""
 
 	// Simulate MCP started with DefaultProfile (not -P)
 	cfg := &CliConfig{ConfigPath: path, ActiveProfiles: []string{"work"}, ProfileSource: "default"}
-	defaultClient := clientFromConfig(cfg)
 
 	// Switching should be allowed when source is "default"
-	client, err := clientForProfile(cfg, defaultClient, "local")
+	client, err := clientForProfile(cfg, "local")
 	require.NoError(t, err)
 	require.Equal(t, "http://localhost:8080", client.URL)
 }
@@ -136,10 +137,9 @@ OneShot = true
 	require.NoError(t, err)
 
 	cfg := &CliConfig{ConfigPath: path}
-	defaultClient := clientFromConfig(cfg)
 
 	// "work,zip" should merge: work URL + work token, zip OneShot
-	client, err := clientForProfile(cfg, defaultClient, "work,zip")
+	client, err := clientForProfile(cfg, "work,zip")
 	require.NoError(t, err)
 	require.Equal(t, "https://work.example.com", client.URL)
 	require.Equal(t, "work-token", client.Token)

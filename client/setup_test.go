@@ -164,7 +164,7 @@ func buildCLI(t *testing.T, config *CliConfig, opts map[string]any) (*PlikCLI, *
 	}
 
 	cli := NewPlikCLI(config, arguments)
-	client := plik.NewClient(config.URL)
+	client := config.NewClient("plik_test")
 
 	var outBuf, errBuf bytes.Buffer
 	cli.Stdout = &outBuf
@@ -213,7 +213,7 @@ func runInfo(t *testing.T, config *CliConfig) string {
 	dumpServerLogs(t)
 
 	cli := NewPlikCLI(config, makeOpts())
-	client := plik.NewClient(config.URL)
+	client := config.NewClient("plik_test")
 
 	var buf bytes.Buffer
 	cli.Stdout = &buf

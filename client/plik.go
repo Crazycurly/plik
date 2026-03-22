@@ -7,7 +7,6 @@ import (
 
 	"github.com/docopt/docopt-go"
 
-	"github.com/root-gg/plik/plik"
 	"github.com/root-gg/plik/server/common"
 )
 
@@ -91,12 +90,10 @@ Options:
 
 	cli := NewPlikCLI(config, arguments)
 
-	client := plik.NewClient(config.URL)
-	client.Debug = config.Debug
-	client.ClientName = "plik_cli"
+	client := config.NewClient("plik_cli")
 
-	// Insecure TLS mode
-	if config.Insecure || arguments["--insecure"].(bool) {
+	// --insecure CLI flag (additive to config.Insecure handled in NewClient)
+	if arguments["--insecure"].(bool) {
 		client.Insecure()
 	}
 

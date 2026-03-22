@@ -92,6 +92,7 @@ The config file supports named profiles via `[Profiles.<name>]` TOML sections. E
 **Key helpers**:
 - `parseProfiles(input string) []string` — splits a comma-separated profile string into a deduplicated ordered list. Trims whitespace, drops empty segments.
 - `SingleProfile() (string, error)` — returns the single active profile name, or errors if multiple profiles are active. Used as the DRY gate by `--login` (in `plik.go`) and `saveToken` (in `login.go`) which require exactly one profile to know where to write the token.
+- `NewClient(name string) *plik.Client` — creates a `plik.Client` from the config with all upload defaults (`Token`, `Stream`, `OneShot`, `Removable`, `TTL`, `ExtendTTL`, `Comments`, `Login`, `Password`) set on the client. `plik.Client.NewUpload()` inherits these automatically via the embedded `*UploadParams` copy. Used by `plik.go` (CLI), `mcp.go` (MCP server), and test helpers.
 
 The runtime `CliConfig` carries `ActiveProfiles []string` (the resolved profile name(s)), `ProfileSource string` (`"flag"` from `-P`, `"env"` from `PLIK_PROFILE`, `"default"` from `DefaultProfile`, or `""` for none), and `AvailableProfiles []string` (list of all profiles defined in the config) — all are `toml:"-"` and not serialized. `DefaultProfile string` (the file-level default) stays a plain string in the config struct. The MCP safety gate only locks profile switching when `ProfileSource == "flag"` (explicit `-P`); `DefaultProfile` does not lock.
 
@@ -149,9 +150,9 @@ Uses the official [Go MCP SDK](https://github.com/modelcontextprotocol/go-sdk) (
 
 **Prompts:** `upload_guide`
 
-**Profile awareness:** All upload tools accept an optional `profile` parameter to target a different server. `clientForProfile()` resolves the profile by re-reading `~/.plikrc` and building a new `plik.Client` with `clientFromConfig()`, which carries over all upload defaults (OneShot, TTL, Token, etc.) from the resolved config.
+**Profile awareness:** All upload tools accept an optional `profile` parameter to target a different server. `clientForProfile()` always re-reads `~/.plikrc` from disk on every tool call, so edits (token rotation, URL changes, `--login`) take effect immediately without restarting the MCP server. It builds a `plik.Client` via `cfg.NewClient()`, which carries over all upload defaults (OneShot, TTL, Token, etc.) from the resolved config. `Stream` is cleared before creating the client to prevent indefinite blocking.
 
-**Safety gate:** If the MCP server is started with `-P <profile>`, the `profile` parameter on tools is rejected — the server is locked to the startup profile(s).
+**Safety gate:** If the MCP server is started with `-P <profile>` (`ProfileSource == "flag"`), the `profile` parameter on tools is rejected — the server is locked to the startup profile(s). `DefaultProfile` and `PLIK_PROFILE` env do not lock.
 
 **`loadPlikrc()`** (in `config.go`): Factored out of `LoadConfigFromFile` to allow `list_profiles` to read profile definitions without triggering the full resolution/merge logic.
 

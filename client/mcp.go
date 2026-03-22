@@ -66,57 +66,37 @@ func errorResult(msg string) *mcp.CallToolResult {
 
 // --- Profile-aware client resolution ---
 
-// clientFromConfig creates a plik.Client from a fully-resolved CliConfig,
-// carrying over all upload defaults so profile settings apply automatically.
-func clientFromConfig(cfg *CliConfig) *plik.Client {
-	client := plik.NewClient(cfg.URL)
-	client.Debug = cfg.Debug
-	client.ClientName = "plik_mcp"
-
-	// Carry over default upload params from config
-	// Note: Stream is intentionally excluded — it blocks until someone
-	// downloads, which would hang the MCP tool call indefinitely.
-	client.Token = cfg.Token
-	client.OneShot = cfg.OneShot
-	client.Removable = cfg.Removable
-	client.TTL = cfg.TTL
-	client.ExtendTTL = cfg.ExtendTTL
-	client.Comments = cfg.Comments
-	client.Login = cfg.Login
-	client.Password = cfg.Password
-
-	if cfg.Insecure {
-		client.Insecure()
-	}
-
-	return client
-}
-
-// clientForProfile returns a plik.Client for the given profile name.
-// If profile is empty, it returns the default client (zero overhead).
-// If the MCP server was started with -P, profile switching is rejected for safety.
-// Otherwise it re-reads the config file and resolves the profile.
-func clientForProfile(baseCfg *CliConfig, defaultClient *plik.Client, profile string) (*plik.Client, error) {
-	if profile == "" {
-		return defaultClient, nil
-	}
-
-	// Safety gate: if MCP was started with -P, lock to that profile
-	if baseCfg.ProfileSource == "flag" {
+// clientForProfile returns a plik.Client by re-reading the config from disk.
+// This ensures edits to ~/.plikrc (token rotation, URL changes, --login) take
+// effect immediately without restarting the MCP server.
+// If the MCP was started with -P, switching to a different profile is rejected.
+func clientForProfile(baseCfg *CliConfig, profile string) (*plik.Client, error) {
+	// Safety gate: -P locks profile switching (but allows reloading the same profile)
+	if baseCfg.ProfileSource == "flag" && profile != "" {
 		return nil, fmt.Errorf("profile switching is locked by -P %s", strings.Join(baseCfg.ActiveProfiles, ","))
 	}
 
-	cfg, err := LoadConfigFromFile(baseCfg.ConfigPath, profile)
+	// Resolve which profile to load: explicit param > startup profile(s)
+	resolvedProfile := profile
+	if resolvedProfile == "" {
+		resolvedProfile = strings.Join(baseCfg.ActiveProfiles, ",")
+	}
+
+	// Always re-read config from disk
+	cfg, err := LoadConfigFromFile(baseCfg.ConfigPath, resolvedProfile)
 	if err != nil {
 		return nil, err
 	}
 
-	return clientFromConfig(cfg), nil
+	// Stream would hang MCP tool calls indefinitely — clear it
+	cfg.Stream = false
+
+	return cfg.NewClient("plik_mcp"), nil
 }
 
 // --- Tool handlers ---
 
-func makeUploadTextHandler(baseCfg *CliConfig, defaultClient *plik.Client) mcp.ToolHandlerFor[UploadTextInput, any] {
+func makeUploadTextHandler(baseCfg *CliConfig) mcp.ToolHandlerFor[UploadTextInput, any] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, input UploadTextInput) (*mcp.CallToolResult, any, error) {
 		if input.Filename == "" {
 			return errorResult("filename is required"), nil, nil
@@ -125,7 +105,7 @@ func makeUploadTextHandler(baseCfg *CliConfig, defaultClient *plik.Client) mcp.T
 			return errorResult("content is required"), nil, nil
 		}
 
-		client, err := clientForProfile(baseCfg, defaultClient, input.Profile)
+		client, err := clientForProfile(baseCfg, input.Profile)
 		if err != nil {
 			return errorResult(fmt.Sprintf("profile error: %s", err)), nil, nil
 		}
@@ -144,7 +124,7 @@ func makeUploadTextHandler(baseCfg *CliConfig, defaultClient *plik.Client) mcp.T
 	}
 }
 
-func makeUploadFileHandler(baseCfg *CliConfig, defaultClient *plik.Client) mcp.ToolHandlerFor[UploadFileInput, any] {
+func makeUploadFileHandler(baseCfg *CliConfig) mcp.ToolHandlerFor[UploadFileInput, any] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, input UploadFileInput) (*mcp.CallToolResult, any, error) {
 		if input.Path == "" {
 			return errorResult("path is required"), nil, nil
@@ -155,7 +135,7 @@ func makeUploadFileHandler(baseCfg *CliConfig, defaultClient *plik.Client) mcp.T
 			return errorResult(fmt.Sprintf("file not found: %s", input.Path)), nil, nil
 		}
 
-		client, err := clientForProfile(baseCfg, defaultClient, input.Profile)
+		client, err := clientForProfile(baseCfg, input.Profile)
 		if err != nil {
 			return errorResult(fmt.Sprintf("profile error: %s", err)), nil, nil
 		}
@@ -175,13 +155,13 @@ func makeUploadFileHandler(baseCfg *CliConfig, defaultClient *plik.Client) mcp.T
 	}
 }
 
-func makeUploadFilesHandler(baseCfg *CliConfig, defaultClient *plik.Client) mcp.ToolHandlerFor[UploadFilesInput, any] {
+func makeUploadFilesHandler(baseCfg *CliConfig) mcp.ToolHandlerFor[UploadFilesInput, any] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, input UploadFilesInput) (*mcp.CallToolResult, any, error) {
 		if len(input.Paths) == 0 {
 			return errorResult("at least one path is required"), nil, nil
 		}
 
-		client, err := clientForProfile(baseCfg, defaultClient, input.Profile)
+		client, err := clientForProfile(baseCfg, input.Profile)
 		if err != nil {
 			return errorResult(fmt.Sprintf("profile error: %s", err)), nil, nil
 		}
@@ -206,7 +186,7 @@ func makeUploadFilesHandler(baseCfg *CliConfig, defaultClient *plik.Client) mcp.
 	}
 }
 
-func makeServerInfoHandler(baseCfg *CliConfig, defaultClient *plik.Client) mcp.ToolHandlerFor[ServerInfoInput, any] {
+func makeServerInfoHandler(baseCfg *CliConfig) mcp.ToolHandlerFor[ServerInfoInput, any] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, input ServerInfoInput) (*mcp.CallToolResult, any, error) {
 		type serverInfo struct {
 			ServerURL         string                `json:"server_url"`
@@ -216,19 +196,35 @@ func makeServerInfoHandler(baseCfg *CliConfig, defaultClient *plik.Client) mcp.T
 			Config            *common.Configuration `json:"config,omitempty"`
 		}
 
-		info := &serverInfo{
-			ServerURL:         defaultClient.URL,
-			ActiveProfiles:    baseCfg.ActiveProfiles,
-			AvailableProfiles: baseCfg.AvailableProfiles,
+		// Re-read config from disk for fresh URL, profiles, and credentials
+		client, err := clientForProfile(baseCfg, "")
+		if err != nil {
+			return errorResult(fmt.Sprintf("failed to load config: %s", err)), nil, nil
 		}
 
-		version, err := defaultClient.GetServerVersion()
+		// Re-read plikrc for fresh profile list
+		plikrc, _, plikrcErr := loadPlikrc(baseCfg.ConfigPath)
+		var availableProfiles []string
+		if plikrcErr == nil {
+			for name := range plikrc.Profiles {
+				availableProfiles = append(availableProfiles, name)
+			}
+			sort.Strings(availableProfiles)
+		}
+
+		info := &serverInfo{
+			ServerURL:         client.URL,
+			ActiveProfiles:    baseCfg.ActiveProfiles,
+			AvailableProfiles: availableProfiles,
+		}
+
+		version, err := client.GetServerVersion()
 		if err != nil {
 			return errorResult(fmt.Sprintf("failed to get server version: %s", err)), nil, nil
 		}
 		info.Version = version
 
-		cfg, err := defaultClient.GetServerConfig()
+		cfg, err := client.GetServerConfig()
 		if err != nil {
 			return errorResult(fmt.Sprintf("failed to get server config: %s", err)), nil, nil
 		}
@@ -371,7 +367,7 @@ Share the upload_url for a web page view, or individual download_url for direct 
 
 // newMCPServer creates the MCP server with all tools and prompts registered.
 // It is separated from RunMCPServer so it can be used in tests with custom transports.
-func newMCPServer(baseCfg *CliConfig, defaultClient *plik.Client) *mcp.Server {
+func newMCPServer(baseCfg *CliConfig) *mcp.Server {
 	server := mcp.NewServer(
 		&mcp.Implementation{
 			Name:    "plik",
@@ -384,22 +380,22 @@ func newMCPServer(baseCfg *CliConfig, defaultClient *plik.Client) *mcp.Server {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "upload_text",
 		Description: "Upload text content as a file to Plik. Use this to upload generated text, code snippets, or any text content without creating temporary files.",
-	}, makeUploadTextHandler(baseCfg, defaultClient))
+	}, makeUploadTextHandler(baseCfg))
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "upload_file",
 		Description: "Upload a single file from a local filesystem path to Plik.",
-	}, makeUploadFileHandler(baseCfg, defaultClient))
+	}, makeUploadFileHandler(baseCfg))
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "upload_files",
 		Description: "Upload multiple files from local filesystem paths to Plik in a single upload.",
-	}, makeUploadFilesHandler(baseCfg, defaultClient))
+	}, makeUploadFilesHandler(baseCfg))
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "server_info",
 		Description: "Get the Plik server version, configuration, and capabilities.",
-	}, makeServerInfoHandler(baseCfg, defaultClient))
+	}, makeServerInfoHandler(baseCfg))
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_profiles",
@@ -424,8 +420,7 @@ func newMCPServer(baseCfg *CliConfig, defaultClient *plik.Client) *mcp.Server {
 
 // RunMCPServer starts the MCP server over stdio.
 func RunMCPServer(cfg *CliConfig) error {
-	defaultClient := clientFromConfig(cfg)
-	server := newMCPServer(cfg, defaultClient)
+	server := newMCPServer(cfg)
 
 	// Run server over stdio
 	fmt.Fprintf(os.Stderr, "Plik MCP server starting (server: %s)\n", cfg.URL)
