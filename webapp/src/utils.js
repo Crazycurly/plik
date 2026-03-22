@@ -330,21 +330,3 @@ export function isAudioFile(file) {
 export function isViewableFile(file) {
     return isTextFile(file) || isImageFile(file) || isVideoFile(file) || isAudioFile(file)
 }
-
-// ── Token display helpers ──
-
-const TOKEN_PREFIX = 'plik_'
-
-/**
- * Format a token string for truncated display.
- * For prefixed tokens (plik_...): shows "plik_<first N random chars>..."
- * For legacy UUIDs: shows "<first N chars>..."
- */
-export function formatTokenForDisplay(token, maxRandomChars = 8) {
-    if (!token) return ''
-    if (token.startsWith(TOKEN_PREFIX)) {
-        const body = token.slice(TOKEN_PREFIX.length)
-        return TOKEN_PREFIX + body.substring(0, maxRandomChars) + '...'
-    }
-    return token.substring(0, maxRandomChars) + '...'
-}

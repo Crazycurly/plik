@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"hash/crc32"
 	"strings"
 	"time"
@@ -98,23 +97,4 @@ func encodeBase62(value uint32, length int) string {
 	}
 
 	return string(result)
-}
-
-// FormatTokenForDisplay returns a human-friendly truncated version of a token.
-// For prefixed tokens: "plik_aBcDeFgH…"
-// For legacy UUIDs:    "550e8400…"
-// Available for server-side usage (e.g., plikd token list CLI output).
-func FormatTokenForDisplay(token string, maxChars int) string {
-	if len(token) <= maxChars {
-		return token
-	}
-
-	if strings.HasPrefix(token, TokenPrefix) {
-		// Show prefix + first N chars of the random body
-		remaining := max(maxChars-len(TokenPrefix), 1)
-		end := min(len(TokenPrefix)+remaining, len(token))
-		return token[:end] + "…"
-	}
-
-	return fmt.Sprintf("%s…", token[:maxChars])
 }

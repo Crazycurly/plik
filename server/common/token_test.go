@@ -90,22 +90,3 @@ func TestEncodeBase62(t *testing.T) {
 	result3 := encodeBase62(43, 6)
 	require.NotEqual(t, result1, result3, "different inputs should produce different outputs")
 }
-
-func TestFormatTokenForDisplay(t *testing.T) {
-	token := GeneratePrefixedToken()
-
-	// Prefixed token: show prefix + truncated body
-	display := FormatTokenForDisplay(token, 13)
-	require.Contains(t, display, TokenPrefix, "display should include prefix")
-	require.Contains(t, display, "…", "display should include ellipsis")
-	require.True(t, len(display) <= 14+len("…"), "display should be truncated") // 13 chars + multi-byte ellipsis
-
-	// Legacy UUID
-	legacy := "550e8400-e29b-41d4-a716-446655440000"
-	display = FormatTokenForDisplay(legacy, 8)
-	require.Equal(t, "550e8400…", display, "legacy display should truncate without prefix")
-
-	// Short token (shorter than maxChars)
-	display = FormatTokenForDisplay("short", 10)
-	require.Equal(t, "short", display, "short token should not be truncated")
-}
