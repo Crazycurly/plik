@@ -80,19 +80,44 @@ Token = ""
 	require.NoError(t, err)
 
 	// Simulate MCP started with -P work
-	cfg := &CliConfig{ConfigPath: path, ActiveProfiles: []string{"work"}}
+	cfg := &CliConfig{ConfigPath: path, ActiveProfiles: []string{"work"}, ProfileSource: "flag"}
 	defaultClient := clientFromConfig(cfg)
 
 	// Switching to a different profile should be rejected
 	_, err = clientForProfile(cfg, defaultClient, "local")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "profile switching is not available")
-	require.Contains(t, err.Error(), "-P work")
+	require.Contains(t, err.Error(), "profile switching is locked by -P work")
 
 	// Empty profile (use default) should still work
 	client, err := clientForProfile(cfg, defaultClient, "")
 	require.NoError(t, err)
 	require.Same(t, defaultClient, client)
+}
+
+func TestClientForProfile_DefaultProfileAllowsSwitch(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://base.example.com"
+
+[Profiles.work]
+URL = "https://work.example.com"
+Token = ""
+
+[Profiles.local]
+URL = "http://localhost:8080"
+Token = ""
+`), 0600)
+	require.NoError(t, err)
+
+	// Simulate MCP started with DefaultProfile (not -P)
+	cfg := &CliConfig{ConfigPath: path, ActiveProfiles: []string{"work"}, ProfileSource: "default"}
+	defaultClient := clientFromConfig(cfg)
+
+	// Switching should be allowed when source is "default"
+	client, err := clientForProfile(cfg, defaultClient, "local")
+	require.NoError(t, err)
+	require.Equal(t, "http://localhost:8080", client.URL)
 }
 
 func TestClientForProfile_Composition(t *testing.T) {
@@ -155,8 +180,8 @@ ArchiveMethod = "zip"
 	})
 
 	t.Run("locked_by_flag", func(t *testing.T) {
-		// When ActiveProfiles is set, the handler returns empty (no profiles listed)
-		cfg := &CliConfig{ConfigPath: path, ActiveProfiles: []string{"work"}}
+		// When ProfileSource is "flag", the handler returns empty (no profiles listed)
+		cfg := &CliConfig{ConfigPath: path, ActiveProfiles: []string{"work"}, ProfileSource: "flag"}
 		handler := makeListProfilesHandler(cfg)
 		result, _, err := handler(context.Background(), nil, ListProfilesInput{})
 		require.NoError(t, err)

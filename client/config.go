@@ -65,6 +65,7 @@ type CliConfig struct {
 	ConfigPath        string   `toml:"-" profile:"-"` // Path to the loaded config file
 	ActiveProfiles    []string `toml:"-" profile:"-"` // Resolved profile name(s) (set after loading)
 	AvailableProfiles []string `toml:"-" profile:"-"` // All profile names from config
+	ProfileSource     string   `toml:"-" profile:"-"` // How profile was selected: "flag", "env", "default", ""
 
 	filePaths        []string // Upload file paths (from CLI args)
 	filenameOverride string   // Filename override (--name flag)
@@ -415,9 +416,15 @@ func LoadConfigFromFile(path string, profileName string) (*CliConfig, error) {
 	// Resolve profile name: CLI flag > env var > config DefaultProfile
 	if profileName == "" {
 		profileName = os.Getenv("PLIK_PROFILE")
+		if profileName != "" {
+			config.ProfileSource = "env"
+		}
 	}
 	if profileName == "" {
 		profileName = config.DefaultProfile
+		if profileName != "" {
+			config.ProfileSource = "default"
+		}
 	}
 
 	// Apply profile(s) if selected — composition: merge left-to-right, last wins
@@ -520,8 +527,21 @@ func mergeProfile(base *CliConfig, profile *CliConfig, md toml.MetaData, profile
 func LoadConfig(opts docopt.Opts) (config *CliConfig, err error) {
 	// Resolve profile name from CLI flag (env var / config default handled in LoadConfigFromFile)
 	var profileName string
+	var fromFlag bool
 	if opts["--profile"] != nil && opts["--profile"].(string) != "" {
 		profileName = opts["--profile"].(string)
+		fromFlag = true
+	}
+
+	loadAndTag := func(path string) (*CliConfig, error) {
+		cfg, err := LoadConfigFromFile(path, profileName)
+		if err != nil {
+			return nil, err
+		}
+		if fromFlag {
+			cfg.ProfileSource = "flag"
+		}
+		return cfg, nil
 	}
 
 	// Load config file from environment variable
@@ -531,7 +551,7 @@ func LoadConfig(opts docopt.Opts) (config *CliConfig, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("Plikrc file %s not found", path)
 		}
-		return LoadConfigFromFile(path, profileName)
+		return loadAndTag(path)
 	}
 
 	// Detect home dir
@@ -548,14 +568,14 @@ func LoadConfig(opts docopt.Opts) (config *CliConfig, err error) {
 	_, err = os.Stat(path)
 	if err == nil {
 		// Config file found — return result or error directly
-		return LoadConfigFromFile(path, profileName)
+		return loadAndTag(path)
 	}
 
 	// Load global config file from /etc directory
 	path = "/etc/plik/plikrc"
 	_, err = os.Stat(path)
 	if err == nil {
-		return LoadConfigFromFile(path, profileName)
+		return loadAndTag(path)
 	}
 
 	config = NewUploadConfig()

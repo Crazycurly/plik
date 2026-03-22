@@ -102,8 +102,8 @@ func clientForProfile(baseCfg *CliConfig, defaultClient *plik.Client, profile st
 	}
 
 	// Safety gate: if MCP was started with -P, lock to that profile
-	if len(baseCfg.ActiveProfiles) > 0 {
-		return nil, fmt.Errorf("profile switching is not available when the MCP server is started with -P %s", strings.Join(baseCfg.ActiveProfiles, ","))
+	if baseCfg.ProfileSource == "flag" {
+		return nil, fmt.Errorf("profile switching is locked by -P %s", strings.Join(baseCfg.ActiveProfiles, ","))
 	}
 
 	cfg, err := LoadConfigFromFile(baseCfg.ConfigPath, profile)
@@ -256,7 +256,7 @@ func makeListProfilesHandler(baseCfg *CliConfig) mcp.ToolHandlerFor[ListProfiles
 		}
 
 		// If MCP was started with -P, return empty to discourage profile switching
-		if len(baseCfg.ActiveProfiles) > 0 {
+		if baseCfg.ProfileSource == "flag" {
 			jsonBytes, _ := json.MarshalIndent(&listProfilesOutput{}, "", "  ")
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{

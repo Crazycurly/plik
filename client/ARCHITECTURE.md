@@ -93,7 +93,7 @@ The config file supports named profiles via `[Profiles.<name>]` TOML sections. E
 - `parseProfiles(input string) []string` — splits a comma-separated profile string into a deduplicated ordered list. Trims whitespace, drops empty segments.
 - `SingleProfile() (string, error)` — returns the single active profile name, or errors if multiple profiles are active. Used as the DRY gate by `--login` (in `plik.go`) and `saveToken` (in `login.go`) which require exactly one profile to know where to write the token.
 
-The runtime `CliConfig` carries `ActiveProfiles []string` (the resolved profile name(s)) and `AvailableProfiles []string` (list of all profiles defined in the config) — both are `toml:"-"` and not serialized. `DefaultProfile string` (the file-level default) stays a plain string in the config struct.
+The runtime `CliConfig` carries `ActiveProfiles []string` (the resolved profile name(s)), `ProfileSource string` (`"flag"` from `-P`, `"env"` from `PLIK_PROFILE`, `"default"` from `DefaultProfile`, or `""` for none), and `AvailableProfiles []string` (list of all profiles defined in the config) — all are `toml:"-"` and not serialized. `DefaultProfile string` (the file-level default) stays a plain string in the config struct. The MCP safety gate only locks profile switching when `ProfileSource == "flag"` (explicit `-P`); `DefaultProfile` does not lock.
 
 Existing flat configs (no `[Profiles]` sections) are 100% backward compatible.
 

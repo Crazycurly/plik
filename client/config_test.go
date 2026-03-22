@@ -619,6 +619,60 @@ Token = "env-token"
 	require.Equal(t, "http://env-test.local:8080", config.URL)
 	require.Equal(t, "env-token", config.Token)
 	require.Equal(t, []string{"envtest"}, config.ActiveProfiles)
+	require.Equal(t, "env", config.ProfileSource)
+}
+
+func TestProfileSource_Flag(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+[Profiles.work]
+URL = "https://work.example.com"
+Token = ""
+`), 0600)
+	require.NoError(t, err)
+
+	t.Setenv("PLIKRC", path)
+	opts := makeOpts()
+	opts["--quiet"] = true
+	opts["--profile"] = "work"
+	config, err := LoadConfig(opts)
+	require.NoError(t, err)
+	require.Equal(t, "flag", config.ProfileSource)
+	require.Equal(t, []string{"work"}, config.ActiveProfiles)
+}
+
+func TestProfileSource_Default(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+DefaultProfile = "work"
+[Profiles.work]
+URL = "https://work.example.com"
+Token = ""
+`), 0600)
+	require.NoError(t, err)
+
+	config, err := LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+	require.Equal(t, "default", config.ProfileSource)
+	require.Equal(t, []string{"work"}, config.ActiveProfiles)
+}
+
+func TestProfileSource_None(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+	err := os.WriteFile(path, []byte(`
+URL = "https://plik.root.gg"
+`), 0600)
+	require.NoError(t, err)
+
+	config, err := LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+	require.Equal(t, "", config.ProfileSource)
+	require.Empty(t, config.ActiveProfiles)
 }
 
 func TestLoadConfigFromFile_AvailableProfiles(t *testing.T) {
