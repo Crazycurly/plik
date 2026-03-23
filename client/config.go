@@ -394,6 +394,43 @@ func saveConfig(path string, plikrc *PlikrcFile) error {
 	return err
 }
 
+// updatePlikrc rewrites the config file at cfg.ConfigPath in canonical format
+// using writeConfig. All values and profiles are preserved; custom comments are
+// replaced with standard inline comments. Prompts for confirmation unless
+// cfg.Yes is set.
+func updatePlikrc(cfg *CliConfig) error {
+	path := cfg.ConfigPath
+	if path == "" {
+		path = configFilePath()
+	}
+
+	plikrc, _, err := loadPlikrc(path)
+	if err != nil {
+		return fmt.Errorf("unable to read %s: %s", path, err)
+	}
+
+	if !cfg.Yes {
+		fmt.Printf("This will rewrite %s in canonical format.\n", path)
+		fmt.Printf("All values and profiles are preserved; custom comments will be replaced.\n")
+		fmt.Printf("Continue? [y/N] ")
+		ok, err := common.AskConfirmation(false)
+		if err != nil {
+			return fmt.Errorf("unable to ask for confirmation: %s", err)
+		}
+		if !ok {
+			fmt.Println("Aborted.")
+			return nil
+		}
+	}
+
+	if err := saveConfig(path, plikrc); err != nil {
+		return err
+	}
+
+	fmt.Printf("✓ %s updated\n", path)
+	return nil
+}
+
 // loadPlikrc reads and decodes a PlikrcFile from the given path.
 // It returns the parsed PlikrcFile and TOML metadata for field-presence checks.
 func loadPlikrc(path string) (*PlikrcFile, toml.MetaData, error) {
@@ -405,6 +442,7 @@ func loadPlikrc(path string) (*PlikrcFile, toml.MetaData, error) {
 		return nil, md, fmt.Errorf("Failed to deserialize ~/.plikrc : %s", err)
 	}
 
+	plikrc.metadata = md
 	return &plikrc, md, nil
 }
 

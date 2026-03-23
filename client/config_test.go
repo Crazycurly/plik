@@ -46,6 +46,7 @@ func makeOpts() docopt.Opts {
 		"--insecure":        false,
 		"--update":          false,
 		"--login":           false,
+		"--update-plikrc":   false,
 		"--mcp":             false,
 		"--version":         false,
 		"--info":            false,
@@ -905,6 +906,73 @@ func TestWriteConfig_RoundTrip(t *testing.T) {
 	require.True(t, loaded.Yes)
 	require.Equal(t, "gzip", loaded.ArchiveOptions["Compress"])
 	require.Equal(t, "/bin/tar", loaded.ArchiveOptions["Tar"])
+}
+
+func TestUpdatePlikrc_RoundTrip(t *testing.T) {
+	// Write a hand-crafted config with user comments and a non-alphabetical
+	// profile order, then call updatePlikrc and verify it comes out in canonical
+	// format with all values preserved.
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	original := `# hand-crafted config with my own comments
+URL = "https://plik.example.com"  # my server
+Token = "my-token"
+OneShot = true
+
+[Profiles.work]
+URL = "https://work.example.com"
+Token = "work-token"
+
+[Profiles.alpha]
+URL = "http://alpha.local"
+Token = ""
+`
+	err := os.WriteFile(path, []byte(original), 0600)
+	require.NoError(t, err)
+
+	cfg := &CliConfig{
+		ConfigPath: path,
+		Yes:        true, // skip confirmation prompt
+	}
+	err = updatePlikrc(cfg)
+	require.NoError(t, err)
+
+	// Values must be preserved
+	loaded, err := LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+	require.Equal(t, "https://plik.example.com", loaded.URL)
+	require.Equal(t, "my-token", loaded.Token)
+	require.True(t, loaded.OneShot)
+
+	// Profiles must be preserved
+	work, err := LoadConfigFromFile(path, "work")
+	require.NoError(t, err)
+	require.Equal(t, "https://work.example.com", work.URL)
+	require.Equal(t, "work-token", work.Token)
+
+	alpha, err := LoadConfigFromFile(path, "alpha")
+	require.NoError(t, err)
+	require.Equal(t, "http://alpha.local", alpha.URL)
+	require.Equal(t, "", alpha.Token)
+
+	// Output is now in canonical format (has standard section headers)
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	output := string(content)
+	require.Contains(t, output, "# --- Server ---")
+	require.Contains(t, output, "# --- Profiles ---")
+	// Original custom comment is gone (replaced by canonical format)
+	require.NotContains(t, output, "hand-crafted config")
+}
+
+func TestUpdatePlikrc_FileNotFound(t *testing.T) {
+	cfg := &CliConfig{
+		ConfigPath: "/nonexistent/path/.plikrc",
+		Yes:        true,
+	}
+	err := updatePlikrc(cfg)
+	require.Error(t, err)
 }
 
 func TestWriteConfig_WithProfiles(t *testing.T) {

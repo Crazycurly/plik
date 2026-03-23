@@ -48,6 +48,14 @@ client/
    - First-run wizard is skipped when `--quiet`, `--yes`, or `--server` is set
 3. Dispatch to `cli.Run(client)` for the upload flow
 
+**Early-exit flags** (handled before `cli.Run`):
+- `--version`, `--help` — print and exit
+- `--mcp` — start MCP server over stdio
+- `--info` — print client/server info
+- `--update` — self-update binary
+- `--login` — device auth flow, saves token via surgical patch
+- `--update-plikrc` — rewrite config in canonical format (`updatePlikrc()` in `config.go`)
+
 **`PlikCLI.Run()` flow** (in `app.go`):
 1. Create upload via the Go library (`plik/`)
 2. Add files (with optional archive/encrypt preprocessing)
@@ -107,6 +115,8 @@ Implements a device authorization flow for CLI authentication:
 4. On approval, saves the token to `~/.plikrc` via surgical text patching (`patchToken`) that preserves user comments and profile ordering, then exits
 
 `saveToken()` performs an in-place edit of the raw config file bytes — it finds the correct `Token = "..."` line (top-level or inside `[Profiles.<name>]`) and replaces only its value. If no Token line exists, one is inserted after the URL line (if present), otherwise right after the section header. This avoids the full-file rewrite that `writeConfig()` would produce.
+
+**`--update-plikrc`** is the intentional counterpart: it calls `loadPlikrc()` → `saveConfig()` to rewrite the entire file in canonical format, preserving all values and profile definitions but replacing custom comments with standard inline comments. A `[y/N]` confirmation prompt is shown unless `--yes` is set.
 
 Triggered by `--login` flag or interactively during first-run when auth is enabled/forced. When `--login` is set, the first-run wizard skips its own interactive login to avoid triggering the flow twice.
 

@@ -47,6 +47,7 @@ Options:
   --insecure                (TLS) Do not verify the server's certificate chain and hostname
   --update                  Update client
   --login                   Authenticate CLI with the server (opens browser)
+  --update-plikrc           Rewrite ~/.plikrc in canonical format (preserves all values, replaces comments)
   --mcp                     Start as MCP (Model Context Protocol) server over stdio
   -j, --json                Output upload metadata as JSON (implies --quiet)
   -q --quiet                Enable quiet mode
@@ -139,6 +140,16 @@ Options:
 		err = login(config, client)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Login failed: %s\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
+	// Rewrite ~/.plikrc in canonical format
+	if arguments["--update-plikrc"].(bool) {
+		err = updatePlikrc(config)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "--update-plikrc: %s\n", err)
 			os.Exit(1)
 		}
 		os.Exit(0)

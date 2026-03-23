@@ -65,6 +65,7 @@ Options:
   --insecure                (TLS) Do not verify the server's certificate chain and hostname
   --update                  Update client
   --login                   Authenticate with the Plik server via browser
+  --update-plikrc           Rewrite ~/.plikrc in canonical format (preserves all values, replaces comments)
   --mcp                     Start as MCP (Model Context Protocol) server over stdio
   -j --json                Output upload metadata as JSON (implies --quiet)
   -q --quiet                Enable quiet mode
@@ -163,6 +164,26 @@ plik --token xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx myfile.txt
 ```
 
 ## Configuration (.plikrc)
+
+### Maintaining your config file
+
+If your `.plikrc` has accumulated drift or you want to normalize it after hand-editing, you can rewrite it in canonical format:
+
+```bash
+plik --update-plikrc
+```
+
+This rewrites your config file using the same format as the first-run wizard — well-commented, consistently ordered, and with all sections labeled. **All values and profiles are preserved.** Custom comments are replaced with standard inline comments.
+
+Use `--yes` to skip the confirmation prompt:
+
+```bash
+plik --update-plikrc --yes
+```
+
+::: tip
+The `--login` flag uses surgical patching to update only your token — it preserves all comments and ordering. `--update-plikrc` is the intentional "reformat everything" command when you want a clean file.
+:::
 
 The client configuration is a TOML file loaded from:
 1. `PLIKRC` environment variable
