@@ -846,17 +846,26 @@ func TestWriteConfig_EmptySecureOptionsOmitted(t *testing.T) {
 	output := buf.String()
 
 	// Empty SecureOptions should NOT produce an active [SecureOptions] block
-	// but SHOULD produce a commented-out reference section
+	// but SHOULD produce a commented-out reference section with all backend keys
 	require.Contains(t, output, "# [SecureOptions]")
 	require.Contains(t, output, "#   Passphrase")
+	require.Contains(t, output, "#   Recipient")
+	require.Contains(t, output, "#   Cipher")
+	require.Contains(t, output, "#   Options")
+	require.Contains(t, output, "#   Openssl")
+	require.Contains(t, output, "#   Gpg")
+	require.Contains(t, output, "#   Keyring")
 
 	// ArchiveOptions with values should produce an active block
 	require.Contains(t, output, "[ArchiveOptions]")
 	require.Contains(t, output, `Compress = "gzip"`)
 
-	// No active profiles → should produce commented-out profile example
+	// No active profiles → should produce commented-out profile examples
 	require.Contains(t, output, "# [Profiles.local]")
 	require.Contains(t, output, "# [Profiles.work]")
+	require.Contains(t, output, "# [Profiles.zip]")
+	require.Contains(t, output, "# [Profiles.bob]")
+	require.Contains(t, output, `# Recipient = "@bob"`)
 }
 
 func TestWriteConfig_RoundTrip(t *testing.T) {

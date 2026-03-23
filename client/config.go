@@ -198,9 +198,14 @@ func writeConfig(w io.Writer, plikrc *PlikrcFile) error {
 	// Commented-out [SecureOptions] reference (when no active SecureOptions)
 	if len(c.SecureOptions) == 0 {
 		fmt.Fprintf(w, "# [SecureOptions]\n")
-		fmt.Fprintf(w, "#   Passphrase = \"\"             # [openssl|age] Encryption passphrase\n")
-		fmt.Fprintf(w, "#   Cipher = \"\"                 # [openssl] Cipher (e.g. aes-256-cbc)\n")
-		fmt.Fprintf(w, "#   Options = \"\"                # [openssl|pgp] Additional command line options\n")
+		fmt.Fprintf(w, "#   Passphrase = \"\"             # [age|openssl] Encryption passphrase (auto-generated if omitted)\n")
+		fmt.Fprintf(w, "#   Recipient = \"\"              # [age] @github_user, ssh://host, URL, ssh key, or age1...\n")
+		fmt.Fprintf(w, "#                               # [pgp] Name or email to search in keyring\n")
+		fmt.Fprintf(w, "#   Cipher = \"\"                 # [openssl] Cipher (default: aes-256-cbc)\n")
+		fmt.Fprintf(w, "#   Options = \"-md sha512 -pbkdf2 -iter 120000\"  # [openssl] Additional command line options\n")
+		fmt.Fprintf(w, "#   Openssl = \"\"                # [openssl] Path to openssl binary (default: /usr/bin/openssl)\n")
+		fmt.Fprintf(w, "#   Gpg = \"\"                    # [pgp] Path to gpg binary (default: /usr/bin/gpg)\n")
+		fmt.Fprintf(w, "#   Keyring = \"\"                # [pgp] Path to GnuPG keyring (default: ~/.gnupg/pubring.gpg)\n")
 		fmt.Fprintln(w)
 	}
 
@@ -243,6 +248,13 @@ func writeConfig(w io.Writer, plikrc *PlikrcFile) error {
 		fmt.Fprintf(w, "# [Profiles.zip]\n")
 		fmt.Fprintf(w, "# Archive = true\n")
 		fmt.Fprintf(w, "# ArchiveMethod = \"zip\"\n")
+		fmt.Fprintf(w, "#\n")
+		fmt.Fprintf(w, "# # Encrypt files for a specific GitHub user using age\n")
+		fmt.Fprintf(w, "# [Profiles.bob]\n")
+		fmt.Fprintf(w, "# Secure = true\n")
+		fmt.Fprintf(w, "# SecureMethod = \"age\"\n")
+		fmt.Fprintf(w, "# [Profiles.bob.SecureOptions]\n")
+		fmt.Fprintf(w, "# Recipient = \"@bob\"   # github username\n")
 	}
 
 	return nil

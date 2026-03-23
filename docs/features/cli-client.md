@@ -214,6 +214,25 @@ Yes = false                     # Auto-accept confirmation prompts (non-interact
   Options = ""                  # Additional command line options
 ```
 
+### SecureOptions
+
+The `[SecureOptions]` table configures encryption backend-specific settings. Available keys depend on the `SecureMethod`:
+
+| Key | Backend | Description | Default |
+|-----|---------|-------------|---------|
+| `Passphrase` | age, openssl | Encryption passphrase (auto-generated if omitted) | — |
+| `Recipient` | age | `@github_user`, `ssh://host`, URL, ssh key, or `age1…` | — |
+| `Recipient` | pgp | Name or email to search in keyring | — |
+| `Cipher` | openssl | Cipher algorithm | `aes-256-cbc` |
+| `Options` | openssl | Additional command line options | `-md sha512 -pbkdf2 -iter 120000` |
+| `Openssl` | openssl | Path to openssl binary | `/usr/bin/openssl` |
+| `Gpg` | pgp | Path to gpg binary | `/usr/bin/gpg` |
+| `Keyring` | pgp | Path to GnuPG public keyring | `~/.gnupg/pubring.gpg` |
+
+::: tip Passphrase vs Recipient
+For age, `Passphrase` and `Recipient` are mutually exclusive. If neither is set, a random passphrase is auto-generated.
+:::
+
 See the [full .plikrc template](https://github.com/root-gg/plik/blob/master/client/.plikrc) for all available options.
 
 ## Profiles
@@ -245,6 +264,13 @@ AutoUpdate = false              # don't auto-update from work server
 [Profiles.zip]
 Archive = true
 ArchiveMethod = "zip"
+
+# Encrypt files for a specific GitHub user using age
+[Profiles.bob]
+Secure = true
+SecureMethod = "age"
+[Profiles.bob.SecureOptions]
+Recipient = "@bob"   # github username
 ```
 
 ### Using Profiles
