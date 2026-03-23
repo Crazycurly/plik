@@ -34,7 +34,7 @@ Runs on every pull request. Contains 7 parallel jobs:
 | `test-frontend-e2e` | Webapp E2E tests (`make test-frontend-e2e` — Playwright + Chromium) |
 | `test-backends` | Docker-based backend integration tests (`make test-backends`) |
 | `release` | Release build dry-run (`make release` — Docker buildx) |
-| `docs` | VitePress docs build (`make docs` — verifies links and structure) |
+| `docs` | VitePress docs build (`make docs` — builds client, injects `--help` + `.plikrc` into docs, fails if out of date) |
 | `helm-docs` | Helm chart README regeneration check (`make helm-docs` — fails if out of date) |
 
 ### `pages.yml` — GitHub Pages (Docs)

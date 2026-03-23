@@ -164,12 +164,25 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+
     - name: Set up Node.js
       uses: actions/setup-node@v6
       with:
         node-version: 24
         cache: npm
         cache-dependency-path: docs/package-lock.json
+
+    - name: Build client
+      run: make client
+
+    - name: Check injected docs are up to date
+      run: |
+        cd docs && bash inject_plikrc.sh && bash inject_help.sh
+        git diff --exit-code || { echo "::error::Injected docs are out of date. Run 'make docs' locally and commit the result."; git diff --stat; exit 1; }
 
     - name: Build docs
       run: make docs
