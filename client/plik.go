@@ -7,7 +7,6 @@ import (
 
 	"github.com/docopt/docopt-go"
 
-	"github.com/root-gg/plik/plik"
 	"github.com/root-gg/plik/server/common"
 )
 
@@ -44,6 +43,7 @@ Options:
   --passphrase PASSPHRASE   [openssl|age] Passphrase or '-' to be prompted for a passphrase
   --recipient RECIPIENT     [pgp|age] Set recipient ( pgp: name, age: @github_user, ssh://host, URL, ssh key, or age1... )
   --secure-options OPTIONS  [openssl|pgp] Additional command line options
+  -P, --profile PROFILE     Use a named profile from ~/.plikrc (see Profiles section)
   --insecure                (TLS) Do not verify the server's certificate chain and hostname
   --update                  Update client
   --login                   Authenticate CLI with the server (opens browser)
@@ -90,12 +90,10 @@ Options:
 
 	cli := NewPlikCLI(config, arguments)
 
-	client := plik.NewClient(config.URL)
-	client.Debug = config.Debug
-	client.ClientName = "plik_cli"
+	client := config.NewClient("plik_cli")
 
-	// Insecure TLS mode
-	if config.Insecure || arguments["--insecure"].(bool) {
+	// --insecure CLI flag (additive to config.Insecure handled in NewClient)
+	if arguments["--insecure"].(bool) {
 		client.Insecure()
 	}
 
@@ -129,6 +127,14 @@ Options:
 		if arguments["--server"] != nil && arguments["--server"].(string) != "" {
 			fmt.Fprintf(os.Stderr, "Cannot use --login with --server: the login flow saves the token to ~/.plikrc and must use the server URL configured there.\n")
 			os.Exit(1)
+		}
+		// --login requires a single profile: it saves a token to one profile section
+		if _, err := config.SingleProfile(); err != nil {
+			fmt.Fprintf(os.Stderr, "Cannot use --login with multiple profiles: %s\n", err)
+			os.Exit(1)
+		}
+		if len(config.ActiveProfiles) == 1 {
+			fmt.Fprintf(os.Stderr, "Authenticating profile %q (%s)...\n", config.ActiveProfiles[0], config.URL)
 		}
 		err = login(config, client)
 		if err != nil {

@@ -24,6 +24,7 @@ client/
 ├── z2_e2e_options_test.go  ← upload option tests (oneshot, ttl, quiet, JSON, etc.)
 ├── z3_e2e_archive_test.go  ← archive backend tests (tar, zip)
 ├── z4_e2e_crypto_test.go   ← crypto backend tests (openssl, pgp, age)
+├── z5_e2e_profiles_test.go ← profile e2e tests (upload, inheritance, info)
 ├── .plikrc          ← example client configuration
 └── plik.sh          ← bash upload wrapper
 ```
@@ -63,7 +64,39 @@ Config is a TOML file loaded from (in order):
 2. `~/.plikrc`
 3. `/etc/plik/plikrc`
 
-Key config fields: `URL` (server), `Token` (user authentication token), archive/crypto defaults.
+`CliConfig` fields are grouped logically: Server, Upload defaults, Authentication, Archive, Encryption, Output, Behavior, Runtime. This order determines both the struct layout and the TOML serialization order produced by `writeConfig()`.
+
+**`writeConfig()`** produces human-readable, commented TOML matching the `.plikrc` template format. It writes all scalar fields first, then `[Table]` sections (`[ArchiveOptions]`, `[SecureOptions]`, `[Profiles.*]`) — this ordering is required by TOML spec. The `configLine()` helper handles column-aligned inline comments. Used by both the first-run wizard and `saveToken()` in `login.go`.
+
+**`WritePlikrcTemplate()`** generates the canonical `client/.plikrc` reference template. It calls `writeConfig()` with showcase defaults (DRY — same code path, different values). The `TestPlikrcTemplate_UpToDate` test compares the generated output against the committed file and rewrites it if stale. CI catches drift via `git diff --exit-code`.
+
+#### Multi-Profile Support
+
+The config file supports named profiles via `[Profiles.<name>]` TOML sections. Each profile can override any subset of the top-level fields. An on-disk config file is represented by `PlikrcFile`, which embeds `CliConfig` (base fields) plus `Profiles map[string]CliConfig` and `DefaultProfile string`.
+
+**Profile selection precedence** (highest to lowest):
+1. `--profile` / `-P` CLI flag (supports comma-separated names for composition)
+2. `PLIK_PROFILE` environment variable (also supports comma-separated names)
+3. `DefaultProfile` field in config file (also supports comma-separated names)
+
+**Profile composition**: `plik -P work,zip` applies profiles left-to-right over the base config. Last one wins on conflicts; non-overlapping fields from all profiles survive. Implemented via `parseProfiles()` (split + trim + dedup) and the composition loop in `LoadConfigFromFile`.
+
+**Config layering** (highest to lowest):
+1. CLI flags (`--server`, `--token`, etc.)
+2. Selected profile(s) fields (composed left-to-right)
+3. Top-level config fields
+4. Built-in defaults (`NewUploadConfig()`)
+
+**Merge semantics**: `mergeProfile()` uses `toml.MetaData.IsDefined()` to apply only fields explicitly set in the profile section. This distinguishes "not present" from "set to zero value" (e.g., `Token = ""` in a profile clears the base token). `validateProfile()` enforces that any profile defining `URL` must also define `Token` to prevent credential leakage to a different server. Similarly, `--server` in `UnmarshalArgs` clears the token (re-settable with `--token`).
+
+**Key helpers**:
+- `parseProfiles(input string) []string` — splits a comma-separated profile string into a deduplicated ordered list. Trims whitespace, drops empty segments.
+- `SingleProfile() (string, error)` — returns the single active profile name, or errors if multiple profiles are active. Used as the DRY gate by `--login` (in `plik.go`) and `saveToken` (in `login.go`) which require exactly one profile to know where to write the token.
+- `NewClient(name string) *plik.Client` — creates a `plik.Client` from the config with all upload defaults (`Token`, `Stream`, `OneShot`, `Removable`, `TTL`, `ExtendTTL`, `Comments`, `Login`, `Password`) set on the client. `plik.Client.NewUpload()` inherits these automatically via the embedded `*UploadParams` copy. Used by `plik.go` (CLI), `mcp.go` (MCP server), and test helpers.
+
+The runtime `CliConfig` carries `ActiveProfiles []string` (the resolved profile name(s)), `ProfileSource string` (`"flag"` from `-P`, `"env"` from `PLIK_PROFILE`, `"default"` from `DefaultProfile`, or `""` for none), and `AvailableProfiles []string` (list of all profiles defined in the config) — all are `toml:"-"` and not serialized. `DefaultProfile string` (the file-level default) stays a plain string in the config struct. The MCP safety gate only locks profile switching when `ProfileSource == "flag"` (explicit `-P`); `DefaultProfile` does not lock.
+
+Existing flat configs (no `[Profiles]` sections) are 100% backward compatible.
 
 ### CLI Login (`login.go`)
 
@@ -112,11 +145,16 @@ Uses the official [Go MCP SDK](https://github.com/modelcontextprotocol/go-sdk) (
 | `upload_text` | Upload inline text content as a named file |
 | `upload_file` | Upload a single file by path |
 | `upload_files` | Upload multiple files by paths in a single upload |
-| `server_info` | Get server version, config, and capabilities |
+| `server_info` | Get server version, config, capabilities, and profile info |
+| `list_profiles` | List available profiles from `~/.plikrc` with their URLs |
 
 **Prompts:** `upload_guide`
 
-All upload tools use `plik.UploadParams` via struct embedding and return `UploadWithURL` — the standard `common.Upload` metadata enriched with computed URLs.
+**Profile awareness:** All upload tools accept an optional `profile` parameter to target a different server. `clientForProfile()` always re-reads `~/.plikrc` from disk on every tool call, so edits (token rotation, URL changes, `--login`) take effect immediately without restarting the MCP server. It builds a `plik.Client` via `cfg.NewClient()`, which carries over all upload defaults (OneShot, TTL, Token, etc.) from the resolved config. `Stream` is cleared before creating the client to prevent indefinite blocking.
+
+**Safety gate:** If the MCP server is started with `-P <profile>` (`ProfileSource == "flag"`), the `profile` parameter on tools is rejected — the server is locked to the startup profile(s). `DefaultProfile` and `PLIK_PROFILE` env do not lock.
+
+**`loadPlikrc()`** (in `config.go`): Factored out of `LoadConfigFromFile` to allow `list_profiles` to read profile definitions without triggering the full resolution/merge logic.
 
 ---
 
@@ -138,6 +176,7 @@ End-to-end tests run against an ephemeral `plikd` server (started in `TestMain`)
 | `z2_e2e_options_test.go` | Oneshot, removable, stream, TTL, password, comments, quiet, JSON, not-secure, error paths |
 | `z3_e2e_archive_test.go` | Tar (single, multi, dir, compression, options, name), zip (single, dir, options, name, dir+name) |
 | `z4_e2e_crypto_test.go` | OpenSSL (auto/custom/prompted passphrase + decrypt round-trip, cipher, options), PGP (encrypt+decrypt), Age (passphrase + decrypt round-trip, recipient + decrypt) |
+| `z5_e2e_profiles_test.go` | Profile upload (settings flow through), base config inheritance, info output with/without profiles |
 
 Tests requiring external binaries (`tar`, `zip`, `gpg`, `age`, `openssl`) use `requireBinary()` to fail immediately if unavailable.
 

@@ -45,7 +45,7 @@ Options:
   --extend-ttl              Extend upload expiration date by TTL when accessed
   -n, --name NAME           Set file name when piping from STDIN
   --stdin                   Enable pipe from stdin explicitly when DisableStdin is set in .plikrc
-  --server SERVER           Overrides server url
+  --server SERVER           Overrides server url (clears token; use --token to set explicitly)
   --token TOKEN             Specify an upload token ( if '-' prompt for value )
   --comments COMMENT        Set comments of the upload ( MarkDown compatible )
   -p                        Protect the upload with login and password ( be prompted )
@@ -61,6 +61,7 @@ Options:
   --passphrase PASSPHRASE   [openssl|age] Passphrase or '-' to be prompted for a passphrase
   --recipient RECIPIENT     [pgp|age] Set recipient ( pgp: name, age: @github_user, ssh://host, URL, ssh key, or age1... )
   --secure-options OPTIONS  [openssl|pgp] Additional command line options
+  -P, --profile PROFILE     Use a named profile from ~/.plikrc (see Profiles section)
   --insecure                (TLS) Do not verify the server's certificate chain and hostname
   --update                  Update client
   --login                   Authenticate with the Plik server via browser
@@ -171,34 +172,146 @@ The client configuration is a TOML file loaded from:
 Key settings:
 
 ```toml
-Debug = false                   # be more verbose
-Quiet = false                   # be less verbose
+# --- Server ---
 URL = "https://plik.root.gg"    # URL of the plik server
-OneShot = false                 # Set the uploads to be one shot by default  (if available server side)
-Removable = false               # Set the uploads to be removable by default (if available server side)
-Stream = false                  # Set the uploads to be stream by default    (if available server side)
-Secure = false                  # Set the uploads to be encrypted by default
-SecureMethod = "age"            # Set the default encryption method (age|openssl|pgp)
-Archive = false                 # Set the uploads to be archives by default
-ArchiveMethod = "tar"           # Set the default archive method
-DownloadBinary = "curl"         # Set the default download command (curl / wget)
-Comments = ""                   # Set the default upload comments
-Login = ""                      # Set the default upload login (http basic auth)
-Password = ""                   # Set the default upload password (http basic auth)
-TTL = 0                         # Set the default upload TTL (0 for server default)
-ExtendTTL = false               # Set the uploads to extend TTL by default   (if available server side)
-AutoUpdate = true               # Enable/Disable auto update mechanism
-Token = ""                      # Set the Authentication Token (can be created from the UI)
-DisableStdin = false            # Disable STDIN input
-Insecure = false                # Disable HTTPS certificate validation
+Token = ""                      # Authentication token (created via web UI or --login)
+Insecure = false                # Skip TLS certificate validation
+
+# --- Upload defaults ---
+OneShot = false                 # Delete file after first download (if available server side)
+Removable = false               # Allow anyone to delete the file (if available server side)
+Stream = false                  # Stream upload, blocks until download starts (if available server side)
+TTL = 0                         # Upload time-to-live in seconds (0 = server default)
+ExtendTTL = false               # Extend expiration on access (if available server side)
+Comments = ""                   # Default upload comments (Markdown)
+
+# --- Authentication ---
+Login = ""                      # HTTP basic auth login
+Password = ""                   # HTTP basic auth password
+
+# --- Archive ---
+Archive = false                 # Archive files before upload
+ArchiveMethod = "tar"           # Archive backend (tar | zip)
+
+# --- Encryption ---
+Secure = false                  # Encrypt files before upload
+SecureMethod = "age"            # Crypto backend (age | openssl | pgp)
+
+# --- Output ---
+Debug = false                   # Verbose debug output
+Quiet = false                   # Suppress non-essential output
+JSON = false                    # Output upload metadata as JSON (implies Quiet)
+DownloadBinary = "curl"         # Download command for output (curl | wget)
+
+# --- Behavior ---
+AutoUpdate = true               # Auto-update client binary from server
+DisableStdin = false            # Disable STDIN pipe input by default
+Yes = false                     # Auto-accept confirmation prompts (non-interactive)
 
 [ArchiveOptions]
-  Compress = "gzip"
-  Options = ""
-  Tar = "/bin/tar"
+  Compress = "gzip"             # Compression codec
+  Tar = "/bin/tar"              # Path to tar binary
+  Options = ""                  # Additional command line options
 ```
 
 See the [full .plikrc template](https://github.com/root-gg/plik/blob/master/client/.plikrc) for all available options.
+
+## Profiles
+
+Profiles let you maintain configurations for multiple servers (or different defaults for the same server) and switch between them with a single flag.
+
+### Defining Profiles
+
+Add `[Profiles.<name>]` sections to your `.plikrc`. Each profile inherits all top-level settings and can override any field. If a profile sets `URL`, it *must* also set `Token` (use `Token = ""` for anonymous) to prevent credential leakage:
+
+```toml
+# ~/.plikrc — shared defaults
+URL = "https://plik.root.gg"
+Token = "your-default-token"
+AutoUpdate = true
+DefaultProfile = "local"        # Optional (can also be set via PLIK_PROFILE env var)
+
+[Profiles.local]
+URL = "http://127.0.0.1:8080"
+Token = ""                      # no auth for local dev
+AutoUpdate = false              # don't auto-update from local dev server
+
+[Profiles.work]
+URL = "https://plik.work.corp"
+Token = "your-token-here"
+AutoUpdate = false              # don't auto-update from work server
+
+# Create a .zip archive instead of the default .tar.gz
+[Profiles.zip]
+Archive = true
+ArchiveMethod = "zip"
+```
+
+### Using Profiles
+
+```bash
+# Use the "local" profile
+plik -P local file.txt
+
+# Use the long form
+plik --profile work file.txt
+
+# Set a default via environment variable
+export PLIK_PROFILE=work
+plik file.txt     # uses "work" profile
+
+# CLI flags still override profile settings
+plik -P work --server https://other.example.com file.txt
+
+# Login to a specific profile
+plik --login -P work
+```
+
+### Profile Composition
+
+Combine profiles with commas — they merge **left-to-right** (last wins on conflicts):
+
+```bash
+# Use work server settings, then add zip archive override
+plik -P work,zip file.txt
+
+# Compose three profiles
+plik -P local,openssl,oneshot file.txt
+```
+
+`DefaultProfile` and `PLIK_PROFILE` also support composition:
+
+```toml
+DefaultProfile = "work,zip"
+```
+
+```bash
+PLIK_PROFILE=local,openssl plik file.txt
+```
+
+::: tip Last wins
+Profiles are applied left-to-right. If `work` sets `URL = "https://work.corp"` and `zip` also sets `URL`, `zip`'s value wins. Fields only set by one profile are always preserved.
+:::
+
+::: warning --login requires a single profile
+`plik -P work,zip --login` will error — the login flow saves a token to exactly one profile section and can't know which to use with multiple profiles.
+:::
+
+### Profile Selection Precedence
+
+When multiple sources specify a profile, the following precedence applies (highest to lowest):
+
+1. `--profile` / `-P` CLI flag
+2. `PLIK_PROFILE` environment variable
+3. `DefaultProfile` field in the config file
+
+::: tip Backward Compatible
+Existing flat `.plikrc` files (without any `[Profiles]` sections) continue to work exactly as before. Profiles are entirely opt-in.
+:::
+
+::: warning Nested Sections
+`[ArchiveOptions]` and `[SecureOptions]` are **fully replaced** when overridden in a profile — individual keys are not merged. If a profile defines `[Profiles.local.ArchiveOptions]`, it must include all desired keys.
+:::
 
 ## Tips & Tricks
 

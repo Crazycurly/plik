@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/mitchellh/go-homedir"
 
 	"github.com/root-gg/plik/plik"
 )
@@ -162,36 +161,45 @@ func pollForToken(client *plik.Client, serverURL, code, secret string) (string, 
 }
 
 func saveToken(cfg *CliConfig, token string) error {
-	cfg.Token = token
-
-	// Find the config file path
-	path := os.Getenv("PLIKRC")
+	// Use the path from the loaded config, or derive it
+	path := cfg.ConfigPath
 	if path == "" {
-		home, err := homedir.Dir()
+		path = configFilePath()
+	}
+
+	// Load the existing config file to preserve profiles
+	var plikrc PlikrcFile
+	plikrc.CliConfig = *NewUploadConfig()
+	if _, err := os.Stat(path); err == nil {
+		md, err := toml.DecodeFile(path, &plikrc)
 		if err != nil {
-			home = os.Getenv("HOME")
-			if home == "" {
-				home = "."
-			}
+			return fmt.Errorf("unable to read existing config: %s", err)
 		}
-		path = home + "/.plikrc"
+		plikrc.metadata = md
 	}
 
-	// Encode in TOML
-	buf := new(bytes.Buffer)
-	if err := toml.NewEncoder(buf).Encode(cfg); err != nil {
-		return fmt.Errorf("unable to serialize config: %s", err)
-	}
-
-	// Write file
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	// Save token to the active profile or the top-level config.
+	// Requires exactly one profile — can't save a token when multiple profiles
+	// are active (they may target different servers).
+	profileName, err := cfg.SingleProfile()
 	if err != nil {
-		return fmt.Errorf("unable to write config file: %s", err)
+		return fmt.Errorf("--login: %s", err)
 	}
-	defer f.Close()
+	if profileName != "" {
+		if plikrc.Profiles == nil {
+			return fmt.Errorf("profile %q not found in config (no profiles defined)", profileName)
+		}
+		profile, ok := plikrc.Profiles[profileName]
+		if !ok {
+			return fmt.Errorf("profile %q not found in config", profileName)
+		}
+		profile.Token = token
+		plikrc.Profiles[profileName] = profile
+	} else {
+		plikrc.CliConfig.Token = token
+	}
 
-	_, err = f.Write(buf.Bytes())
-	return err
+	return saveConfig(path, &plikrc)
 }
 
 func openBrowser(url string) {

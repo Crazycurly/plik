@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/root-gg/utils"
@@ -57,15 +58,6 @@ func (cli *PlikCLI) Run(client *plik.Client) error {
 	}
 
 	upload := client.NewUpload()
-	upload.Token = cli.Config.Token
-	upload.TTL = cli.Config.TTL
-	upload.ExtendTTL = cli.Config.ExtendTTL
-	upload.Stream = cli.Config.Stream
-	upload.OneShot = cli.Config.OneShot
-	upload.Removable = cli.Config.Removable
-	upload.Comments = cli.Config.Comments
-	upload.Login = cli.Config.Login
-	upload.Password = cli.Config.Password
 
 	if len(cli.Config.filePaths) == 0 {
 		if cli.Config.DisableStdin {
@@ -275,6 +267,21 @@ func (cli *PlikCLI) info(client *plik.Client) error {
 
 	cli.printAlways("\nPlik server configuration :\n")
 	cli.printAlways("%s", serverConfig.String())
+
+	// Profile information (at the end for readability)
+	if len(cli.Config.ActiveProfiles) > 0 || len(cli.Config.AvailableProfiles) > 0 {
+		cli.printAlways("\n")
+	}
+	if len(cli.Config.ActiveProfiles) > 0 {
+		label := "Active profile"
+		if len(cli.Config.ActiveProfiles) > 1 {
+			label = "Active profiles"
+		}
+		cli.printAlways("%s : %s\n", label, strings.Join(cli.Config.ActiveProfiles, ", "))
+	}
+	if len(cli.Config.AvailableProfiles) > 0 {
+		cli.printAlways("Available profiles : %s\n", strings.Join(cli.Config.AvailableProfiles, ", "))
+	}
 
 	return nil
 }
