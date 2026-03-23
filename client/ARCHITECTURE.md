@@ -66,7 +66,7 @@ Config is a TOML file loaded from (in order):
 
 `CliConfig` fields are grouped logically: Server, Upload defaults, Authentication, Archive, Encryption, Output, Behavior, Runtime. This order determines both the struct layout and the TOML serialization order produced by `writeConfig()`.
 
-**`writeConfig()`** produces human-readable, commented TOML matching the `.plikrc` template format. It writes all scalar fields first, then `[Table]` sections (`[ArchiveOptions]`, `[SecureOptions]`, `[Profiles.*]`) — this ordering is required by TOML spec. The `configLine()` helper handles column-aligned inline comments. Used by both the first-run wizard and `saveToken()` in `login.go`.
+**`writeConfig()`** produces human-readable, commented TOML matching the `.plikrc` template format. It writes all scalar fields first, then `[Table]` sections (`[ArchiveOptions]`, `[SecureOptions]`, `[Profiles.*]`) — this ordering is required by TOML spec. The `configLine()` helper handles column-aligned inline comments. Used by the first-run wizard and `saveConfig()` for creating new config files.
 
 **`WritePlikrcTemplate()`** generates the canonical `client/.plikrc` reference template. It calls `writeConfig()` with showcase defaults (DRY — same code path, different values). The `TestPlikrcTemplate_UpToDate` test compares the generated output against the committed file and rewrites it if stale. CI catches drift via `git diff --exit-code`.
 
@@ -104,7 +104,9 @@ Implements a device authorization flow for CLI authentication:
 1. POST `/auth/cli/init` with hostname → receives a code, secret, and verification URL
 2. Opens verification URL in user's browser (best-effort)
 3. Polls POST `/auth/cli/poll` with code + secret every 2s
-4. On approval, saves the token to `~/.plikrc` and exits
+4. On approval, saves the token to `~/.plikrc` via surgical text patching (`patchToken`) that preserves user comments and profile ordering, then exits
+
+`saveToken()` performs an in-place edit of the raw config file bytes — it finds the correct `Token = "..."` line (top-level or inside `[Profiles.<name>]`) and replaces only its value. If no Token line exists, one is inserted after the URL line (if present), otherwise right after the section header. This avoids the full-file rewrite that `writeConfig()` would produce.
 
 Triggered by `--login` flag or interactively during first-run when auth is enabled/forced. When `--login` is set, the first-run wizard skips its own interactive login to avoid triggering the flow twice.
 
