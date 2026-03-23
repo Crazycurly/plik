@@ -204,8 +204,7 @@ func writeConfig(w io.Writer, plikrc *PlikrcFile) error {
 		fmt.Fprintf(w, "#   Cipher = \"\"                 # [openssl] Cipher (default: aes-256-cbc)\n")
 		fmt.Fprintf(w, "#   Options = \"-md sha512 -pbkdf2 -iter 120000\"  # [openssl] Additional command line options\n")
 		fmt.Fprintf(w, "#   Openssl = \"\"                # [openssl] Path to openssl binary (default: /usr/bin/openssl)\n")
-		fmt.Fprintf(w, "#   Gpg = \"\"                    # [pgp] Path to gpg binary (default: /usr/bin/gpg)\n")
-		fmt.Fprintf(w, "#   Keyring = \"\"                # [pgp] Path to GnuPG keyring (default: ~/.gnupg/pubring.gpg)\n")
+		fmt.Fprintf(w, "#   Keyring = \"\"                # [pgp] Path to GnuPG keyring (default: $GNUPGHOME/pubring.gpg or ~/.gnupg/pubring.gpg)\n")
 		fmt.Fprintln(w)
 	}
 

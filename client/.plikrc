@@ -47,8 +47,7 @@ DefaultProfile = ""             # Default profile to use (can also be set via PL
 #   Cipher = ""                 # [openssl] Cipher (default: aes-256-cbc)
 #   Options = "-md sha512 -pbkdf2 -iter 120000"  # [openssl] Additional command line options
 #   Openssl = ""                # [openssl] Path to openssl binary (default: /usr/bin/openssl)
-#   Gpg = ""                    # [pgp] Path to gpg binary (default: /usr/bin/gpg)
-#   Keyring = ""                # [pgp] Path to GnuPG keyring (default: ~/.gnupg/pubring.gpg)
+#   Keyring = ""                # [pgp] Path to GnuPG keyring (default: $GNUPGHOME/pubring.gpg or ~/.gnupg/pubring.gpg)
 
 # --- Profiles ---
 # Named profiles let you maintain different configurations

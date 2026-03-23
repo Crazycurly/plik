@@ -129,12 +129,14 @@ Triggered by `--login` flag or interactively during first-run when auth is enabl
 
 Archives wrap multiple files/directories into a single upload file. Errors are propagated via `io.PipeWriter.CloseWithError()` from the archiving goroutine.
 
+**Binary discovery**: All backends that shell out to external commands (tar, zip, openssl) use `binutil.LookupBinary(configured, name)` which first checks `os.Stat(configured)` and falls back to `exec.LookPath(name)`. This handles cross-platform binary locations (e.g. `/bin/tar` vs `/usr/bin/tar`, macOS Homebrew paths).
+
 ### Crypto Backends (`crypto/`)
 
 | Backend | Description |
 |---------|-------------|
-| `openssl` | Symmetric encryption via OpenSSL CLI (configurable cipher). **Deprecated** — use `age` instead |
-| `pgp` | Asymmetric encryption via GPG/PGP (recipient-based). **Deprecated** — use `age` instead |
+| `openssl` | Symmetric encryption via OpenSSL CLI (configurable cipher). Uses `binutil.LookupBinary` for portable binary discovery. **Deprecated** — use `age` instead |
+| `pgp` | Asymmetric encryption using pure Go `openpgp` (no external gpg binary needed). Keyring path respects `$GNUPGHOME` (default: `~/.gnupg/pubring.gpg`). **Deprecated** — use `age` instead |
 | `age` | Modern encryption via [age](https://age-encryption.org/). Supports passphrase, X25519, SSH recipients (`@github_user`, URL, raw key), and SSH host key scanning (`ssh://hostname`). URLs can serve SSH keys **and** native `age1…` recipients. Plain HTTP URLs trigger a MITM security prompt (default: decline). **Default backend.** Sets `upload.E2EE = "age"` for webapp interop (passphrase mode only) |
 
 Encryption wraps the file data stream before upload. Errors are propagated via `io.PipeWriter.CloseWithError()` from the encryption goroutine. All backends expose a `Stderr io.Writer` field (default: `os.Stderr`) and a `SetStderr(w io.Writer)` method so that `PlikCLI` can redirect diagnostic output (passphrase display, recipient resolution progress, warnings) through its injectable writer for test capture.

@@ -854,7 +854,6 @@ func TestWriteConfig_EmptySecureOptionsOmitted(t *testing.T) {
 	require.Contains(t, output, "#   Cipher")
 	require.Contains(t, output, "#   Options")
 	require.Contains(t, output, "#   Openssl")
-	require.Contains(t, output, "#   Gpg")
 	require.Contains(t, output, "#   Keyring")
 
 	// ArchiveOptions with values should produce an active block

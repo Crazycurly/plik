@@ -2,13 +2,13 @@ package zip
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/root-gg/plik/server/common"
 )
 
 // Backend config
@@ -21,11 +21,7 @@ type Backend struct {
 func NewZipBackend(config map[string]any) (zb *Backend, err error) {
 	zb = new(Backend)
 	zb.Config = NewZipBackendConfig(config)
-	if _, err = os.Stat(zb.Config.Zip); os.IsNotExist(err) || os.IsPermission(err) {
-		if zb.Config.Zip, err = exec.LookPath("zip"); err != nil {
-			err = errors.New("zip binary not found in $PATH, please install or edit ~/.plikrc")
-		}
-	}
+	zb.Config.Zip, err = common.LookupBinary(zb.Config.Zip, "zip")
 	return
 }
 

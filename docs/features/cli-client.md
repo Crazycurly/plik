@@ -247,8 +247,7 @@ The `[SecureOptions]` table configures encryption backend-specific settings. Ava
 | `Cipher` | openssl | Cipher algorithm | `aes-256-cbc` |
 | `Options` | openssl | Additional command line options | `-md sha512 -pbkdf2 -iter 120000` |
 | `Openssl` | openssl | Path to openssl binary | `/usr/bin/openssl` |
-| `Gpg` | pgp | Path to gpg binary | `/usr/bin/gpg` |
-| `Keyring` | pgp | Path to GnuPG public keyring | `~/.gnupg/pubring.gpg` |
+| `Keyring` | pgp | Path to GnuPG public keyring | `$GNUPGHOME/pubring.gpg` or `~/.gnupg/pubring.gpg` |
 
 ::: tip Passphrase vs Recipient
 For age, `Passphrase` and `Recipient` are mutually exclusive. If neither is set, a random passphrase is auto-generated.

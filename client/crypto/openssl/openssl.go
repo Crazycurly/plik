@@ -17,12 +17,13 @@ type Backend struct {
 	Stderr io.Writer // Diagnostic output writer (default: os.Stderr)
 }
 
-// NewOpenSSLBackend instantiate a new PGP Crypto Backend
+// NewOpenSSLBackend instantiate a new OpenSSL Crypto Backend
 // and configure it from config map
-func NewOpenSSLBackend(config map[string]any) (ob *Backend) {
+func NewOpenSSLBackend(config map[string]any) (ob *Backend, err error) {
 	ob = new(Backend)
 	ob.Config = NewOpenSSLBackendConfig(config)
 	ob.Stderr = os.Stderr
+	ob.Config.Openssl, err = common.LookupBinary(ob.Config.Openssl, "openssl")
 	return
 }
 
