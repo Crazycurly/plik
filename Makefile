@@ -169,8 +169,8 @@ test-backend:
 ###
 # Build documentation
 ###
-docs:
-	@cd docs && npm ci && bash inject_version.sh && bash copy_architecture.sh && npm run build
+docs: client
+	@cd docs && npm ci && bash inject_version.sh && bash copy_architecture.sh && bash inject_plikrc.sh && bash inject_help.sh && npm run build
 
 ###
 # Build a docker image locally

@@ -46,6 +46,7 @@ func makeOpts() docopt.Opts {
 		"--insecure":        false,
 		"--update":          false,
 		"--login":           false,
+		"--update-plikrc":   false,
 		"--mcp":             false,
 		"--version":         false,
 		"--info":            false,
@@ -846,17 +847,25 @@ func TestWriteConfig_EmptySecureOptionsOmitted(t *testing.T) {
 	output := buf.String()
 
 	// Empty SecureOptions should NOT produce an active [SecureOptions] block
-	// but SHOULD produce a commented-out reference section
+	// but SHOULD produce a commented-out reference section with all backend keys
 	require.Contains(t, output, "# [SecureOptions]")
 	require.Contains(t, output, "#   Passphrase")
+	require.Contains(t, output, "#   Recipient")
+	require.Contains(t, output, "#   Cipher")
+	require.Contains(t, output, "#   Options")
+	require.Contains(t, output, "#   Openssl")
+	require.Contains(t, output, "#   Keyring")
 
 	// ArchiveOptions with values should produce an active block
 	require.Contains(t, output, "[ArchiveOptions]")
 	require.Contains(t, output, `Compress = "gzip"`)
 
-	// No active profiles → should produce commented-out profile example
+	// No active profiles → should produce commented-out profile examples
 	require.Contains(t, output, "# [Profiles.local]")
 	require.Contains(t, output, "# [Profiles.work]")
+	require.Contains(t, output, "# [Profiles.zip]")
+	require.Contains(t, output, "# [Profiles.bob]")
+	require.Contains(t, output, `# Recipient = "@bob"`)
 }
 
 func TestWriteConfig_RoundTrip(t *testing.T) {
@@ -896,6 +905,73 @@ func TestWriteConfig_RoundTrip(t *testing.T) {
 	require.True(t, loaded.Yes)
 	require.Equal(t, "gzip", loaded.ArchiveOptions["Compress"])
 	require.Equal(t, "/bin/tar", loaded.ArchiveOptions["Tar"])
+}
+
+func TestUpdatePlikrc_RoundTrip(t *testing.T) {
+	// Write a hand-crafted config with user comments and a non-alphabetical
+	// profile order, then call updatePlikrc and verify it comes out in canonical
+	// format with all values preserved.
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	original := `# hand-crafted config with my own comments
+URL = "https://plik.example.com"  # my server
+Token = "my-token"
+OneShot = true
+
+[Profiles.work]
+URL = "https://work.example.com"
+Token = "work-token"
+
+[Profiles.alpha]
+URL = "http://alpha.local"
+Token = ""
+`
+	err := os.WriteFile(path, []byte(original), 0600)
+	require.NoError(t, err)
+
+	cfg := &CliConfig{
+		ConfigPath: path,
+		Yes:        true, // skip confirmation prompt
+	}
+	err = updatePlikrc(cfg)
+	require.NoError(t, err)
+
+	// Values must be preserved
+	loaded, err := LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+	require.Equal(t, "https://plik.example.com", loaded.URL)
+	require.Equal(t, "my-token", loaded.Token)
+	require.True(t, loaded.OneShot)
+
+	// Profiles must be preserved
+	work, err := LoadConfigFromFile(path, "work")
+	require.NoError(t, err)
+	require.Equal(t, "https://work.example.com", work.URL)
+	require.Equal(t, "work-token", work.Token)
+
+	alpha, err := LoadConfigFromFile(path, "alpha")
+	require.NoError(t, err)
+	require.Equal(t, "http://alpha.local", alpha.URL)
+	require.Equal(t, "", alpha.Token)
+
+	// Output is now in canonical format (has standard section headers)
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	output := string(content)
+	require.Contains(t, output, "# --- Server ---")
+	require.Contains(t, output, "# --- Profiles ---")
+	// Original custom comment is gone (replaced by canonical format)
+	require.NotContains(t, output, "hand-crafted config")
+}
+
+func TestUpdatePlikrc_FileNotFound(t *testing.T) {
+	cfg := &CliConfig{
+		ConfigPath: "/nonexistent/path/.plikrc",
+		Yes:        true,
+	}
+	err := updatePlikrc(cfg)
+	require.Error(t, err)
 }
 
 func TestWriteConfig_WithProfiles(t *testing.T) {
@@ -1109,7 +1185,229 @@ func TestSaveToken_NoProfilesDefined(t *testing.T) {
 	}
 	err = saveToken(cfg, "some-token")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "no profiles defined")
+	require.Contains(t, err.Error(), `"local"`)
+	require.Contains(t, err.Error(), "not found")
+}
+
+func TestSaveToken_PreservesComments(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	original := `# My custom plik config
+URL = "https://plik.root.gg"    # production server
+Token = "old-token"             # will be replaced
+Insecure = false                # keep TLS on
+
+# Upload settings I like
+OneShot = true
+
+[Profiles.work]
+# Work server with special config
+URL = "https://plik.work.corp"
+Token = "work-token"   # auto-generated
+`
+	err := os.WriteFile(path, []byte(original), 0600)
+	require.NoError(t, err)
+
+	// Patch top-level token
+	cfg := &CliConfig{ConfigPath: path}
+	err = saveToken(cfg, "new-top-level-token")
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	output := string(content)
+
+	// All user comments must survive
+	require.Contains(t, output, "# My custom plik config")
+	require.Contains(t, output, "# production server")
+	require.Contains(t, output, "# keep TLS on")
+	require.Contains(t, output, "# Upload settings I like")
+	require.Contains(t, output, "# Work server with special config")
+	require.Contains(t, output, "# auto-generated")
+
+	// Token value must be updated
+	require.Contains(t, output, `Token = "new-top-level-token"`)
+
+	// Work token must be untouched
+	require.Contains(t, output, `Token = "work-token"`)
+
+	// Inline comment on the Token line is preserved (trailing content after the value)
+	// The inline comment changes because the value length changed, but trailing
+	// content after the quoted value is preserved by replaceTokenValue.
+}
+
+func TestSaveToken_PreservesProfileOrder(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	// Deliberately non-alphabetical order: work > alpha > local
+	original := `URL = "https://plik.root.gg"
+Token = "base-token"
+
+[Profiles.work]
+URL = "https://plik.work.corp"
+Token = "work-token"
+
+[Profiles.alpha]
+URL = "https://alpha.example.com"
+Token = ""
+
+[Profiles.local]
+URL = "http://127.0.0.1:8080"
+Token = "local-token"
+`
+	err := os.WriteFile(path, []byte(original), 0600)
+	require.NoError(t, err)
+
+	// Patch the alpha profile
+	cfg := &CliConfig{
+		ConfigPath:     path,
+		ActiveProfiles: []string{"alpha"},
+	}
+	err = saveToken(cfg, "new-alpha-token")
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	output := string(content)
+
+	// Profile order must be preserved: work > alpha > local
+	workIdx := strings.Index(output, "[Profiles.work]")
+	alphaIdx := strings.Index(output, "[Profiles.alpha]")
+	localIdx := strings.Index(output, "[Profiles.local]")
+
+	require.NotEqual(t, -1, workIdx)
+	require.NotEqual(t, -1, alphaIdx)
+	require.NotEqual(t, -1, localIdx)
+	require.Less(t, workIdx, alphaIdx, "work should come before alpha")
+	require.Less(t, alphaIdx, localIdx, "alpha should come before local")
+
+	// Token updated in the right place
+	require.Contains(t, output, `Token = "new-alpha-token"`)
+	// Other tokens untouched
+	require.Contains(t, output, `Token = "work-token"`)
+	require.Contains(t, output, `Token = "local-token"`)
+}
+
+func TestSaveToken_InsertsTokenWhenMissing_Profile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	original := `URL = "https://plik.root.gg"
+
+[Profiles.zip]
+Archive = true
+ArchiveMethod = "zip"
+`
+	err := os.WriteFile(path, []byte(original), 0600)
+	require.NoError(t, err)
+
+	cfg := &CliConfig{
+		ConfigPath:     path,
+		ActiveProfiles: []string{"zip"},
+	}
+	err = saveToken(cfg, "zip-token")
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	output := string(content)
+
+	// Token should be inserted and the file should be valid TOML
+	require.Contains(t, output, `Token = "zip-token"`)
+
+	// Verify the file round-trips through TOML
+	loaded, err := LoadConfigFromFile(path, "zip")
+	require.NoError(t, err)
+	require.Equal(t, "zip-token", loaded.Token)
+	require.True(t, loaded.Archive)
+	require.Equal(t, "zip", loaded.ArchiveMethod)
+}
+
+func TestSaveToken_InsertsTokenAfterURL_Profile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	// Profile with URL but no Token line
+	original := `URL = "https://plik.root.gg"
+
+[Profiles.work]
+URL = "https://work.example.com"
+OneShot = true
+`
+	err := os.WriteFile(path, []byte(original), 0600)
+	require.NoError(t, err)
+
+	cfg := &CliConfig{
+		ConfigPath:     path,
+		ActiveProfiles: []string{"work"},
+	}
+	err = saveToken(cfg, "work-token")
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	lines := strings.Split(string(content), "\n")
+
+	// Find positions of URL and Token within the profile section
+	urlIdx, tokenIdx := -1, -1
+	inProfile := false
+	for i, line := range lines {
+		if strings.TrimSpace(line) == "[Profiles.work]" {
+			inProfile = true
+			continue
+		}
+		if inProfile && strings.HasPrefix(strings.TrimSpace(line), "[") {
+			break // next section
+		}
+		if inProfile && strings.Contains(line, "URL =") {
+			urlIdx = i
+		}
+		if inProfile && strings.Contains(line, "Token =") {
+			tokenIdx = i
+		}
+	}
+
+	require.NotEqual(t, -1, urlIdx, "URL line should exist in profile")
+	require.NotEqual(t, -1, tokenIdx, "Token line should exist in profile")
+	require.Equal(t, urlIdx+1, tokenIdx, "Token should be inserted immediately after URL")
+
+	// Verify the file round-trips through TOML
+	loaded, err := LoadConfigFromFile(path, "work")
+	require.NoError(t, err)
+	require.Equal(t, "work-token", loaded.Token)
+	require.Equal(t, "https://work.example.com", loaded.URL)
+	require.True(t, loaded.OneShot)
+}
+
+func TestSaveToken_InsertsTokenWhenMissing_TopLevel(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".plikrc")
+
+	// Config with no Token line at all
+	original := `URL = "https://plik.root.gg"
+OneShot = true
+`
+	err := os.WriteFile(path, []byte(original), 0600)
+	require.NoError(t, err)
+
+	cfg := &CliConfig{ConfigPath: path}
+	err = saveToken(cfg, "brand-new-token")
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	output := string(content)
+
+	require.Contains(t, output, `Token = "brand-new-token"`)
+
+	// Verify the file is valid TOML
+	loaded, err := LoadConfigFromFile(path, "")
+	require.NoError(t, err)
+	require.Equal(t, "brand-new-token", loaded.Token)
+	require.Equal(t, "https://plik.root.gg", loaded.URL)
+	require.True(t, loaded.OneShot)
 }
 
 func TestDefaultProfile_ResolutionPrecedence(t *testing.T) {

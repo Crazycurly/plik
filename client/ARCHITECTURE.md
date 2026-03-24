@@ -48,6 +48,14 @@ client/
    - First-run wizard is skipped when `--quiet`, `--yes`, or `--server` is set
 3. Dispatch to `cli.Run(client)` for the upload flow
 
+**Early-exit flags** (handled before `cli.Run`):
+- `--version`, `--help` — print and exit
+- `--mcp` — start MCP server over stdio
+- `--info` — print client/server info
+- `--update` — self-update binary
+- `--login` — device auth flow, saves token via surgical patch
+- `--update-plikrc` — rewrite config in canonical format (`updatePlikrc()` in `config.go`)
+
 **`PlikCLI.Run()` flow** (in `app.go`):
 1. Create upload via the Go library (`plik/`)
 2. Add files (with optional archive/encrypt preprocessing)
@@ -66,7 +74,7 @@ Config is a TOML file loaded from (in order):
 
 `CliConfig` fields are grouped logically: Server, Upload defaults, Authentication, Archive, Encryption, Output, Behavior, Runtime. This order determines both the struct layout and the TOML serialization order produced by `writeConfig()`.
 
-**`writeConfig()`** produces human-readable, commented TOML matching the `.plikrc` template format. It writes all scalar fields first, then `[Table]` sections (`[ArchiveOptions]`, `[SecureOptions]`, `[Profiles.*]`) — this ordering is required by TOML spec. The `configLine()` helper handles column-aligned inline comments. Used by both the first-run wizard and `saveToken()` in `login.go`.
+**`writeConfig()`** produces human-readable, commented TOML matching the `.plikrc` template format. It writes all scalar fields first, then `[Table]` sections (`[ArchiveOptions]`, `[SecureOptions]`, `[Profiles.*]`) — this ordering is required by TOML spec. The `configLine()` helper handles column-aligned inline comments. Used by the first-run wizard and `saveConfig()` for creating new config files.
 
 **`WritePlikrcTemplate()`** generates the canonical `client/.plikrc` reference template. It calls `writeConfig()` with showcase defaults (DRY — same code path, different values). The `TestPlikrcTemplate_UpToDate` test compares the generated output against the committed file and rewrites it if stale. CI catches drift via `git diff --exit-code`.
 
@@ -104,7 +112,11 @@ Implements a device authorization flow for CLI authentication:
 1. POST `/auth/cli/init` with hostname → receives a code, secret, and verification URL
 2. Opens verification URL in user's browser (best-effort)
 3. Polls POST `/auth/cli/poll` with code + secret every 2s
-4. On approval, saves the token to `~/.plikrc` and exits
+4. On approval, saves the token to `~/.plikrc` via surgical text patching (`patchToken`) that preserves user comments and profile ordering, then exits
+
+`saveToken()` performs an in-place edit of the raw config file bytes — it finds the correct `Token = "..."` line (top-level or inside `[Profiles.<name>]`) and replaces only its value. If no Token line exists, one is inserted after the URL line (if present), otherwise right after the section header. This avoids the full-file rewrite that `writeConfig()` would produce.
+
+**`--update-plikrc`** is the intentional counterpart: it calls `loadPlikrc()` → `saveConfig()` to rewrite the entire file in canonical format, preserving all values and profile definitions but replacing custom comments with standard inline comments. A `[y/N]` confirmation prompt is shown unless `--yes` is set.
 
 Triggered by `--login` flag or interactively during first-run when auth is enabled/forced. When `--login` is set, the first-run wizard skips its own interactive login to avoid triggering the flow twice.
 
@@ -117,12 +129,14 @@ Triggered by `--login` flag or interactively during first-run when auth is enabl
 
 Archives wrap multiple files/directories into a single upload file. Errors are propagated via `io.PipeWriter.CloseWithError()` from the archiving goroutine.
 
+**Binary discovery**: All backends that shell out to external commands (tar, zip, openssl) use `binutil.LookupBinary(configured, name)` which first checks `os.Stat(configured)` and falls back to `exec.LookPath(name)`. This handles cross-platform binary locations (e.g. `/bin/tar` vs `/usr/bin/tar`, macOS Homebrew paths).
+
 ### Crypto Backends (`crypto/`)
 
 | Backend | Description |
 |---------|-------------|
-| `openssl` | Symmetric encryption via OpenSSL CLI (configurable cipher). **Deprecated** — use `age` instead |
-| `pgp` | Asymmetric encryption via GPG/PGP (recipient-based). **Deprecated** — use `age` instead |
+| `openssl` | Symmetric encryption via OpenSSL CLI (configurable cipher). Uses `binutil.LookupBinary` for portable binary discovery. **Deprecated** — use `age` instead |
+| `pgp` | Asymmetric encryption using pure Go `openpgp` (no external gpg binary needed). Keyring path respects `$GNUPGHOME` (default: `~/.gnupg/pubring.gpg`). **Deprecated** — use `age` instead |
 | `age` | Modern encryption via [age](https://age-encryption.org/). Supports passphrase, X25519, SSH recipients (`@github_user`, URL, raw key), and SSH host key scanning (`ssh://hostname`). URLs can serve SSH keys **and** native `age1…` recipients. Plain HTTP URLs trigger a MITM security prompt (default: decline). **Default backend.** Sets `upload.E2EE = "age"` for webapp interop (passphrase mode only) |
 
 Encryption wraps the file data stream before upload. Errors are propagated via `io.PipeWriter.CloseWithError()` from the encryption goroutine. All backends expose a `Stderr io.Writer` field (default: `os.Stderr`) and a `SetStderr(w io.Writer)` method so that `PlikCLI` can redirect diagnostic output (passphrase display, recipient resolution progress, warnings) through its injectable writer for test capture.

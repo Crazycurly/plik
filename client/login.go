@@ -9,10 +9,10 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
+	"strings"
 	"time"
-
-	"github.com/BurntSushi/toml"
 
 	"github.com/root-gg/plik/plik"
 )
@@ -160,46 +160,161 @@ func pollForToken(client *plik.Client, serverURL, code, secret string) (string, 
 	return "", nil
 }
 
+// saveToken performs a surgical edit of ~/.plikrc, updating only the Token
+// value in the correct section (top-level or a named profile). All other
+// content — comments, whitespace, profile ordering — is preserved verbatim.
 func saveToken(cfg *CliConfig, token string) error {
-	// Use the path from the loaded config, or derive it
 	path := cfg.ConfigPath
 	if path == "" {
 		path = configFilePath()
 	}
 
-	// Load the existing config file to preserve profiles
-	var plikrc PlikrcFile
-	plikrc.CliConfig = *NewUploadConfig()
-	if _, err := os.Stat(path); err == nil {
-		md, err := toml.DecodeFile(path, &plikrc)
-		if err != nil {
-			return fmt.Errorf("unable to read existing config: %s", err)
-		}
-		plikrc.metadata = md
-	}
-
-	// Save token to the active profile or the top-level config.
-	// Requires exactly one profile — can't save a token when multiple profiles
-	// are active (they may target different servers).
 	profileName, err := cfg.SingleProfile()
 	if err != nil {
 		return fmt.Errorf("--login: %s", err)
 	}
-	if profileName != "" {
-		if plikrc.Profiles == nil {
-			return fmt.Errorf("profile %q not found in config (no profiles defined)", profileName)
-		}
-		profile, ok := plikrc.Profiles[profileName]
-		if !ok {
-			return fmt.Errorf("profile %q not found in config", profileName)
-		}
-		profile.Token = token
-		plikrc.Profiles[profileName] = profile
-	} else {
-		plikrc.CliConfig.Token = token
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("unable to read config file: %s", err)
 	}
 
-	return saveConfig(path, &plikrc)
+	patched, err := patchToken(data, profileName, token)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, patched, 0600)
+}
+
+// tokenLineRe matches a TOML Token assignment, regardless of whitespace or
+// inline comments:  Token = "value"  # optional comment
+var tokenLineRe = regexp.MustCompile(`^(\s*)Token\s*=\s*"[^"]*"(.*)$`)
+
+// sectionHeaderRe matches a TOML table header like [Profiles.work] or [ArchiveOptions].
+var sectionHeaderRe = regexp.MustCompile(`^\s*\[`)
+
+// urlLineRe matches a TOML URL assignment like:  URL = "https://..."
+var urlLineRe = regexp.MustCompile(`^\s*URL\s*=`)
+
+// patchToken performs an in-place edit of the raw .plikrc bytes, updating only
+// the Token value. When profileName is empty, it patches the top-level Token.
+// Otherwise it patches Token inside [Profiles.<profileName>].
+//
+// If a Token line already exists in the target section, its value is replaced
+// in-place (preserving any trailing inline comment). If no Token line exists,
+// a new one is inserted after the URL line (if present), otherwise right after
+// the section header.
+func patchToken(data []byte, profileName string, token string) ([]byte, error) {
+	lines := strings.Split(string(data), "\n")
+
+	if profileName == "" {
+		return patchTopLevelToken(lines, token)
+	}
+	return patchProfileToken(lines, profileName, token)
+}
+
+// patchTopLevelToken patches Token in the top-level section (before the first
+// TOML table header).
+func patchTopLevelToken(lines []string, token string) ([]byte, error) {
+	// Find the boundary: first line that starts a [Table] section.
+	firstSection := len(lines)
+	for i, line := range lines {
+		if sectionHeaderRe.MatchString(line) {
+			firstSection = i
+			break
+		}
+	}
+
+	// Look for an existing Token line in the top-level section.
+	for i := 0; i < firstSection; i++ {
+		if tokenLineRe.MatchString(lines[i]) {
+			lines[i] = replaceTokenValue(lines[i], token)
+			return []byte(strings.Join(lines, "\n")), nil
+		}
+	}
+
+	// No Token line found — insert one. Place it after URL if present,
+	// otherwise at the start of the file.
+	insertAt := 0
+	for i := 0; i < firstSection; i++ {
+		if urlLineRe.MatchString(lines[i]) {
+			insertAt = i + 1
+			break
+		}
+	}
+
+	newLine := fmt.Sprintf("Token = %q", token)
+	lines = insertLine(lines, insertAt, newLine)
+	return []byte(strings.Join(lines, "\n")), nil
+}
+
+// patchProfileToken patches Token inside [Profiles.<name>].
+func patchProfileToken(lines []string, profileName string, token string) ([]byte, error) {
+	header := fmt.Sprintf("[Profiles.%s]", profileName)
+
+	// Find the profile section header.
+	headerIdx := -1
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == header {
+			headerIdx = i
+			break
+		}
+	}
+	if headerIdx == -1 {
+		return nil, fmt.Errorf("profile %q not found in config", profileName)
+	}
+
+	// Find the end of this profile section (next [Table] header or EOF).
+	sectionEnd := len(lines)
+	for i := headerIdx + 1; i < len(lines); i++ {
+		if sectionHeaderRe.MatchString(lines[i]) {
+			sectionEnd = i
+			break
+		}
+	}
+
+	// Look for an existing Token line within this section.
+	for i := headerIdx + 1; i < sectionEnd; i++ {
+		if tokenLineRe.MatchString(lines[i]) {
+			lines[i] = replaceTokenValue(lines[i], token)
+			return []byte(strings.Join(lines, "\n")), nil
+		}
+	}
+
+	// No Token line — insert one after URL if present, otherwise right
+	// after the section header.
+	insertAt := headerIdx + 1
+	for i := headerIdx + 1; i < sectionEnd; i++ {
+		if urlLineRe.MatchString(lines[i]) {
+			insertAt = i + 1
+			break
+		}
+	}
+
+	newLine := fmt.Sprintf("Token = %q", token)
+	lines = insertLine(lines, insertAt, newLine)
+	return []byte(strings.Join(lines, "\n")), nil
+}
+
+// replaceTokenValue replaces the value in a Token = "..." line, preserving
+// leading whitespace and any trailing content (inline comments, etc.).
+func replaceTokenValue(line string, token string) string {
+	m := tokenLineRe.FindStringSubmatch(line)
+	if m == nil {
+		return line // shouldn't happen — caller verified match
+	}
+	return fmt.Sprintf("%sToken = %q%s", m[1], token, m[2])
+}
+
+// insertLine inserts a new line at the given index in a slice of lines.
+func insertLine(lines []string, at int, newLine string) []string {
+	result := make([]string, 0, len(lines)+1)
+	result = append(result, lines[:at]...)
+	result = append(result, newLine)
+	result = append(result, lines[at:]...)
+	return result
 }
 
 func openBrowser(url string) {

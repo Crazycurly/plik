@@ -183,3 +183,21 @@ func BenchmarkGenerateRandomID(b *testing.B) {
 		GenerateRandomID(32)
 	}
 }
+
+func TestLookupBinary(t *testing.T) {
+	// Valid path → returned as-is
+	path, err := LookupBinary("/bin/sh", "sh")
+	require.NoError(t, err)
+	require.Equal(t, "/bin/sh", path)
+
+	// Invalid configured path → fallback to $PATH
+	path, err = LookupBinary("/nonexistent/bin/sh", "sh")
+	require.NoError(t, err)
+	require.NotEmpty(t, path) // resolved via exec.LookPath
+
+	// Both invalid → descriptive error
+	_, err = LookupBinary("/nonexistent/nope", "nonexistent_binary_xyz")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "nonexistent_binary_xyz not found at /nonexistent/nope")
+	require.Contains(t, err.Error(), "not in $PATH")
+}

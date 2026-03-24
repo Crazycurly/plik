@@ -24,7 +24,7 @@ type Backend interface {
 func NewCryptoBackend(name string, config map[string]any) (backend Backend, err error) {
 	switch name {
 	case "openssl":
-		backend = openssl.NewOpenSSLBackend(config)
+		backend, err = openssl.NewOpenSSLBackend(config)
 	case "pgp":
 		backend = pgp.NewPgpBackend(config)
 	case "age":

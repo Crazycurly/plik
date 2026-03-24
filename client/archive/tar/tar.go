@@ -2,13 +2,13 @@ package tar
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/root-gg/plik/server/common"
 )
 
 // Backend object
@@ -21,11 +21,7 @@ type Backend struct {
 func NewTarBackend(config map[string]any) (tb *Backend, err error) {
 	tb = new(Backend)
 	tb.Config = NewTarBackendConfig(config)
-	if _, err = os.Stat(tb.Config.Tar); os.IsNotExist(err) || os.IsPermission(err) {
-		if tb.Config.Tar, err = exec.LookPath("tar"); err != nil {
-			err = errors.New("tar binary not found in $PATH, please install or edit ~/.plikrc")
-		}
-	}
+	tb.Config.Tar, err = common.LookupBinary(tb.Config.Tar, "tar")
 	return
 }
 

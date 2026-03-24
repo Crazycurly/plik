@@ -24,6 +24,39 @@ The `@username` shorthand fetches SSH keys from `https://github.com/{username}.k
 Fetching keys over plain `http://` triggers a security warning — an attacker could substitute their own key (MITM). Use `https://` whenever possible. The prompt defaults to **No**; use `--yes` to bypass it in non-interactive scripts.
 :::
 
+## Configuration
+
+Encryption defaults can be configured in `~/.plikrc` to avoid repeating flags. Use `SecureOptions` for backend-specific settings and profiles for reusable encryption presets.
+
+### Setting defaults
+
+```toml
+# Always encrypt by default
+Secure = true
+SecureMethod = "age"
+```
+
+### Encryption profile
+
+Create a profile to encrypt for a specific recipient:
+
+```toml
+[Profiles.bob]
+Secure = true
+SecureMethod = "age"
+[Profiles.bob.SecureOptions]
+Recipient = "@bob"   # github username
+```
+
+Then use it:
+
+```bash
+plik -P bob secret.txt          # encrypt for @bob
+plik -P work,bob secret.txt     # use work server + encrypt for @bob
+```
+
+See [CLI Client > SecureOptions](/features/cli-client#secureoptions) for the full reference of available keys per backend.
+
 ## Interoperability
 
 Files encrypted via the web UI can be decrypted with the CLI and vice versa:

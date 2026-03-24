@@ -149,7 +149,7 @@ The documentation lives in two places:
 ```bash
 cd docs && npm install       # First time only
 cd docs && npm run dev       # Preview at localhost:5173
-make docs                    # Build docs (validates links, injects version)
+make docs                    # Build docs (builds client, injects help+plikrc, builds VitePress)
 ```
 
 **Important**: Always run `make docs` when you touch documentation files to catch build errors (dead links, etc.) before committing.

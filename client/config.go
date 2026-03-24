@@ -198,9 +198,13 @@ func writeConfig(w io.Writer, plikrc *PlikrcFile) error {
 	// Commented-out [SecureOptions] reference (when no active SecureOptions)
 	if len(c.SecureOptions) == 0 {
 		fmt.Fprintf(w, "# [SecureOptions]\n")
-		fmt.Fprintf(w, "#   Passphrase = \"\"             # [openssl|age] Encryption passphrase\n")
-		fmt.Fprintf(w, "#   Cipher = \"\"                 # [openssl] Cipher (e.g. aes-256-cbc)\n")
-		fmt.Fprintf(w, "#   Options = \"\"                # [openssl|pgp] Additional command line options\n")
+		fmt.Fprintf(w, "#   Passphrase = \"\"             # [age|openssl] Encryption passphrase (auto-generated if omitted)\n")
+		fmt.Fprintf(w, "#   Recipient = \"\"              # [age] @github_user, ssh://host, URL, ssh key, or age1...\n")
+		fmt.Fprintf(w, "#                               # [pgp] Name or email to search in keyring\n")
+		fmt.Fprintf(w, "#   Cipher = \"\"                 # [openssl] Cipher (default: aes-256-cbc)\n")
+		fmt.Fprintf(w, "#   Options = \"-md sha512 -pbkdf2 -iter 120000\"  # [openssl] Additional command line options\n")
+		fmt.Fprintf(w, "#   Openssl = \"\"                # [openssl] Path to openssl binary (default: /usr/bin/openssl)\n")
+		fmt.Fprintf(w, "#   Keyring = \"\"                # [pgp] Path to GnuPG keyring (default: $GNUPGHOME/pubring.gpg or ~/.gnupg/pubring.gpg)\n")
 		fmt.Fprintln(w)
 	}
 
@@ -243,6 +247,13 @@ func writeConfig(w io.Writer, plikrc *PlikrcFile) error {
 		fmt.Fprintf(w, "# [Profiles.zip]\n")
 		fmt.Fprintf(w, "# Archive = true\n")
 		fmt.Fprintf(w, "# ArchiveMethod = \"zip\"\n")
+		fmt.Fprintf(w, "#\n")
+		fmt.Fprintf(w, "# # Encrypt files for a specific GitHub user using age\n")
+		fmt.Fprintf(w, "# [Profiles.bob]\n")
+		fmt.Fprintf(w, "# Secure = true\n")
+		fmt.Fprintf(w, "# SecureMethod = \"age\"\n")
+		fmt.Fprintf(w, "# [Profiles.bob.SecureOptions]\n")
+		fmt.Fprintf(w, "# Recipient = \"@bob\"   # github username\n")
 	}
 
 	return nil
@@ -382,6 +393,43 @@ func saveConfig(path string, plikrc *PlikrcFile) error {
 	return err
 }
 
+// updatePlikrc rewrites the config file at cfg.ConfigPath in canonical format
+// using writeConfig. All values and profiles are preserved; custom comments are
+// replaced with standard inline comments. Prompts for confirmation unless
+// cfg.Yes is set.
+func updatePlikrc(cfg *CliConfig) error {
+	path := cfg.ConfigPath
+	if path == "" {
+		path = configFilePath()
+	}
+
+	plikrc, _, err := loadPlikrc(path)
+	if err != nil {
+		return fmt.Errorf("unable to read %s: %s", path, err)
+	}
+
+	if !cfg.Yes {
+		fmt.Printf("This will rewrite %s in canonical format.\n", path)
+		fmt.Printf("All values and profiles are preserved; custom comments will be replaced.\n")
+		fmt.Printf("Continue? [y/N] ")
+		ok, err := common.AskConfirmation(false)
+		if err != nil {
+			return fmt.Errorf("unable to ask for confirmation: %s", err)
+		}
+		if !ok {
+			fmt.Println("Aborted.")
+			return nil
+		}
+	}
+
+	if err := saveConfig(path, plikrc); err != nil {
+		return err
+	}
+
+	fmt.Printf("✓ %s updated\n", path)
+	return nil
+}
+
 // loadPlikrc reads and decodes a PlikrcFile from the given path.
 // It returns the parsed PlikrcFile and TOML metadata for field-presence checks.
 func loadPlikrc(path string) (*PlikrcFile, toml.MetaData, error) {
@@ -393,6 +441,7 @@ func loadPlikrc(path string) (*PlikrcFile, toml.MetaData, error) {
 		return nil, md, fmt.Errorf("Failed to deserialize ~/.plikrc : %s", err)
 	}
 
+	plikrc.metadata = md
 	return &plikrc, md, nil
 }
 

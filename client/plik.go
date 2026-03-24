@@ -14,47 +14,71 @@ import (
 func main() {
 
 	// Usage /!\ INDENT THIS WITH SPACES NOT TABS /!\
-	usage := `plik
+	usage := `plik — temporary file sharing
 
 Usage:
   plik [options] [FILE] ...
 
-Options:
-  -o, --oneshot             Enable OneShot ( Each file will be deleted on first download )
-  -r, --removable           Enable Removable upload ( Each file can be deleted by anyone at any moment )
-  -S, --stream              Enable Streaming ( It will block until remote user starts downloading )
-  -t, --ttl TTL             Time before expiration (Upload will be removed in m|h|d)
-  --extend-ttl              Extend upload expiration date by TTL when accessed
-  -n, --name NAME           Set file name when piping from STDIN
-  --stdin                   Enable pipe from stdin explicitly when DisableStdin is set in .plikrc
-  --server SERVER           Overrides server url
-  --token TOKEN             Specify an upload token ( if '-' prompt for value )
-  --comments COMMENT        Set comments of the upload ( MarkDown compatible )
-  -p                        Protect the upload with login and password ( be prompted )
-  --password PASSWD         Protect the upload with "login:password" ( if omitted default login is "plik" )
-  -a                        Archive upload using default archive params ( see ~/.plikrc )
-  --archive MODE            Archive upload using the specified archive backend : tar|zip
-  --compress MODE           [tar] Compression codec : gzip|bzip2|xz|lzip|lzma|lzop|compress|no
-  --archive-options OPTIONS [tar|zip] Additional command line options
-  -s                        Encrypt upload using the default encryption parameters ( see ~/.plikrc )
-  --not-secure              Do not encrypt upload files regardless of the ~/.plikrc configurations
-  --secure MODE             Encrypt upload files using the specified crypto backend : openssl|pgp|age (default: age)
-  --cipher CIPHER           [openssl] Openssl cipher to use ( see openssl help )
-  --passphrase PASSPHRASE   [openssl|age] Passphrase or '-' to be prompted for a passphrase
-  --recipient RECIPIENT     [pgp|age] Set recipient ( pgp: name, age: @github_user, ssh://host, URL, ssh key, or age1... )
+Profile Options:
+  -P, --profile PROFILES    Use named profiles from ~/.plikrc (comma-separated for composition)
+
+Upload Options:
+  -o, --oneshot             Delete each file after first download
+  -r, --removable           Allow anyone to delete uploaded files
+  -S, --stream              Stream upload (blocks until receiver downloads)
+  -t, --ttl TTL             Time before expiration (e.g. 30m, 24h, 7d)
+  --extend-ttl              Extend expiration on each download
+  -p                        Prompt for upload login and password
+  --password PASSWD         Protect upload with login:password (default login: "plik")
+  --comments COMMENT        Set upload comments (Markdown)
+  -n, --name NAME           Set filename when piping from STDIN
+
+Server Options:
+  --server SERVER           Override server URL
+  --token TOKEN             Set upload token (use '-' to prompt)
+  --insecure                Skip TLS certificate verification
+
+Archive Options:
+  -a                        Archive files using default settings from ~/.plikrc
+  --archive MODE            Archive files with specified backend (tar | zip)
+  --compress MODE           [tar] Compression codec (gzip|bzip2|xz|lzip|lzma|lzop|no)
+  --archive-options OPTIONS Additional command line options passed to archiver
+
+Encryption Options:
+  -s                        Encrypt files using default settings from ~/.plikrc
+  --not-secure              Disable encryption even if enabled in ~/.plikrc
+  --secure MODE             Encrypt files with backend (age | openssl | pgp, default: age)
+  --passphrase PASSPHRASE   [age|openssl] Encryption passphrase (use '-' to prompt)
+  --recipient RECIPIENT     [age] @github_user, ssh://host, URL, key, or age1...
+                            [pgp] Recipient name or email
+  --cipher CIPHER           [openssl] Cipher algorithm (default: aes-256-cbc)
   --secure-options OPTIONS  [openssl|pgp] Additional command line options
-  -P, --profile PROFILE     Use a named profile from ~/.plikrc (see Profiles section)
-  --insecure                (TLS) Do not verify the server's certificate chain and hostname
-  --update                  Update client
-  --login                   Authenticate CLI with the server (opens browser)
-  --mcp                     Start as MCP (Model Context Protocol) server over stdio
+
+Output Options:
+  -q, --quiet               Suppress progress and non-essential output
   -j, --json                Output upload metadata as JSON (implies --quiet)
-  -q --quiet                Enable quiet mode
-  -y --yes                  Auto-accept confirmation prompts (non-interactive mode)
-  -d --debug                Enable debug mode
-  -v --version              Show client version
-  -i --info                 Show client and server information
-  -h --help                 Show this help
+  -d, --debug               Enable debug mode
+
+General Options:
+  --login                   Authenticate with server (opens browser)
+  --update                  Update client binary from server
+  --update-plikrc           Rewrite ~/.plikrc in canonical format
+  --mcp                     Start MCP (Model Context Protocol) server over stdio
+  --stdin                   Read from STDIN even when DisableStdin is set
+  -y, --yes                 Auto-accept confirmation prompts
+  -v, --version             Show client version
+  -i, --info                Show client and server information
+  -h, --help                Show this help
+
+Examples:
+  plik file.txt                       Upload a single file
+  plik -o file1.txt file2.txt         Upload files, delete after first download
+  plik -t 1h *.log                    Upload with 1 hour expiration
+  plik -s secret.pdf                  Encrypt with age (passphrase auto-generated)
+  plik -a src/                        Archive and upload a directory
+  plik -P work report.pdf             Upload using the "work" profile
+  plik -P work,zip report.pdf         Compose profiles (work server + zip archive)
+  cat data.csv | plik -n data.csv     Pipe from STDIN
 `
 	// Parse command line arguments
 	arguments, _ := docopt.ParseDoc(usage)
@@ -139,6 +163,16 @@ Options:
 		err = login(config, client)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Login failed: %s\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
+	// Rewrite ~/.plikrc in canonical format
+	if arguments["--update-plikrc"].(bool) {
+		err = updatePlikrc(config)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "--update-plikrc: %s\n", err)
 			os.Exit(1)
 		}
 		os.Exit(0)

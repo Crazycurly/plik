@@ -41,9 +41,13 @@ DefaultProfile = ""             # Default profile to use (can also be set via PL
   Tar = "/bin/tar"
 
 # [SecureOptions]
-#   Passphrase = ""             # [openssl|age] Encryption passphrase
-#   Cipher = ""                 # [openssl] Cipher (e.g. aes-256-cbc)
-#   Options = ""                # [openssl|pgp] Additional command line options
+#   Passphrase = ""             # [age|openssl] Encryption passphrase (auto-generated if omitted)
+#   Recipient = ""              # [age] @github_user, ssh://host, URL, ssh key, or age1...
+#                               # [pgp] Name or email to search in keyring
+#   Cipher = ""                 # [openssl] Cipher (default: aes-256-cbc)
+#   Options = "-md sha512 -pbkdf2 -iter 120000"  # [openssl] Additional command line options
+#   Openssl = ""                # [openssl] Path to openssl binary (default: /usr/bin/openssl)
+#   Keyring = ""                # [pgp] Path to GnuPG keyring (default: $GNUPGHOME/pubring.gpg or ~/.gnupg/pubring.gpg)
 
 # --- Profiles ---
 # Named profiles let you maintain different configurations
@@ -65,3 +69,10 @@ DefaultProfile = ""             # Default profile to use (can also be set via PL
 # [Profiles.zip]
 # Archive = true
 # ArchiveMethod = "zip"
+#
+# # Encrypt files for a specific GitHub user using age
+# [Profiles.bob]
+# Secure = true
+# SecureMethod = "age"
+# [Profiles.bob.SecureOptions]
+# Recipient = "@bob"   # github username

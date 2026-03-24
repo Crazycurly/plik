@@ -32,48 +32,75 @@ Any running Plik instance serves its client binaries through the web interface. 
 
 ## Usage
 
+<!-- BEGIN:HELP -->
 ```
-plik [options] [FILE] ...
-```
+plik — temporary file sharing
 
-```
-Options:
-  -o, --oneshot             Enable OneShot ( Each file will be deleted on first download )
-  -r, --removable           Enable Removable upload ( Each file can be deleted by anyone at any moment )
-  -S, --stream              Enable Streaming ( It will block until remote user starts downloading )
-  -t, --ttl TTL             Time before expiration (Upload will be removed in m|h|d)
-  --extend-ttl              Extend upload expiration date by TTL when accessed
-  -n, --name NAME           Set file name when piping from STDIN
-  --stdin                   Enable pipe from stdin explicitly when DisableStdin is set in .plikrc
-  --server SERVER           Overrides server url (clears token; use --token to set explicitly)
-  --token TOKEN             Specify an upload token ( if '-' prompt for value )
-  --comments COMMENT        Set comments of the upload ( MarkDown compatible )
-  -p                        Protect the upload with login and password ( be prompted )
-  --password PASSWD         Protect the upload with "login:password" ( if omitted default login is "plik" )
-  -a                        Archive upload using default archive params ( see ~/.plikrc )
-  --archive MODE            Archive upload using the specified archive backend : tar|zip
-  --compress MODE           [tar] Compression codec : gzip|bzip2|xz|lzip|lzma|lzop|compress|no
-  --archive-options OPTIONS [tar|zip] Additional command line options
-  -s                        Encrypt upload using the default encryption parameters ( see ~/.plikrc )
-  --not-secure              Do not encrypt upload files regardless of the ~/.plikrc configurations
-  --secure MODE             Encrypt upload files using the specified crypto backend : openssl|pgp|age (default: age)
-  --cipher CIPHER           [openssl] Openssl cipher to use ( see openssl help )
-  --passphrase PASSPHRASE   [openssl|age] Passphrase or '-' to be prompted for a passphrase
-  --recipient RECIPIENT     [pgp|age] Set recipient ( pgp: name, age: @github_user, ssh://host, URL, ssh key, or age1... )
+Usage:
+  plik [options] [FILE] ...
+
+Profile Options:
+  -P, --profile PROFILES    Use named profiles from ~/.plikrc (comma-separated for composition)
+
+Upload Options:
+  -o, --oneshot             Delete each file after first download
+  -r, --removable           Allow anyone to delete uploaded files
+  -S, --stream              Stream upload (blocks until receiver downloads)
+  -t, --ttl TTL             Time before expiration (e.g. 30m, 24h, 7d)
+  --extend-ttl              Extend expiration on each download
+  -p                        Prompt for upload login and password
+  --password PASSWD         Protect upload with login:password (default login: "plik")
+  --comments COMMENT        Set upload comments (Markdown)
+  -n, --name NAME           Set filename when piping from STDIN
+
+Server Options:
+  --server SERVER           Override server URL
+  --token TOKEN             Set upload token (use '-' to prompt)
+  --insecure                Skip TLS certificate verification
+
+Archive Options:
+  -a                        Archive files using default settings from ~/.plikrc
+  --archive MODE            Archive files with specified backend (tar | zip)
+  --compress MODE           [tar] Compression codec (gzip|bzip2|xz|lzip|lzma|lzop|no)
+  --archive-options OPTIONS Additional command line options passed to archiver
+
+Encryption Options:
+  -s                        Encrypt files using default settings from ~/.plikrc
+  --not-secure              Disable encryption even if enabled in ~/.plikrc
+  --secure MODE             Encrypt files with backend (age | openssl | pgp, default: age)
+  --passphrase PASSPHRASE   [age|openssl] Encryption passphrase (use '-' to prompt)
+  --recipient RECIPIENT     [age] @github_user, ssh://host, URL, key, or age1...
+                            [pgp] Recipient name or email
+  --cipher CIPHER           [openssl] Cipher algorithm (default: aes-256-cbc)
   --secure-options OPTIONS  [openssl|pgp] Additional command line options
-  -P, --profile PROFILE     Use a named profile from ~/.plikrc (see Profiles section)
-  --insecure                (TLS) Do not verify the server's certificate chain and hostname
-  --update                  Update client
-  --login                   Authenticate with the Plik server via browser
-  --mcp                     Start as MCP (Model Context Protocol) server over stdio
-  -j --json                Output upload metadata as JSON (implies --quiet)
-  -q --quiet                Enable quiet mode
-  -y --yes                  Auto-accept confirmation prompts (non-interactive mode)
-  -d --debug                Enable debug mode
-  -v --version              Show client version
-  -i --info                 Show client and server information
-  -h --help                 Show this help
+
+Output Options:
+  -q, --quiet               Suppress progress and non-essential output
+  -j, --json                Output upload metadata as JSON (implies --quiet)
+  -d, --debug               Enable debug mode
+
+General Options:
+  --login                   Authenticate with server (opens browser)
+  --update                  Update client binary from server
+  --update-plikrc           Rewrite ~/.plikrc in canonical format
+  --mcp                     Start MCP (Model Context Protocol) server over stdio
+  --stdin                   Read from STDIN even when DisableStdin is set
+  -y, --yes                 Auto-accept confirmation prompts
+  -v, --version             Show client version
+  -i, --info                Show client and server information
+  -h, --help                Show this help
+
+Examples:
+  plik file.txt                       Upload a single file
+  plik -o file1.txt file2.txt         Upload files, delete after first download
+  plik -t 1h *.log                    Upload with 1 hour expiration
+  plik -s secret.pdf                  Encrypt with age (passphrase auto-generated)
+  plik -a src/                        Archive and upload a directory
+  plik -P work report.pdf             Upload using the "work" profile
+  plik -P work,zip report.pdf         Compose profiles (work server + zip archive)
+  cat data.csv | plik -n data.csv     Pipe from STDIN
 ```
+<!-- END:HELP -->
 
 ### Examples
 
@@ -164,6 +191,26 @@ plik --token xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx myfile.txt
 
 ## Configuration (.plikrc)
 
+### Maintaining your config file
+
+If your `.plikrc` has accumulated drift or you want to normalize it after hand-editing, you can rewrite it in canonical format:
+
+```bash
+plik --update-plikrc
+```
+
+This rewrites your config file using the same format as the first-run wizard — well-commented, consistently ordered, and with all sections labeled. **All values and profiles are preserved.** Custom comments are replaced with standard inline comments.
+
+Use `--yes` to skip the confirmation prompt:
+
+```bash
+plik --update-plikrc --yes
+```
+
+::: tip
+The `--login` flag uses surgical patching to update only your token — it preserves all comments and ordering. `--update-plikrc` is the intentional "reformat everything" command when you want a clean file.
+:::
+
 The client configuration is a TOML file loaded from:
 1. `PLIKRC` environment variable
 2. `~/.plikrc`
@@ -171,6 +218,7 @@ The client configuration is a TOML file loaded from:
 
 Key settings:
 
+<!-- BEGIN:PLIKRC -->
 ```toml
 # --- Server ---
 URL = "https://plik.root.gg"    # URL of the plik server
@@ -207,12 +255,69 @@ DownloadBinary = "curl"         # Download command for output (curl | wget)
 AutoUpdate = true               # Auto-update client binary from server
 DisableStdin = false            # Disable STDIN pipe input by default
 Yes = false                     # Auto-accept confirmation prompts (non-interactive)
+DefaultProfile = ""             # Default profile to use (can also be set via PLIK_PROFILE env var)
 
 [ArchiveOptions]
-  Compress = "gzip"             # Compression codec
-  Tar = "/bin/tar"              # Path to tar binary
-  Options = ""                  # Additional command line options
+  Compress = "gzip"
+  Options = ""
+  Tar = "/bin/tar"
+
+# [SecureOptions]
+#   Passphrase = ""             # [age|openssl] Encryption passphrase (auto-generated if omitted)
+#   Recipient = ""              # [age] @github_user, ssh://host, URL, ssh key, or age1...
+#                               # [pgp] Name or email to search in keyring
+#   Cipher = ""                 # [openssl] Cipher (default: aes-256-cbc)
+#   Options = "-md sha512 -pbkdf2 -iter 120000"  # [openssl] Additional command line options
+#   Openssl = ""                # [openssl] Path to openssl binary (default: /usr/bin/openssl)
+#   Keyring = ""                # [pgp] Path to GnuPG keyring (default: $GNUPGHOME/pubring.gpg or ~/.gnupg/pubring.gpg)
+
+# --- Profiles ---
+# Named profiles let you maintain different configurations
+# for multiple servers or use-cases. Use with: plik -P <name> file.txt
+# Profiles inherit all top-level settings and can override any field.
+# If a profile sets URL, it *must* also set Token (use Token = "" for anonymous).
+#
+# [Profiles.local]
+# URL = "http://127.0.0.1:8080"
+# Token = ""
+# AutoUpdate = false
+#
+# [Profiles.work]
+# URL = "https://plik.work.corp"
+# Token = "your-token-here"
+# AutoUpdate = false
+#
+# # Create a .zip archive instead of the default .tar.gz
+# [Profiles.zip]
+# Archive = true
+# ArchiveMethod = "zip"
+#
+# # Encrypt files for a specific GitHub user using age
+# [Profiles.bob]
+# Secure = true
+# SecureMethod = "age"
+# [Profiles.bob.SecureOptions]
+# Recipient = "@bob"   # github username
 ```
+<!-- END:PLIKRC -->
+
+### SecureOptions
+
+The `[SecureOptions]` table configures encryption backend-specific settings. Available keys depend on the `SecureMethod`:
+
+| Key | Backend | Description | Default |
+|-----|---------|-------------|---------|
+| `Passphrase` | age, openssl | Encryption passphrase (auto-generated if omitted) | — |
+| `Recipient` | age | `@github_user`, `ssh://host`, URL, ssh key, or `age1…` | — |
+| `Recipient` | pgp | Name or email to search in keyring | — |
+| `Cipher` | openssl | Cipher algorithm | `aes-256-cbc` |
+| `Options` | openssl | Additional command line options | `-md sha512 -pbkdf2 -iter 120000` |
+| `Openssl` | openssl | Path to openssl binary | `/usr/bin/openssl` |
+| `Keyring` | pgp | Path to GnuPG public keyring | `$GNUPGHOME/pubring.gpg` or `~/.gnupg/pubring.gpg` |
+
+::: tip Passphrase vs Recipient
+For age, `Passphrase` and `Recipient` are mutually exclusive. If neither is set, a random passphrase is auto-generated.
+:::
 
 See the [full .plikrc template](https://github.com/root-gg/plik/blob/master/client/.plikrc) for all available options.
 
@@ -245,6 +350,13 @@ AutoUpdate = false              # don't auto-update from work server
 [Profiles.zip]
 Archive = true
 ArchiveMethod = "zip"
+
+# Encrypt files for a specific GitHub user using age
+[Profiles.bob]
+Secure = true
+SecureMethod = "age"
+[Profiles.bob.SecureOptions]
+Recipient = "@bob"   # github username
 ```
 
 ### Using Profiles

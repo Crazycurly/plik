@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -223,4 +225,18 @@ func HumanDuration(d time.Duration) string {
 	}
 
 	return str
+}
+
+// LookupBinary resolves the path to an external binary.
+// If configured is a valid executable path, it is returned as-is.
+// Otherwise, it falls back to exec.LookPath(name) to search $PATH.
+func LookupBinary(configured string, name string) (string, error) {
+	if _, err := os.Stat(configured); err == nil {
+		return configured, nil
+	}
+	path, err := exec.LookPath(name)
+	if err != nil {
+		return "", fmt.Errorf("%s not found at %s and not in $PATH, please install or set the path in ~/.plikrc", name, configured)
+	}
+	return path, nil
 }
