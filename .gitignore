@@ -1,27 +1,44 @@
-# Ignore plik CLI binary (not */plik which would exclude charts/plik/)
-client/plik
-plikd
+# Build outputs
 /clients
+/servers
+/release
+/releases
+/debs
+server/plikd
+server/files
+client/plik
+client/client
+coverage.out
+
+# Database files (SQLite)
 *.db
 *.db-wal
 *.db-shm
-server/files
-webapp/dist
-/clients
-client/client
-servers
-release
-releases
-debs
+
+# Runtime / generated config
 plikd_*.cfg
-*node_modules
-*.log
+
+# TLS certificates
 *.key
 *.crt
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+
+# Editor / IDE
 .idea
 .vscode
 plik.iml
-coverage.out
-/plans
+
+# AI agent directories
+.claude/
+.gitnexus/
+
+# Test output
 test-results/
 
+# Misc
+/plans
