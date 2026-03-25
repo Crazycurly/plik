@@ -30,6 +30,7 @@ type Config struct {
 	UseSSL                bool
 	SendContentMd5        bool
 	SSE                   string
+	BucketLookup          string
 }
 
 // NewConfig instantiate a new default configuration
@@ -40,6 +41,7 @@ func NewConfig(params map[string]any) (config *Config) {
 	config.Location = "us-east-1"
 	config.PartSize = 16 * 1024 * 1024 // 16MiB
 	config.PartUploadConcurrency = 4
+	config.BucketLookup = "auto"
 	utils.Assign(config, params)
 	return
 }
@@ -67,6 +69,11 @@ func (config *Config) Validate() error {
 	if config.PartUploadConcurrency < 1 {
 		return fmt.Errorf("invalid part upload concurrency: must be at least 1")
 	}
+	switch config.BucketLookup {
+	case "auto", "dns", "path":
+	default:
+		return fmt.Errorf("invalid bucket lookup: must be \"auto\", \"dns\", or \"path\"")
+	}
 	return nil
 }
 
@@ -92,10 +99,21 @@ func NewBackend(config *Config) (b *Backend, err error) {
 		return nil, fmt.Errorf("invalid s3 data backend config : %s", err)
 	}
 
+	var bucketLookup minio.BucketLookupType
+	switch config.BucketLookup {
+	case "dns":
+		bucketLookup = minio.BucketLookupDNS
+	case "path":
+		bucketLookup = minio.BucketLookupPath
+	default: // "auto"
+		bucketLookup = minio.BucketLookupAuto
+	}
+
 	b.client, err = minio.New(config.Endpoint, &minio.Options{
 		Creds: credentials.NewStaticV4(config.AccessKeyID, config.SecretAccessKey, ""),
 		//Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-		Secure: config.UseSSL,
+		Secure:       config.UseSSL,
+		BucketLookup: bucketLookup,
 	})
 	if err != nil {
 		return nil, err
