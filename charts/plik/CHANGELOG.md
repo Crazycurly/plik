@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- New `BucketLookup` S3 data backend config option (`"auto"` / `"dns"` / `"path"` — path-style required for Cloudflare R2 and some MinIO deployments)
+
 ## [1.4.1]
 
 ### Changed

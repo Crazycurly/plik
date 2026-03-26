@@ -286,6 +286,7 @@ plikd:
     # Location: "us-east-1"
     # Prefix: ""
     # UseSSL: true
+    # BucketLookup: "auto"  # Bucket addressing style: "auto" (default), "dns" (virtual-hosted), "path" (required for Cloudflare R2 and some MinIO deployments)
     # PartSize: 16777216
     # PartUploadConcurrency: 4
     # SSE: ""

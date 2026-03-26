@@ -26,9 +26,30 @@ DataBackend = "s3"
     Location = "us-east-1"
     Prefix = ""
     UseSSL = true
+    BucketLookup = "auto"  # Bucket addressing style: "auto" (default), "dns" (virtual-hosted), "path" (required for Cloudflare R2 and some MinIO deployments)
     PartSize = 16777216  # 16MiB chunks (min 5MiB, max file = PartSize × 10000)
-    PartUploadConcurrency = 4  # Parallel part upload threads (default 5, 1 = sequential)
+    PartUploadConcurrency = 4  # Parallel part upload threads (default 4, 1 = sequential)
     SendContentMd5 = false  # Use Content-MD5 instead of x-amz-checksum-* headers (for strict S3-compatible APIs like B2)
+```
+
+### Provider-Specific Configuration
+
+#### [Cloudflare R2](https://developers.cloudflare.com/r2/)
+
+R2 requires path-style bucket addressing (`BucketLookup = "path"`) because its TLS wildcard certificate does not cover virtual-hosted-style subdomains.  
+Set `Location` to `"auto"` or the value defined for your bucket in the R2 Console:
+
+```toml
+BucketLookup = "path"
+Location = "auto"
+```
+
+#### [Backblaze B2](https://www.backblaze.com/cloud-storage)
+
+B2's S3-compatible API does not support the newer `x-amz-checksum-*` headers. Enable legacy Content-MD5 checksums:
+
+```toml
+SendContentMd5 = true
 ```
 
 ### Upload Strategy

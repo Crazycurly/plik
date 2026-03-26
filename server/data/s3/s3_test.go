@@ -12,6 +12,7 @@ func TestNewConfigDefaults(t *testing.T) {
 	require.Equal(t, int64(16*1024*1024), config.PartSize, "invalid default part size")
 	require.Equal(t, 4, config.PartUploadConcurrency, "invalid default part upload concurrency")
 	require.False(t, config.SendContentMd5, "SendContentMd5 should be disabled by default")
+	require.Equal(t, "auto", config.BucketLookup, "BucketLookup should default to auto")
 }
 
 func TestNewConfigWithSendContentMd5(t *testing.T) {
@@ -19,6 +20,13 @@ func TestNewConfigWithSendContentMd5(t *testing.T) {
 		"SendContentMd5": true,
 	})
 	require.True(t, config.SendContentMd5, "invalid SendContentMd5 override")
+}
+
+func TestNewConfigWithPathStyle(t *testing.T) {
+	config := NewConfig(map[string]any{
+		"BucketLookup": "path",
+	})
+	require.Equal(t, "path", config.BucketLookup, "invalid BucketLookup override")
 }
 
 func TestNewConfigWithPartUploadConcurrency(t *testing.T) {
