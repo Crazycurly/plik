@@ -305,6 +305,49 @@ func Test_initializeFeatureClients(t *testing.T) {
 	RequireError(t, config.initializeFeatureClients(), "Invalid feature flag value")
 }
 
+func Test_initializeFeatureApiTokens(t *testing.T) {
+	// Invalid value
+	config := NewConfiguration()
+	config.FeatureApiTokens = "invalid"
+	RequireError(t, config.initializeFeatureApiTokens(), "Invalid feature flag value")
+
+	// Default → enabled
+	config = NewConfiguration()
+	config.FeatureApiTokens = ""
+	require.NoError(t, config.initializeFeatureApiTokens())
+	require.Equal(t, FeatureEnabled, config.FeatureApiTokens)
+
+	// Disabled
+	config = NewConfiguration()
+	config.FeatureApiTokens = FeatureDisabled
+	require.NoError(t, config.initializeFeatureApiTokens())
+	require.Equal(t, FeatureDisabled, config.FeatureApiTokens)
+
+	// forced / default are not valid
+	config = NewConfiguration()
+	config.FeatureApiTokens = FeatureForced
+	RequireError(t, config.initializeFeatureApiTokens(), "Invalid feature flag value")
+
+	config = NewConfiguration()
+	config.FeatureApiTokens = FeatureDefault
+	RequireError(t, config.initializeFeatureApiTokens(), "Invalid feature flag value")
+
+	// Cross-flag: forced auth + disabled tokens → FeatureClients auto-disabled
+	config = NewConfiguration()
+	config.FeatureAuthentication = FeatureForced
+	config.FeatureApiTokens = FeatureDisabled
+	require.NoError(t, config.initializeFeatureApiTokens())
+	require.Equal(t, FeatureDisabled, config.FeatureClients)
+
+	// Cross-flag: non-forced auth + disabled tokens → FeatureClients unchanged
+	config = NewConfiguration()
+	config.FeatureAuthentication = FeatureEnabled
+	config.FeatureApiTokens = FeatureDisabled
+	config.FeatureClients = FeatureEnabled
+	require.NoError(t, config.initializeFeatureApiTokens())
+	require.Equal(t, FeatureEnabled, config.FeatureClients)
+}
+
 func Test_initializeFeatureGithub(t *testing.T) {
 	config := NewConfiguration()
 	config.FeatureGithub = "invalid"
@@ -418,6 +461,7 @@ func Test_initializeFeatureFlags(t *testing.T) {
 	require.NoError(t, ValidateFeatureFlag(config.FeatureExtendTTL))
 	require.NoError(t, ValidateFeatureFlag(config.FeatureGithub))
 	require.NoError(t, ValidateFeatureFlag(config.FeatureClients))
+	require.NoError(t, ValidateCustomFeatureFlag(config.FeatureApiTokens, []string{FeatureDisabled, FeatureEnabled}))
 	require.NoError(t, ValidateFeatureFlag(config.FeatureText))
 
 	config = NewConfiguration()

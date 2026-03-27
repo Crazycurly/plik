@@ -93,6 +93,12 @@ func UserInfo(ctx *context.Context, resp http.ResponseWriter, req *http.Request)
 // GetUserTokens return user tokens
 func GetUserTokens(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
 
+	// Check feature flag
+	if ctx.GetConfig().FeatureApiTokens == common.FeatureDisabled {
+		ctx.BadRequest("API tokens are disabled")
+		return
+	}
+
 	// Get user from context
 	user := ctx.GetUser()
 	if user == nil {

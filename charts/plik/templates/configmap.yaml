@@ -54,6 +54,7 @@ data:
     FeatureSetTTL         = {{ .Values.plikd.FeatureSetTTL | quote }}
     FeatureExtendTTL      = {{ .Values.plikd.FeatureExtendTTL | quote }}
     FeatureClients        = {{ .Values.plikd.FeatureClients | quote }}
+    FeatureApiTokens      = {{ .Values.plikd.FeatureApiTokens | quote }}
     FeatureGithub         = {{ .Values.plikd.FeatureGithub | quote }}
     FeatureText           = {{ .Values.plikd.FeatureText | quote }}
 

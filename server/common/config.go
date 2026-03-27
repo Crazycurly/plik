@@ -82,6 +82,7 @@ type Configuration struct {
 	FeatureSetTTL         string `json:"feature_set_ttl"`
 	FeatureExtendTTL      string `json:"feature_extend_ttl"`
 	FeatureClients        string `json:"feature_clients"`
+	FeatureApiTokens      string `json:"feature_api_tokens"`
 	FeatureGithub         string `json:"feature_github"`
 	FeatureText           string `json:"feature_text"`
 	FeatureE2EE           string `json:"feature_e2ee"`

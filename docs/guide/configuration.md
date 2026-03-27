@@ -82,7 +82,8 @@ Features can be set to one of four states:
 | `FeatureComments` | `enabled` | Markdown comments on uploads |
 | `FeatureSetTTL` | `enabled` | Custom TTL setting |
 | `FeatureExtendTTL` | `disabled` | Extend TTL on each download |
-| `FeatureClients` | `enabled` | Show CLI download button in UI |
+| `FeatureClients` | `enabled` | Show CLI download button in UI (enable/disable only) |
+| `FeatureApiTokens` | `enabled` | API token creation, usage via `X-PlikToken` header, and CLI auth flow. When `disabled` + `FeatureAuthentication=forced`, `FeatureClients` is also auto-disabled (enable/disable only) |
 | `FeatureGithub` | `enabled` | Show source code link in UI |
 | `FeatureText` | `enabled` | Text upload dialog |
 | `FeatureLocalLogin` | `enabled` | Local login form (enable/disable only) |

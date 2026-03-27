@@ -53,6 +53,47 @@ func TestCLIAuthInit_AuthDisabled(t *testing.T) {
 	context.TestBadRequest(t, rr, "authentication is disabled")
 }
 
+func TestCLIAuthInit_ApiTokensDisabled(t *testing.T) {
+	config := common.NewConfiguration()
+	config.FeatureApiTokens = common.FeatureDisabled
+	ctx := newTestingContext(config)
+
+	reqBody, err := json.Marshal(CLIAuthInitRequest{Hostname: "test-host"})
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("POST", "/auth/cli/init", bytes.NewBuffer(reqBody))
+	require.NoError(t, err)
+
+	rr := ctx.NewRecorder(req)
+	CLIAuthInit(ctx, rr, req)
+	context.TestBadRequest(t, rr, "API tokens are disabled")
+}
+
+func TestCLIAuthApprove_ApiTokensDisabled(t *testing.T) {
+	config := common.NewConfiguration()
+	config.FeatureApiTokens = common.FeatureDisabled
+	ctx := newTestingContext(config)
+
+	user := common.NewUser(common.ProviderLocal, "user1")
+	err := ctx.GetMetadataBackend().CreateUser(user)
+	require.NoError(t, err)
+	ctx.SetUser(user)
+
+	session := common.NewCLIAuthSession()
+	err = ctx.GetMetadataBackend().CreateCLIAuthSession(session)
+	require.NoError(t, err)
+
+	reqBody, err := json.Marshal(CLIAuthApproveRequest{Code: session.Code})
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("POST", "/auth/cli/approve", bytes.NewBuffer(reqBody))
+	require.NoError(t, err)
+
+	rr := ctx.NewRecorder(req)
+	CLIAuthApprove(ctx, rr, req)
+	context.TestBadRequest(t, rr, "API tokens are disabled")
+}
+
 func TestCLIAuthPoll_Pending(t *testing.T) {
 	ctx := newTestingContext(common.NewConfiguration())
 

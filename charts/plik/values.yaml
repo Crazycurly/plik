@@ -235,6 +235,8 @@ plikd:
   FeatureExtendTTL: "disabled"
   # -- Enable pre-built CLI clients download page
   FeatureClients: "enabled"
+  # -- Enable API token creation and usage. When disabled with FeatureAuthentication=forced, FeatureClients is also auto-disabled.
+  FeatureApiTokens: "enabled"
   # -- Show GitHub link in the footer
   FeatureGithub: "enabled"
   # -- Enable plain-text paste mode

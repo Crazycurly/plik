@@ -55,6 +55,7 @@ func (config *Configuration) initializeFeatureFlags() error {
 		config.initializeFeatureExtendTTL,
 		config.initializeFeatureGithub,
 		config.initializeFeatureClients,
+		config.initializeFeatureApiTokens,
 		config.initializeFeatureText,
 		config.initializeFeatureE2EE,
 	}
@@ -252,6 +253,25 @@ func (config *Configuration) initializeFeatureClients() error {
 	err := ValidateCustomFeatureFlag(config.FeatureClients, []string{FeatureDisabled, FeatureEnabled})
 	if err != nil {
 		return fmt.Errorf("Invalid value for FeatureClients : %s", err)
+	}
+
+	return nil
+}
+
+func (config *Configuration) initializeFeatureApiTokens() error {
+	if config.FeatureApiTokens == "" {
+		config.FeatureApiTokens = FeatureEnabled
+	}
+
+	err := ValidateCustomFeatureFlag(config.FeatureApiTokens, []string{FeatureDisabled, FeatureEnabled})
+	if err != nil {
+		return fmt.Errorf("Invalid value for FeatureApiTokens : %s", err)
+	}
+
+	// When authentication is forced (no anonymous uploads) and API tokens are disabled,
+	// also disable CLI client downloads since they won't be usable without token auth.
+	if config.FeatureAuthentication == FeatureForced && config.FeatureApiTokens == FeatureDisabled {
+		config.FeatureClients = FeatureDisabled
 	}
 
 	return nil
