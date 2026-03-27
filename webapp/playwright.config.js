@@ -18,17 +18,36 @@ export default defineConfig({
         {
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
+            testIgnore: /subpath\.spec/,
+        },
+        {
+            name: 'chromium-subpath',
+            use: {
+                ...devices['Desktop Chrome'],
+                baseURL: 'http://localhost:8586/sub/',
+            },
+            testMatch: /subpath\.spec/,
         },
     ],
 
-    webServer: {
-        command: 'bash e2e/start-server.sh',
-        url: 'http://localhost:8585/version',
-        reuseExistingServer: !process.env.CI,
-        timeout: 30_000,
-        stdout: 'pipe',
-        stderr: 'pipe',
-    },
+    webServer: [
+        {
+            command: 'bash e2e/start-server.sh',
+            url: 'http://localhost:8585/version',
+            reuseExistingServer: !process.env.CI,
+            timeout: 30_000,
+            stdout: 'pipe',
+            stderr: 'pipe',
+        },
+        {
+            command: 'bash e2e/start-server-subpath.sh',
+            url: 'http://localhost:8586/sub/version',
+            reuseExistingServer: !process.env.CI,
+            timeout: 30_000,
+            stdout: 'pipe',
+            stderr: 'pipe',
+        },
+    ],
 
     globalTeardown: './e2e/global-teardown.js',
 })

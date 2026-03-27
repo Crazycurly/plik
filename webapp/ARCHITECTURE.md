@@ -926,10 +926,14 @@ Tests live in `webapp/e2e/` and cover core flows:
 | `streaming.spec.js` | Stream upload, URL path, hidden actions |
 | `customization.spec.js` | Runtime settings.json override, custom CSS/JS injection, white-label fallback |
 | `mermaid.spec.js` | Mermaid diagram rendering, source stashing, comment SVG, theme reactivity |
+| `subpath.spec.js` | Subpath deployment (`Path=/sub`): asset loading, settings.json URL, theme/flag paths, upload/download, API URL scoping |
+| `language-picker.spec.js` | Language picker visibility, dropdown, localStorage, wildcards, flags |
 
-**Server lifecycle**: Playwright's `webServer` launches `e2e/start-server.sh` which creates a fresh temp directory with clean SQLite DB + data backend, seeds an admin user, and starts `plikd`. The `globalTeardown` cleans up after the suite.
+**Server lifecycle**: Playwright's `webServer` launches two `plikd` instances: `e2e/start-server.sh` (root path, port 8585) and `e2e/start-server-subpath.sh` (Path="/sub", port 8586). Each creates a fresh temp directory with clean SQLite DB + data backend, seeds an admin user, and starts `plikd`. Two Playwright projects target these: `chromium` (all specs except `subpath.spec.js`) and `chromium-subpath` (only `subpath.spec.js`, with `baseURL: 'http://localhost:8586/sub/'`). The `globalTeardown` cleans up both temp dirs.
 
-**Fixtures** (`e2e/fixtures.js`): `authenticatedPage` provides a pre-logged-in admin session; `withConfig(overrides)` intercepts `/config` API to test feature flags; `withVersion(overrides)` intercepts `/version` API for badge testing; `uploadTestFile()` creates a quick upload through the UI.
+> **Gotcha**: In the subpath project, `page.goto('./')` must be used instead of `page.goto('/')`. Playwright resolves `/` as an absolute path from the origin (`http://localhost:8586/`), ignoring the subpath in `baseURL`. The `'./'` form stays relative to the base.
+
+**Fixtures** (`e2e/fixtures.js`): `authenticatedPage` provides a pre-logged-in admin session; `withConfig(overrides)` intercepts `/config` API to test feature flags; `withVersion(overrides)` intercepts `/version` API for badge testing; `uploadTestFile()` creates a quick upload through the UI. Note: the `authenticatedPage` fixture uses `fetch('/auth/local/login')` with an absolute path — it works for the root-path project but not for `chromium-subpath`. The subpath spec has its own `loginAs()` helper that derives the API base from `window.location.pathname`, mirroring how `api.js` works in production.
 
 ---
 
