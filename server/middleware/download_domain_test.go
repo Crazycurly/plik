@@ -187,3 +187,28 @@ func TestRestrictDownloadDomain_WebappRoot(t *testing.T) {
 	require.Equal(t, http.StatusFound, rr.Code)
 	require.Equal(t, "https://plik.root.gg/", rr.Header().Get("Location"))
 }
+
+func TestRestrictDownloadDomain_RedirectWithPath(t *testing.T) {
+	config := common.NewConfiguration()
+	config.PlikDomain = "https://plik.root.gg"
+	config.DownloadDomain = "https://dl.plik.root.gg"
+	config.Path = "/sub"
+	require.NoError(t, config.Initialize())
+
+	handler, called := newTestHandler()
+	middleware := RestrictDownloadDomain(config)(handler)
+
+	// Non-file request on download domain — should redirect to PlikDomain.
+	// The request path is already stripped of the prefix by the server's StripPrefix
+	// middleware before it reaches the download_domain middleware. So the Location
+	// header should be PlikDomain + the already-stripped RequestURI (no double-prefix).
+	req := httptest.NewRequest("GET", "/config", nil)
+	req.Host = "dl.plik.root.gg"
+	rr := httptest.NewRecorder()
+	middleware.ServeHTTP(rr, req)
+
+	require.False(t, *called, "non-file endpoint should not pass through on download domain")
+	require.Equal(t, http.StatusFound, rr.Code)
+	require.Equal(t, "https://plik.root.gg/config", rr.Header().Get("Location"),
+		"redirect should point to PlikDomain + request path (Path already stripped by StripPrefix middleware)")
+}

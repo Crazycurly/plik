@@ -466,6 +466,35 @@ func TestGetFileE2EERedirectWebapp(t *testing.T) {
 	require.Contains(t, rr.Header().Get("Location"), "/#/?id="+upload.ID, "redirect should point to download page")
 }
 
+func TestGetFileE2EERedirectWebappWithPath(t *testing.T) {
+	config := common.NewConfiguration()
+	config.Path = "/sub"
+	ctx := newTestingContext(config)
+
+	upload := &common.Upload{E2EE: "age"}
+	upload.InitializeForTests()
+	file := upload.NewFile()
+	file.Name = "file"
+	file.Status = common.FileUploaded
+	createTestUpload(t, ctx, upload)
+
+	err := createTestFile(ctx, file, bytes.NewBuffer([]byte("encrypted")))
+	require.NoError(t, err, "unable to create test file")
+
+	ctx.SetUpload(upload)
+	ctx.SetFile(file)
+
+	req, err := http.NewRequest("GET", "/file/"+upload.ID+"/"+file.ID+"/"+file.Name, bytes.NewBuffer([]byte{}))
+	require.NoError(t, err, "unable to create new request")
+	req.Header.Set("X-ClientApp", "web_client")
+
+	rr := ctx.NewRecorder(req)
+	GetFile(ctx, rr, req)
+
+	require.Equal(t, http.StatusTemporaryRedirect, rr.Code, "expected redirect for webapp E2EE download")
+	require.Equal(t, "/sub/#/?id="+upload.ID, rr.Header().Get("Location"), "E2EE redirect should include the configured Path prefix")
+}
+
 func TestGetFileE2EEContentType(t *testing.T) {
 	config := common.NewConfiguration()
 	ctx := newTestingContext(config)

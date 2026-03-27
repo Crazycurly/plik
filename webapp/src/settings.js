@@ -23,17 +23,17 @@ const BUILTIN_THEMES = [
 // Flags are SVG files in webapp/public/flags/ (same pattern as themes in themes/).
 export const BUILTIN_LANGUAGES = [
     { name: 'auto', label: 'Auto' },
-    { name: 'de', label: 'Deutsch', flag: '/flags/de.svg' },
-    { name: 'en', label: 'English', flag: '/flags/en.svg' },
-    { name: 'es', label: 'Español', flag: '/flags/es.svg' },
-    { name: 'fr', label: 'Français', flag: '/flags/fr.svg' },
-    { name: 'it', label: 'Italiano', flag: '/flags/it.svg' },
-    { name: 'nl', label: 'Nederlands', flag: '/flags/nl.svg' },
-    { name: 'pl', label: 'Polski', flag: '/flags/pl.svg' },
-    { name: 'pt', label: 'Português', flag: '/flags/pt.svg' },
-    { name: 'ru', label: 'Русский', flag: '/flags/ru.svg' },
-    { name: 'sv', label: 'Svenska', flag: '/flags/sv.svg' },
-    { name: 'zh', label: '中文', flag: '/flags/zh.svg' },
+    { name: 'de', label: 'Deutsch', flag: 'flags/de.svg' },
+    { name: 'en', label: 'English', flag: 'flags/en.svg' },
+    { name: 'es', label: 'Español', flag: 'flags/es.svg' },
+    { name: 'fr', label: 'Français', flag: 'flags/fr.svg' },
+    { name: 'it', label: 'Italiano', flag: 'flags/it.svg' },
+    { name: 'nl', label: 'Nederlands', flag: 'flags/nl.svg' },
+    { name: 'pl', label: 'Polski', flag: 'flags/pl.svg' },
+    { name: 'pt', label: 'Português', flag: 'flags/pt.svg' },
+    { name: 'ru', label: 'Русский', flag: 'flags/ru.svg' },
+    { name: 'sv', label: 'Svenska', flag: 'flags/sv.svg' },
+    { name: 'zh', label: '中文', flag: 'flags/zh.svg' },
 ]
 
 const STORAGE_KEY = 'plik-theme'
@@ -127,9 +127,9 @@ export async function applyTheme(value) {
             : value
 
         // "dark" is the compiled-in default — no external CSS needed.
-        // All other themes (including "light") load from /themes/{name}.css.
+        // All other themes (including "light") load from themes/{name}.css.
         if (name !== 'dark') {
-            const href = `/themes/${name}.css`
+            const href = `themes/${name}.css`
             if (!loadedThemes.has(href)) {
                 await injectCSS(href)
                 loadedThemes.add(href)
@@ -384,7 +384,7 @@ export function syncLanguageFromUser(user) {
  */
 export async function loadSettings() {
     try {
-        const resp = await fetch('/settings.json')
+        const resp = await fetch('settings.json')
         if (resp.ok) {
             const text = await resp.text()
             const data = JSON.parse(stripJSONCComments(text))
