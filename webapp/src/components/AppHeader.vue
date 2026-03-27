@@ -218,7 +218,7 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
             <span>{{ $t('header.language') }}</span>
           </LanguagePicker>
         </template>
-        <div v-if="showThemePicker || showLanguagePicker || isFeatureEnabled('authentication')" class="border-t border-surface-700/50 my-1"></div>
+        <div v-if="isFeatureEnabled('authentication')" class="border-t border-surface-700/50 my-1"></div>
 
         <router-link v-if="auth.user"
                      to="/home"
