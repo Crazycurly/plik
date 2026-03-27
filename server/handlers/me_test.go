@@ -287,6 +287,26 @@ func TestGetUserTokensNoUser(t *testing.T) {
 	context.TestUnauthorized(t, rr, "missing user, please login first")
 }
 
+func TestGetUserTokensApiTokensDisabled(t *testing.T) {
+	config := common.NewConfiguration()
+	config.FeatureApiTokens = common.FeatureDisabled
+	ctx := newTestingContext(config)
+
+	user := common.NewUser(common.ProviderLocal, "user1")
+	err := ctx.GetMetadataBackend().CreateUser(user)
+	require.NoError(t, err, "unable to create test user")
+	ctx.SetUser(user)
+
+	req, err := http.NewRequest("GET", "/me/token", bytes.NewBuffer([]byte{}))
+	require.NoError(t, err, "unable to create new request")
+
+	ctx.SetPagingQuery(&common.PagingQuery{})
+	rr := ctx.NewRecorder(req)
+	GetUserTokens(ctx, rr, req)
+
+	context.TestBadRequest(t, rr, "API tokens are disabled")
+}
+
 func TestRemoveUserUploads(t *testing.T) {
 	ctx := newTestingContext(common.NewConfiguration())
 

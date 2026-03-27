@@ -52,6 +52,11 @@ func CLIAuthInit(ctx *context.Context, resp http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	if config.FeatureApiTokens == common.FeatureDisabled {
+		ctx.BadRequest("API tokens are disabled")
+		return
+	}
+
 	// Read request body
 	defer func() { _ = req.Body.Close() }()
 	body, err := io.ReadAll(req.Body)
@@ -108,6 +113,11 @@ func CLIAuthApprove(ctx *context.Context, resp http.ResponseWriter, req *http.Re
 
 	if config.FeatureAuthentication == common.FeatureDisabled {
 		ctx.BadRequest("authentication is disabled")
+		return
+	}
+
+	if config.FeatureApiTokens == common.FeatureDisabled {
+		ctx.BadRequest("API tokens are disabled")
 		return
 	}
 

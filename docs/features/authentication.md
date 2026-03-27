@@ -104,3 +104,14 @@ You can also create tokens manually in the web UI or via the API. Tokens are sen
 ```toml
 Token = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 ```
+
+## Disabling API Tokens
+
+Set `FeatureApiTokens = "disabled"` to prevent users from creating or using API tokens (`X-PlikToken` header and the CLI auth flow are both blocked):
+
+```toml
+FeatureApiTokens = "disabled"
+```
+
+> [!NOTE]
+> When `FeatureApiTokens = "disabled"` and `FeatureAuthentication = "forced"`, the CLI client download button (`FeatureClients`) is also automatically hidden since CLI clients can't authenticate without tokens.

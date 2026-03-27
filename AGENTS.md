@@ -116,7 +116,7 @@ make vuln                   # govulncheck (report only)
 ## Conventions
 
 - **Configuration**: TOML file + env var override using SCREAMING_SNAKE_CASE (e.g., `PLIKD_DEBUG_REQUESTS=true`)
-- **Feature flags**: Four states — `disabled`, `enabled` (opt-in), `default` (opt-out), `forced`
+- **Feature flags**: Four states — `disabled`, `enabled` (opt-in), `default` (opt-out), `forced`. Some flags use only a binary subset: e.g. `FeatureClients`, `FeatureApiTokens` (`disabled`/`enabled` only). `FeatureApiTokens=disabled` + `FeatureAuthentication=forced` auto-disables `FeatureClients`.
 - **Special values**: `0` = use server default, `-1` = unlimited (for file size, TTL, etc.)
 - **Error handling**: Handlers return HTTP errors; middleware chain panics on missing required context values
 - **ID generation**: Random hex strings (16 chars for files, 16 chars for uploads); CLI tokens use prefixed opaque format (`plik_` + 30 Base62 + 6 CRC32, 41 chars total)

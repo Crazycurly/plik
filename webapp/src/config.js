@@ -28,6 +28,7 @@ export const config = reactive({
     feature_set_ttl: 'default',
     feature_extend_ttl: 'default',
     feature_clients: 'default',
+    feature_api_tokens: 'enabled',
     feature_github: 'default',
     feature_text: 'default',
     feature_e2ee: 'enabled',

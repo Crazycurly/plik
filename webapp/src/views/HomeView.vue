@@ -372,7 +372,9 @@ watch(display, (tab, prevTab) => {
         uploads.value = []
         loadUploads()
     } else if (tab === 'tokens') {
-        loadTokens()
+        if (isFeatureEnabled('api_tokens')) {
+            loadTokens()
+        }
     }
 })
 
@@ -402,7 +404,9 @@ onMounted(() => {
     }
     const tab = display.value
 
-    loadTokens()  // needed for token comment lookup map
+    if (isFeatureEnabled('api_tokens')) {
+        loadTokens()  // needed for token comment lookup map
+    }
 
     if (tab === 'uploads') {
         // Restore badge filters from URL
@@ -477,7 +481,8 @@ onMounted(() => {
             {{ $t('homeView.uploads') }}
           </button>
 
-          <button @click="showTokens"
+          <button v-if="isFeatureEnabled('api_tokens')"
+                  @click="showTokens"
                   :class="display === 'tokens'
                     ? 'bg-accent-500/10 text-accent-400 border-l-2 border-accent-400'
                     : 'text-surface-300 hover:text-surface-100 hover:bg-surface-700/50 border-l-2 border-transparent'"
@@ -663,7 +668,7 @@ onMounted(() => {
         </template>
 
         <!-- ─── Tokens View ─── -->
-        <template v-if="display === 'tokens'">
+        <template v-if="display === 'tokens' && isFeatureEnabled('api_tokens')">
 
           <!-- Create token -->
           <div class="glass-card p-4 mb-4 space-y-3">
