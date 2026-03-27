@@ -110,6 +110,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions around config vs. se
 | plikd.DataBackendConfig | object | `{"Directory":"files"}` | Non-sensitive data backend configuration. Keys depend on the backend type. See [data backends](https://github.com/root-gg/plik#data-backends). |
 | plikd.Debug | bool | `false` | Enable debug mode |
 | plikd.DebugRequests | bool | `false` | Log every HTTP request |
+| plikd.DefaultAdminLogin | string | `""` | Login for the default local admin user to create on first startup (empty = disabled). Idempotent: skipped if the user already exists. |
 | plikd.DefaultTTLStr | string | `"30d"` | Default upload TTL (e.g. `30d`, `24h`) |
 | plikd.DownloadDomain | string | `""` | Custom download domain |
 | plikd.DownloadDomainAlias | list | `[]` | Additional download domain aliases |
@@ -165,6 +166,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions around config vs. se
 | replicaCount | int | `1` | Number of pod replicas |
 | resources | object | `{}` | CPU/memory resource requests and limits |
 | secrets.dataBackend | object | `{}` | Sensitive data backend config (merged with `plikd.DataBackendConfig` at runtime). Injected as `PLIKD_DATA_BACKEND_CONFIG` JSON. |
+| secrets.defaultAdminPassword | string | `""` | Default admin password (injected as `PLIKD_DEFAULT_ADMIN_PASSWORD`). If empty, a random password is generated and logged on first startup. |
 | secrets.existingSecret | string | `""` | Use an existing Kubernetes Secret instead of creating one. The Secret must contain the relevant env var keys. |
 | secrets.githubApiSecret | string | `""` | GitHub OAuth app client secret (injected as `PLIKD_GIT_HUB_API_SECRET`) |
 | secrets.googleApiSecret | string | `""` | Google OAuth2 client secret (injected as `PLIKD_GOOGLE_API_SECRET`) |
