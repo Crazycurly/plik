@@ -114,6 +114,7 @@ Check language-specific punctuation conventions:
 |----------|------|
 | French (fr) | Space before `:`, `?`, `!`, `;` |
 | German (de) | No special rules |
+| Hindi (hi) | Space before `:` (matches Hindi typography convention); Devanagari purna viram `।` can replace period but not required in short UI strings |
 | Spanish (es) | Opening `¡` and `¿` for exclamations/questions (optional in short UI strings) |
 | Chinese (zh) | No spaces before punctuation; uses full-width punctuation marks（：、？、！） |
 | Others | Standard punctuation |
@@ -126,6 +127,7 @@ Verify pipe-separated plurals match the language's plural rules:
 |----------|-------------|---------|
 | en, de, es, it, pt, nl | 2 | `singular \| plural` |
 | fr | 2 | `singular \| plural` (0 is singular in French) |
+| hi | 1 | No plural form needed (Hindi uses counter-noun constructs; single form covers both) |
 | pl | 3 | `one \| few \| many` |
 | ru | 3 | `one \| few \| many` |
 | ar | 6 | `zero \| one \| two \| few \| many \| other` |
