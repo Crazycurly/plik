@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2]
+
 ### Added
 - New `DefaultAdminLogin` config option (and `secrets.defaultAdminPassword` in Helm) to automatically create a local admin user on first startup — idempotent, skipped if the user already exists
 - New `FeatureApiTokens` config option to globally disable API token creation and usage (`disabled`/`enabled`, default: `enabled`)
