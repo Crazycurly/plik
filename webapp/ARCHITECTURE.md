@@ -734,7 +734,7 @@ Language management follows the **exact same pattern as themes**:
 | `src/i18n.js` | vue-i18n instance, `setLocale()`, `getLocale()` |
 | `src/settings.js` | `BUILTIN_LANGUAGES`, `getAvailableLanguages()`, `getUserLanguage()`, `setUserLanguage()`, `syncLanguageFromUser()`, `resolveAutoLanguage()`, `currentLanguage` ref |
 | `src/locales/en.json` | English translations (source of truth) |
-| `src/locales/*.json` | Translations for de, es, fr, it, nl, pl, pt, ru, sv, zh (must be key-synced with `en.json`) |
+| `src/locales/*.json` | Translations for de, es, fr, hi, it, nl, pl, pt, ru, sv, zh (must be key-synced with `en.json`) |
 | `src/__tests__/locales.test.js` | Automated key sync test — validates keys, empty values, and placeholder tokens |
 | `src/components/DropdownPicker.vue` | Generic shared dropdown (scrollbar, click-outside, transitions, flags) |
 | `src/components/LanguagePicker.vue` | Thin wrapper over `DropdownPicker`, supplies globe icon + language data |

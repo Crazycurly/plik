@@ -3,6 +3,7 @@ import de from './locales/de.json'
 import en from './locales/en.json'
 import es from './locales/es.json'
 import fr from './locales/fr.json'
+import hi from './locales/hi.json'
 import it from './locales/it.json'
 import nl from './locales/nl.json'
 import pl from './locales/pl.json'
@@ -16,7 +17,7 @@ const i18n = createI18n({
     globalInjection: true,  // ensure $t is available in all templates
     locale: 'en',           // default; overridden by loadSettings() before mount
     fallbackLocale: 'en',
-    messages: { de, en, es, fr, it, nl, pl, pt, ru, sv, zh },
+    messages: { de, en, es, fr, hi, it, nl, pl, pt, ru, sv, zh },
 })
 
 /**

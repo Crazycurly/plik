@@ -16,6 +16,7 @@ Plik supports multiple languages in the web interface, with automatic detection 
 | `en` | English |
 | `es` | Español |
 | `fr` | Français |
+| `hi` | हिन्दी |
 | `it` | Italiano |
 | `nl` | Nederlands |
 | `pl` | Polski |
@@ -164,6 +165,7 @@ When the user switches language, Plik sets `document.documentElement.lang` to th
         en: `For abuse contact ${link}`,
         fr: `Pour signaler un abus, contactez ${link}`,
         de: `Bei Missbrauch kontaktieren Sie ${link}`,
+        hi: `दुरुपयोग की शिकायत के लिए ${link} से संपर्क करें`,
         es: `Para reportar abuso, contacte ${link}`,
         it: `Per segnalare un abuso, contattare ${link}`,
         pt: `Para denunciar abuso, contacte ${link}`,
