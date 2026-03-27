@@ -1,7 +1,7 @@
 /*
  * Plik — Light Theme
  *
- * A clean, soft light theme with cool-tinted grays and muted blue accents.
+ * A clean, crisp light theme with cool-tinted grays and muted blue accents.
  * Uses inverted surface scale: 50 = dark text, 950 = light background.
  */
 [data-theme="light"] {
@@ -22,13 +22,13 @@
     /* Subtle labels, timestamps */
     --color-surface-600: #9ca3af;
     /* Hint text below inputs */
-    --color-surface-700: #d1d5db;
+    --color-surface-700: #d9dde5;
     /* Borders & subtle dividers */
-    --color-surface-800: #f9f9f9;
+    --color-surface-800: #fdfdfd;
     /* Cards, panels, inputs */
-    --color-surface-900: #f5f5f5;
+    --color-surface-900: #f7f9fb;
     /* Header background */
-    --color-surface-950: #f5f5f5;
+    --color-surface-950: #fafafa;
     /* Page background */
 
     /* ── Accent Palette ── */
@@ -67,7 +67,7 @@
 }
 
 [data-theme="light"] .file-row:hover {
-    background-color: #f0f1f3;
+    background-color: #f1f3f6;
 }
 
 /* ── Toggle Switch ── */
