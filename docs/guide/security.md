@@ -61,20 +61,6 @@ In most reverse-proxy deployments, setting `PlikDomain = "https://plik.example.c
 When `AssumeHTTPS` is enabled, session cookies have the `Secure` flag and can **only** be transmitted over HTTPS connections. Authentication will not work over plain HTTP.
 :::
 
-### Migrating from `EnhancedWebSecurity`
-
-The legacy `EnhancedWebSecurity` option is deprecated. If you have it set:
-
-```toml
-# Before (deprecated)
-EnhancedWebSecurity = true
-
-# After — or just remove it if SslEnabled=true or PlikDomain is https://
-AssumeHTTPS = true
-```
-
-The old flag is still accepted and will automatically enable `AssumeHTTPS` with a deprecation warning logged at startup.
-
 ## Upload Password Protection
 
 When `FeaturePassword` is enabled, uploads can be protected with a login/password pair. Credentials are transmitted via HTTP Basic Authentication.
