@@ -603,3 +603,58 @@ func TestGetTlsVersionAllValues(t *testing.T) {
 	config.TlsVersion = "invalid"
 	require.Equal(t, uint16(tls.VersionTLS12), config.GetTlsVersion())
 }
+
+// --- AssumeHTTPS resolution tests ---
+
+func TestAssumeHTTPSDefault(t *testing.T) {
+	// Off by default — neither EnhancedWebSecurity, SslEnabled nor https PlikDomain
+	config := NewConfiguration()
+	err := config.Initialize()
+	require.NoError(t, err)
+	require.False(t, config.AssumeHTTPS, "AssumeHTTPS should be false by default")
+}
+
+func TestAssumeHTTPSExplicit(t *testing.T) {
+	// Explicit opt-in without any other flag
+	config := NewConfiguration()
+	config.AssumeHTTPS = true
+	err := config.Initialize()
+	require.NoError(t, err)
+	require.True(t, config.AssumeHTTPS, "explicit AssumeHTTPS=true should be preserved")
+}
+
+func TestAssumeHTTPSFromSslEnabled(t *testing.T) {
+	// plikd manages TLS directly → auto-enable
+	config := NewConfiguration()
+	config.SslEnabled = true
+	err := config.Initialize()
+	require.NoError(t, err)
+	require.True(t, config.AssumeHTTPS, "SslEnabled should auto-enable AssumeHTTPS")
+}
+
+func TestAssumeHTTPSFromHttpsPlikDomain(t *testing.T) {
+	// PlikDomain declares HTTPS → admin signals reverse proxy handles TLS → auto-enable
+	config := NewConfiguration()
+	config.PlikDomain = "https://plik.root.gg"
+	err := config.Initialize()
+	require.NoError(t, err)
+	require.True(t, config.AssumeHTTPS, "https PlikDomain should auto-enable AssumeHTTPS")
+}
+
+func TestAssumeHTTPSNotFromHttpPlikDomain(t *testing.T) {
+	// Plain-HTTP PlikDomain should NOT enable AssumeHTTPS
+	config := NewConfiguration()
+	config.PlikDomain = "http://plik.root.gg"
+	err := config.Initialize()
+	require.NoError(t, err)
+	require.False(t, config.AssumeHTTPS, "http PlikDomain should NOT enable AssumeHTTPS")
+}
+
+func TestAssumeHTTPSFromlegacyEnhancedWebSecurity(t *testing.T) {
+	// Deprecated EnhancedWebSecurity=true must still enable AssumeHTTPS for backward compat
+	config := NewConfiguration()
+	config.EnhancedWebSecurity = true
+	err := config.Initialize()
+	require.NoError(t, err)
+	require.True(t, config.AssumeHTTPS, "EnhancedWebSecurity=true should enable AssumeHTTPS (backward compat)")
+}

@@ -19,8 +19,7 @@ import (
 // GetVersion return the build information.
 func GetVersion(ctx *context.Context, resp http.ResponseWriter, req *http.Request) {
 	bi := common.GetBuildInfo()
-	if ctx.GetConfig().EnhancedWebSecurity {
-		// Remove sensible info from BuildInfo
+	if !ctx.IsAdmin() {
 		bi.Sanitize()
 	}
 	common.WriteJSONResponse(resp, bi)

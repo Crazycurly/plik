@@ -26,6 +26,7 @@ data:
     DownloadDomain      = {{ .Values.plikd.DownloadDomain | quote }}
     DownloadDomainAlias = {{ .Values.plikd.DownloadDomainAlias | toJson }}
     EnhancedWebSecurity = {{ .Values.plikd.EnhancedWebSecurity }}
+    AssumeHTTPS         = {{ .Values.plikd.AssumeHTTPS }}
     SessionTimeout      = {{ .Values.plikd.SessionTimeout | quote }}
     AbuseContact        = {{ .Values.plikd.AbuseContact | quote }}
     WebappDirectory     = {{ .Values.plikd.WebappDirectory | quote }}

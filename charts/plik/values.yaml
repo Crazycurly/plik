@@ -179,8 +179,10 @@ plikd:
   DownloadDomain: ""
   # -- Additional download domain aliases
   DownloadDomainAlias: []
-  # -- Enable enhanced web security headers (CSP, X-Frame-Options, etc.)
+  # -- Deprecated: use AssumeHTTPS instead. Kept for backward compatibility — if true, enables AssumeHTTPS with a deprecation warning at startup.
   EnhancedWebSecurity: false
+  # -- Enable HSTS and Secure cookies (auto-enabled when SslEnabled=true or PlikDomain starts with https://)
+  AssumeHTTPS: false
   # -- User session timeout (e.g. `365d`, `24h`)
   SessionTimeout: "365d"
   # -- Abuse contact email displayed in the footer

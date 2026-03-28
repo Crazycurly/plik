@@ -425,7 +425,7 @@ func (ps *PlikServer) getHTTPHandler() (handler http.Handler) {
 	router.Handle("/", tokenChain.Append(middleware.CreateUpload).Then(handlers.AddFile)).Methods("POST")
 
 	router.Handle("/config", stdChain.Then(handlers.GetConfiguration)).Methods("GET")
-	router.Handle("/version", stdChain.Then(handlers.GetVersion)).Methods("GET")
+	router.Handle("/version", authChain.Then(handlers.GetVersion)).Methods("GET")
 	router.Handle("/qrcode", stdChain.Then(handlers.GetQrCode)).Methods("GET")
 	router.Handle("/health", emptyChain.Then(handlers.Health)).Methods("GET")
 
@@ -489,8 +489,7 @@ func (ps *PlikServer) getHTTPHandler() (handler http.Handler) {
 
 	handler = common.StripPrefix(ps.config.Path, router)
 
-	// Add HSTS header when TLS is configured
-	if ps.config.SslEnabled || ps.config.EnhancedWebSecurity {
+	if ps.config.AssumeHTTPS {
 		handler = middleware.HSTS(handler)
 	}
 
@@ -622,7 +621,7 @@ func (ps *PlikServer) initializeAuthenticator() (err error) {
 
 			ps.authenticator = &common.SessionAuthenticator{
 				SignatureKey:   setting.Value,
-				SecureCookies:  ps.config.EnhancedWebSecurity || ps.config.SslEnabled,
+				SecureCookies:  ps.config.AssumeHTTPS,
 				SessionTimeout: ps.config.GetSessionTimeout(),
 				Path:           ps.config.GetPath(),
 			}

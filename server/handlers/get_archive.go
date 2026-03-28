@@ -38,11 +38,10 @@ func GetArchive(ctx *context.Context, resp http.ResponseWriter, req *http.Reques
 	// Set content type
 	resp.Header().Set("Content-Type", "application/zip")
 
-	/* Additional security headers for possibly unsafe content */
+	/* Security headers — always set */
 	resp.Header().Set("X-Content-Type-Options", "nosniff")
-	resp.Header().Set("X-XSS-Protection", "1; mode=block")
 	resp.Header().Set("X-Frame-Options", "DENY")
-	resp.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'none'; style-src 'none'; img-src 'none'; connect-src 'none'; font-src 'none'; object-src 'none'; media-src 'none'; child-src 'none'; form-action 'none'; frame-ancestors 'none'; plugin-types ''; sandbox ''")
+	resp.Header().Set("Content-Security-Policy", "default-src 'none'; form-action 'none'; frame-ancestors 'none'; sandbox")
 
 	/* Additional header for disabling cache if the upload is OneShot */
 	if upload.OneShot {

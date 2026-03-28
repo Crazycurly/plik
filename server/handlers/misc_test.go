@@ -57,12 +57,24 @@ func TestGetVersion(t *testing.T) {
 	err = json.Unmarshal(respBody, &result)
 	require.NoError(t, err, "unable to unmarshal response body")
 
-	require.EqualValues(t, common.GetBuildInfo(), result, "invalid build info")
+	// Non-admin: BuildInfo is sanitized — version is kept, build metadata is stripped
+	require.NotEmpty(t, result.Version, "build info version should be present")
+	require.Empty(t, result.GoVersion, "build info GoVersion should be sanitized")
+	require.Empty(t, result.GitFullRevision, "build info GitFullRevision should be sanitized")
+	require.Empty(t, result.GitShortRevision, "build info GitShortRevision should be sanitized")
+	require.Zero(t, result.Date, "build info Date should be sanitized")
+	require.False(t, result.IsMint, "build info IsMint should be sanitized")
+	require.False(t, result.IsRelease, "build info IsRelease should be sanitized")
+	require.Empty(t, result.Host, "build info Host should be sanitized")
+	require.Empty(t, result.User, "build info User should be sanitized")
 }
 
-func TestGetVersionEnhancedWebSecurity(t *testing.T) {
+func TestGetVersionAdmin(t *testing.T) {
 	ctx := newTestingContext(common.NewConfiguration())
-	ctx.GetConfig().EnhancedWebSecurity = true
+
+	user := common.NewUser(common.ProviderLocal, "admin")
+	user.IsAdmin = true
+	ctx.SetUser(user)
 
 	req, err := http.NewRequest("GET", "/version", bytes.NewBuffer([]byte{}))
 	require.NoError(t, err, "unable to create new request")
@@ -70,7 +82,6 @@ func TestGetVersionEnhancedWebSecurity(t *testing.T) {
 	rr := ctx.NewRecorder(req)
 	GetVersion(ctx, rr, req)
 
-	// Check the status code is what we expect.
 	context.TestOK(t, rr)
 
 	respBody, err := io.ReadAll(rr.Body)
@@ -80,15 +91,19 @@ func TestGetVersionEnhancedWebSecurity(t *testing.T) {
 	err = json.Unmarshal(respBody, &result)
 	require.NoError(t, err, "unable to unmarshal response body")
 
-	require.NotEmpty(t, result.Version, "invalid build info")
-	require.Empty(t, result.GoVersion, result, "invalid build info")
-	require.Empty(t, result.GitFullRevision, result, "invalid build info")
-	require.Empty(t, result.GitShortRevision, result, "invalid build info")
-	require.Zero(t, result.Date, result, "invalid build info")
-	require.False(t, result.IsMint, result, "invalid build info")
-	require.False(t, result.IsRelease, result, "invalid build info")
-	require.Empty(t, result.Host, result, "invalid build info")
-	require.Empty(t, result.User, result, "invalid build info")
+	// Admin: BuildInfo is NOT sanitized — response matches the raw build info
+	require.NotEmpty(t, result.Version, "build info version should be present")
+
+	// Compare against unsanitized build info to confirm nothing was stripped
+	expected := common.GetBuildInfo()
+	require.Equal(t, expected.GoVersion, result.GoVersion, "admin should see GoVersion")
+	require.Equal(t, expected.IsRelease, result.IsRelease, "admin should see IsRelease")
+	require.Equal(t, expected.IsMint, result.IsMint, "admin should see IsMint")
+	require.Equal(t, expected.Date, result.Date, "admin should see Date")
+	require.Equal(t, expected.Host, result.Host, "admin should see Host")
+	require.Equal(t, expected.User, result.User, "admin should see User")
+	require.Equal(t, expected.GitShortRevision, result.GitShortRevision, "admin should see GitShortRevision")
+	require.Equal(t, expected.GitFullRevision, result.GitFullRevision, "admin should see GitFullRevision")
 }
 
 func TestGetConfiguration(t *testing.T) {

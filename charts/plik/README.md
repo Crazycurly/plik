@@ -104,6 +104,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions around config vs. se
 | persistence.size | string | `"10Gi"` | PVC storage size |
 | plikd | object | see sub-values | Plik server configuration. Values are rendered into the `plikd.cfg` config file. See [server configuration reference](https://github.com/root-gg/plik/tree/master/server/plikd.cfg) for all options. |
 | plikd.AbuseContact | string | `""` | Abuse contact email displayed in the footer |
+| plikd.AssumeHTTPS | bool | `false` | Enable HSTS and Secure cookies (auto-enabled when SslEnabled=true or PlikDomain starts with https://) |
 | plikd.ChangelogDirectory | string | `"../changelog"` | Path to the changelog directory |
 | plikd.ClientsDirectory | string | `"../clients"` | Path to the pre-built CLI clients directory |
 | plikd.DataBackend | string | `"file"` | Data backend type (`file`, `gcs`, `s3`, `swift`) |
@@ -115,7 +116,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions around config vs. se
 | plikd.DownloadDomain | string | `""` | Custom download domain |
 | plikd.DownloadDomainAlias | list | `[]` | Additional download domain aliases |
 | plikd.EnableArchiveCompression | bool | `true` | Enable zip compression for archive downloads. When true (default), archives use zip.Deflate (smaller files but higher CPU usage). Set to false to use zip.Store (no compression) to prevent CPU exhaustion DoS on public instances. |
-| plikd.EnhancedWebSecurity | bool | `false` | Enable enhanced web security headers (CSP, X-Frame-Options, etc.) |
+| plikd.EnhancedWebSecurity | bool | `false` | Deprecated: use AssumeHTTPS instead. Kept for backward compatibility — if true, enables AssumeHTTPS with a deprecation warning at startup. |
 | plikd.FeatureApiTokens | string | `"enabled"` | Enable API token creation and usage. When disabled with FeatureAuthentication=forced, FeatureClients is also auto-disabled. |
 | plikd.FeatureAuthentication | string | `"disabled"` | Enable user authentication (`enabled`, `disabled`, `forced`) |
 | plikd.FeatureClients | string | `"enabled"` | Enable pre-built CLI clients download page |
