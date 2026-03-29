@@ -132,9 +132,15 @@ make test-frontend-e2e 2>&1 | tail -20
 
 ### 5. Run tests
 
-If there are some code changes (ask the for confirmation as this takes ~3 min)
+If there are some code changes (ask for confirmation as this takes ~3 min).
+
+Use `NO_RACE=1` for faster iteration during review (disables the race detector, ~3–7× faster). Always run the full `make test` before signing off.
 
 ```bash
+# Fast iteration (no race detector)
+NO_RACE=1 make test 2>&1 | tail -40
+
+# Full run before sign-off (race detector on)
 make test 2>&1 | tail -40
 ```
 
