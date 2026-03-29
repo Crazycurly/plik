@@ -56,8 +56,9 @@ type Configuration struct {
 	PlikDomain          string   `json:"plikDomain"`
 	DownloadDomain      string   `json:"downloadDomain"`
 	DownloadDomainAlias []string `json:"downloadDomainAlias"`
-	EnhancedWebSecurity bool     `json:"-"` // Deprecated: use AssumeHTTPS instead
-	AssumeHTTPS         bool     `json:"-"` // Enable HSTS + Secure cookies (auto from SslEnabled or https:// PlikDomain)
+	DownloadURL         string   `json:"downloadURL,omitempty" toml:"-"` // Computed in Initialize(): only when PlikDomain or DownloadDomain is set
+	EnhancedWebSecurity bool     `json:"-"`                              // Deprecated: use AssumeHTTPS instead
+	AssumeHTTPS         bool     `json:"-"`                              // Enable HSTS + Secure cookies (auto from SslEnabled or https:// PlikDomain)
 	SessionTimeout      string   `json:"-"`
 	StreamTimeoutStr    string   `json:"-"`
 	StreamTimeout       int      `json:"streamTimeout"`
@@ -214,7 +215,10 @@ func (config *Configuration) EnvironmentOverride() (err error) {
 	return utils.AssignStrings(config, getEnvOverride)
 }
 
-// Initialize config internal parameters
+// Initialize config internal parameters.
+// Warnings about misconfigured domain options (e.g. path components in PlikDomain /
+// DownloadDomain) are written to config.LogOutput. Set config.LogOutput = io.Discard
+// to suppress them.
 func (config *Configuration) Initialize() (err error) {
 
 	// For backward compatibility
@@ -275,6 +279,11 @@ func (config *Configuration) Initialize() (err error) {
 		if config.plikDomainURL, err = url.Parse(config.PlikDomain); err != nil {
 			return fmt.Errorf("invalid plik domain URL %s : %s", config.PlikDomain, err)
 		}
+		if config.plikDomainURL.Path != "" && config.plikDomainURL.Path != "/" {
+			fmt.Fprintf(config.LogOutput, "[WARNING] PlikDomain %q contains a path component %q which will be ignored — use the Path config option instead\n", config.PlikDomain, config.plikDomainURL.Path)
+			config.plikDomainURL.Path = ""
+			config.PlikDomain = config.plikDomainURL.String()
+		}
 	}
 
 	if config.DownloadDomain != "" {
@@ -283,11 +292,20 @@ func (config *Configuration) Initialize() (err error) {
 		if config.downloadDomainURL, err = url.Parse(config.DownloadDomain); err != nil {
 			return fmt.Errorf("invalid download domain URL %s : %s", config.DownloadDomain, err)
 		}
+		if config.downloadDomainURL.Path != "" && config.downloadDomainURL.Path != "/" {
+			fmt.Fprintf(config.LogOutput, "[WARNING] DownloadDomain %q contains a path component %q which will be ignored — use the Path config option instead\n", config.DownloadDomain, config.downloadDomainURL.Path)
+			config.downloadDomainURL.Path = ""
+			config.DownloadDomain = config.downloadDomainURL.String()
+		}
 
-		for _, domainAlias := range config.DownloadDomainAlias {
-			domainAlias, err := url.Parse(domainAlias)
+		for _, alias := range config.DownloadDomainAlias {
+			domainAlias, err := url.Parse(alias)
 			if err != nil {
 				return fmt.Errorf("invalid download domain URL %s : %s", domainAlias, err)
+			}
+			if domainAlias.Path != "" && domainAlias.Path != "/" {
+				fmt.Fprintf(config.LogOutput, "[WARNING] DownloadDomainAlias %q contains a path component %q which will be ignored\n", alias, domainAlias.Path)
+				domainAlias.Path = ""
 			}
 			config.downloadDomainURLAlias = append(config.downloadDomainURLAlias, domainAlias)
 		}
@@ -295,6 +313,14 @@ func (config *Configuration) Initialize() (err error) {
 		if config.plikDomainURL != nil && config.IsDownloadDomain(config.plikDomainURL.Host) {
 			return fmt.Errorf("PlikDomain and DownloadDomain must be different domains (%s), using the same domain would cause redirect loops", config.plikDomainURL.Host)
 		}
+
+	}
+
+	// Compute DownloadURL only when a public domain is known.
+	// Without PlikDomain/DownloadDomain, GetServerURL() returns the internal listen address
+	// which is not accessible to clients — omit the field so they fall back to client.URL.
+	if config.plikDomainURL != nil || config.downloadDomainURL != nil {
+		config.DownloadURL = config.GetDownloadURL().String()
 	}
 
 	config.initializeAssumeHTTPS()
@@ -477,9 +503,7 @@ func (config *Configuration) IsWhitelisted(ip net.IP) bool {
 func (config *Configuration) GetServerURL() *url.URL {
 	if config.plikDomainURL != nil {
 		u := *config.plikDomainURL // copy
-		if config.Path != "" {
-			u.Path = config.Path
-		}
+		u.Path = config.Path
 		return &u
 	}
 
@@ -502,6 +526,44 @@ func (config *Configuration) GetServerURL() *url.URL {
 	URL.Path = config.Path
 
 	return URL
+}
+
+// GetDownloadURL returns the base URL for file download links.
+// Uses DownloadDomain + Path when configured, otherwise falls back to GetServerURL().
+func (config *Configuration) GetDownloadURL() *url.URL {
+	if config.downloadDomainURL != nil {
+		u := *config.downloadDomainURL
+		u.Path = config.Path
+		return &u
+	}
+	return config.GetServerURL()
+}
+
+// GetFileURL returns the full download URL for a file.
+// When stream is true, uses the /stream/ endpoint instead of /file/.
+func (config *Configuration) GetFileURL(uploadID, fileID, fileName string, stream bool) string {
+	mode := "file"
+	if stream {
+		mode = "stream"
+	}
+	u := config.GetDownloadURL()
+	// Set Path (decoded) for correct URL semantics, and RawPath (encoded) so .String()
+	// emits exactly one level of percent-encoding (no double-encoding).
+	rawSuffix := fmt.Sprintf("/%s/%s/%s/%s", mode, uploadID, fileID, url.PathEscape(fileName))
+	decodedSuffix := fmt.Sprintf("/%s/%s/%s/%s", mode, uploadID, fileID, fileName)
+	u.RawPath = u.Path + rawSuffix
+	u.Path = u.Path + decodedSuffix
+	return u.String()
+}
+
+// GetArchiveURL returns the full download URL for an upload archive.
+func (config *Configuration) GetArchiveURL(uploadID, archiveName string) string {
+	u := config.GetDownloadURL()
+	rawSuffix := fmt.Sprintf("/archive/%s/%s", uploadID, url.PathEscape(archiveName))
+	decodedSuffix := fmt.Sprintf("/archive/%s/%s", uploadID, archiveName)
+	u.RawPath = u.Path + rawSuffix
+	u.Path = u.Path + decodedSuffix
+	return u.String()
 }
 
 // GetTlsVersion is a helper to get the TLS version

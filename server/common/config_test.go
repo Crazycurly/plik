@@ -658,3 +658,155 @@ func TestAssumeHTTPSFromlegacyEnhancedWebSecurity(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, config.AssumeHTTPS, "EnhancedWebSecurity=true should enable AssumeHTTPS (backward compat)")
 }
+
+// ── Domain Path Stripping ──────────────────────────────────────────────────
+
+func TestInitialize_PlikDomainWithPath_StripsPath(t *testing.T) {
+	config := NewConfiguration()
+	config.PlikDomain = "https://plik.root.gg/badpath"
+	err := config.Initialize()
+	require.NoError(t, err)
+	// Path component should be removed
+	require.Equal(t, "https://plik.root.gg", config.PlikDomain)
+	require.Empty(t, config.GetPlikDomain().Path)
+}
+
+func TestInitialize_DownloadDomainWithPath_StripsPath(t *testing.T) {
+	config := NewConfiguration()
+	config.DownloadDomain = "https://dl.plik.root.gg/badpath"
+	err := config.Initialize()
+	require.NoError(t, err)
+	require.Equal(t, "https://dl.plik.root.gg", config.DownloadDomain)
+	require.Empty(t, config.GetDownloadDomain().Path)
+}
+
+func TestInitialize_DownloadDomainAliasWithPath_StripsPath(t *testing.T) {
+	config := NewConfiguration()
+	config.DownloadDomain = "https://dl.plik.root.gg"
+	config.DownloadDomainAlias = []string{"https://dl2.plik.root.gg/also/bad"}
+	err := config.Initialize()
+	require.NoError(t, err)
+	aliases := config.GetDownloadDomainAlias()
+	require.Len(t, aliases, 1)
+	require.Empty(t, aliases[0].Path)
+}
+
+// ── DownloadURL Computed Field ─────────────────────────────────────────────
+
+func TestInitialize_DownloadURL_NoDownloadDomain(t *testing.T) {
+	config := NewConfiguration()
+	err := config.Initialize()
+	require.NoError(t, err)
+	// No domain configured — field is omitted so clients fall back to their connection URL
+	require.Empty(t, config.DownloadURL)
+}
+
+func TestInitialize_DownloadURL_WithDownloadDomain(t *testing.T) {
+	config := NewConfiguration()
+	config.DownloadDomain = "https://dl.plik.root.gg"
+	err := config.Initialize()
+	require.NoError(t, err)
+	require.Equal(t, "https://dl.plik.root.gg", config.DownloadURL)
+}
+
+func TestInitialize_DownloadURL_WithDownloadDomainAndPath(t *testing.T) {
+	config := NewConfiguration()
+	config.DownloadDomain = "https://dl.plik.root.gg"
+	config.Path = "/sub"
+	err := config.Initialize()
+	require.NoError(t, err)
+	// DownloadURL must include Path; raw DownloadDomain must not
+	require.Equal(t, "https://dl.plik.root.gg/sub", config.DownloadURL)
+	require.Equal(t, "https://dl.plik.root.gg", config.DownloadDomain)
+}
+
+// ── GetDownloadURL ─────────────────────────────────────────────────────────
+
+func TestGetDownloadURL_NoDownloadDomain_FallsBackToServerURL(t *testing.T) {
+	config := NewConfiguration()
+	config.PlikDomain = "https://plik.root.gg"
+	err := config.Initialize()
+	require.NoError(t, err)
+	u := config.GetDownloadURL()
+	require.Equal(t, "https://plik.root.gg", u.String())
+}
+
+func TestGetDownloadURL_WithDownloadDomain(t *testing.T) {
+	config := NewConfiguration()
+	config.DownloadDomain = "https://dl.plik.root.gg"
+	err := config.Initialize()
+	require.NoError(t, err)
+	u := config.GetDownloadURL()
+	require.Equal(t, "https://dl.plik.root.gg", u.String())
+}
+
+func TestGetDownloadURL_WithDownloadDomainAndPath(t *testing.T) {
+	config := NewConfiguration()
+	config.DownloadDomain = "https://dl.plik.root.gg"
+	config.Path = "/sub"
+	err := config.Initialize()
+	require.NoError(t, err)
+	u := config.GetDownloadURL()
+	require.Equal(t, "https://dl.plik.root.gg/sub", u.String())
+}
+
+// ── GetFileURL ─────────────────────────────────────────────────────────────
+
+func TestGetFileURL_NoDownloadDomain(t *testing.T) {
+	config := NewConfiguration()
+	config.PlikDomain = "https://plik.root.gg"
+	err := config.Initialize()
+	require.NoError(t, err)
+	got := config.GetFileURL("upload1", "file1", "test.txt", false)
+	require.Equal(t, "https://plik.root.gg/file/upload1/file1/test.txt", got)
+}
+
+func TestGetFileURL_WithDownloadDomainAndPath(t *testing.T) {
+	config := NewConfiguration()
+	config.DownloadDomain = "https://dl.plik.root.gg"
+	config.Path = "/sub"
+	err := config.Initialize()
+	require.NoError(t, err)
+	got := config.GetFileURL("upload1", "file1", "test.txt", false)
+	require.Equal(t, "https://dl.plik.root.gg/sub/file/upload1/file1/test.txt", got)
+}
+
+func TestGetFileURL_StreamMode(t *testing.T) {
+	config := NewConfiguration()
+	config.DownloadDomain = "https://dl.plik.root.gg"
+	config.Path = "/sub"
+	err := config.Initialize()
+	require.NoError(t, err)
+	got := config.GetFileURL("upload1", "file1", "test.txt", true)
+	require.Equal(t, "https://dl.plik.root.gg/sub/stream/upload1/file1/test.txt", got)
+}
+
+func TestGetFileURL_SpecialCharsInName(t *testing.T) {
+	config := NewConfiguration()
+	config.PlikDomain = "https://plik.root.gg"
+	err := config.Initialize()
+	require.NoError(t, err)
+	got := config.GetFileURL("upload1", "file1", "my file (1).txt", false)
+	require.Equal(t, "https://plik.root.gg/file/upload1/file1/my%20file%20%281%29.txt", got)
+}
+
+// ── GetArchiveURL ──────────────────────────────────────────────────────────
+
+func TestGetArchiveURL_NoDownloadDomain(t *testing.T) {
+	config := NewConfiguration()
+	config.PlikDomain = "https://plik.root.gg"
+	err := config.Initialize()
+	require.NoError(t, err)
+	got := config.GetArchiveURL("upload1", "archive.zip")
+	require.Equal(t, "https://plik.root.gg/archive/upload1/archive.zip", got)
+}
+
+func TestGetArchiveURL_WithDownloadDomainAndPath(t *testing.T) {
+	config := NewConfiguration()
+	config.DownloadDomain = "https://dl.plik.root.gg"
+	config.Path = "/sub"
+	err := config.Initialize()
+	require.NoError(t, err)
+	got := config.GetArchiveURL("upload1", "archive.zip")
+	require.Equal(t, "https://dl.plik.root.gg/sub/archive/upload1/archive.zip", got)
+}

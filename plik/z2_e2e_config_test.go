@@ -465,3 +465,81 @@ func TestSourceIpHeader(t *testing.T) {
 	require.NoError(t, err, "unable to create upload")
 
 }
+
+// TestDownloadURLMetadata verifies that the upload API response includes both:
+//   - DownloadDomain: the raw domain (backward compat)
+//   - DownloadURL: the domain + Path (new field)
+func TestDownloadURLMetadata(t *testing.T) {
+	ps, pc := newPlikServerAndClient()
+	defer shutdown(ps)
+
+	ps.GetConfig().Path = "/sub"
+	err := startWithClient(ps, pc)
+	require.NoError(t, err, "unable to start plik server")
+
+	// Set DownloadDomain after server start (port is now known)
+	ps.GetConfig().DownloadDomain = fmt.Sprintf("http://%s:%d", ps.GetConfig().ListenAddress, ps.GetConfig().ListenPort)
+	err = ps.GetConfig().Initialize()
+	require.NoError(t, err, "unable to re-initialize config")
+
+	upload, _, err := pc.UploadReader("filename", bytes.NewBufferString("test data"))
+	require.NoError(t, err, "unable to create upload")
+
+	meta := upload.Metadata()
+	require.NotNil(t, meta)
+
+	// DownloadDomain must be the raw domain (no path) for backward compat
+	require.Equal(t, ps.GetConfig().DownloadDomain, meta.DownloadDomain,
+		"DownloadDomain must be the raw domain without Path")
+
+	// DownloadURL must include the Path prefix
+	require.Equal(t, ps.GetConfig().DownloadURL, meta.DownloadURL,
+		"DownloadURL must equal DownloadDomain + Path")
+	require.Contains(t, meta.DownloadURL, "/sub",
+		"DownloadURL must contain the Path prefix")
+}
+
+// TestDownloadDomainWithPath verifies that GetURL() on a file returns a URL that
+// includes the server Path prefix when DownloadURL is set.
+func TestDownloadDomainWithPath(t *testing.T) {
+	ps, pc := newPlikServerAndClient()
+	defer shutdown(ps)
+
+	ps.GetConfig().Path = "/sub"
+	err := startWithClient(ps, pc)
+	require.NoError(t, err, "unable to start plik server")
+
+	// Set DownloadDomain after server start
+	ps.GetConfig().DownloadDomain = fmt.Sprintf("http://%s:%d", ps.GetConfig().ListenAddress, ps.GetConfig().ListenPort)
+	err = ps.GetConfig().Initialize()
+	require.NoError(t, err, "unable to re-initialize config")
+
+	_, file, err := pc.UploadReader("test.txt", bytes.NewBufferString("hello"))
+	require.NoError(t, err, "unable to upload file")
+
+	u, err := file.GetURL()
+	require.NoError(t, err, "unable to get file URL")
+
+	// The URL must contain /sub/file/ — not just /file/
+	require.Contains(t, u.Path, "/sub/file/",
+		"file URL must include the Path prefix")
+}
+
+// TestDownloadDomainWithPathStripping verifies that Initialize() strips a path
+// component from DownloadDomain and uses config.Path instead for DownloadURL.
+func TestDownloadDomainWithPathStripping(t *testing.T) {
+	ps, _ := newPlikServerAndClient()
+	defer shutdown(ps)
+
+	ps.GetConfig().Path = "/correct"
+	// Intentionally put a path in DownloadDomain — should be stripped with a warning
+	ps.GetConfig().DownloadDomain = "https://dl.example.com/wrong-path"
+
+	err := ps.GetConfig().Initialize()
+	require.NoError(t, err, "Initialize must not error when stripping domain path")
+
+	// The raw DownloadDomain is cleaned
+	require.Equal(t, "https://dl.example.com", ps.GetConfig().DownloadDomain)
+	// DownloadURL uses config.Path, not the path that was in DownloadDomain
+	require.Equal(t, "https://dl.example.com/correct", ps.GetConfig().DownloadURL)
+}

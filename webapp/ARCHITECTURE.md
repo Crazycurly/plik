@@ -413,7 +413,8 @@ The `GET /config` response also includes:
 | `feature_local_login` | `"enabled"` or `"disabled"` — controls local login form visibility (replaces old `localAuthentication` boolean) |
 | `oidcAuthentication` | `true` if OIDC is configured → shows OIDC login button |
 | `oidcProviderName` | Display name for OIDC button (e.g. `"Keycloak"`, defaults to `"OpenID"`) |
-| `downloadDomain` | Alternate domain for download URLs (set in `api.js` via `setDownloadDomain`) |
+| `downloadDomain` | Raw configured `DownloadDomain` — kept for backward compatibility |
+| `downloadURL` | Fully-qualified base URL for file/archive links. Present when `PlikDomain` or `DownloadDomain` is configured (`DownloadDomain + Path`, or `PlikDomain + Path`). Absent otherwise — clients fall back to their connection URL. Falls back to `downloadDomain` for servers older than 1.4.2 |
 | `abuseContact` | Abuse contact email → displayed in global footer (`App.vue`) |
 
 ---
