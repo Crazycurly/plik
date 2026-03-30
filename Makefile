@@ -23,7 +23,9 @@ BUILD_TAGS = -tags osusergo,netgo,sqlite_omit_load_extension
 GO_BUILD = go build $(BUILD_FLAG) $(BUILD_TAGS)
 
 COVER_FILE = /tmp/plik.coverprofile
-GO_TEST = GORACE="halt_on_error=1" go test $(BUILD_FLAG) $(BUILD_TAGS) -race -cover -coverprofile=$(COVER_FILE) -p 1
+RACE_FLAGS := $(if $(NO_RACE),,-race)
+RACE_ENV   := $(if $(NO_RACE),,GORACE="halt_on_error=1")
+GO_TEST     = $(RACE_ENV) go test $(BUILD_FLAG) $(BUILD_TAGS) $(RACE_FLAGS) -cover -coverprofile=$(COVER_FILE) -p 1
 
 ifdef ENABLE_RACE_DETECTOR
 	GO_BUILD := GORACE="halt_on_error=1" $(GO_BUILD) -race
