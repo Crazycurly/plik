@@ -25,7 +25,6 @@ func createTestFile(ctx *context.Context, file *common.File, reader io.Reader) (
 
 func TestGetFile(t *testing.T) {
 	config := common.NewConfiguration()
-	config.EnhancedWebSecurity = true
 	ctx := newTestingContext(config)
 
 	data := "data"
@@ -60,7 +59,6 @@ func TestGetFile(t *testing.T) {
 
 	require.Equal(t, data, string(respBody), "invalid file content")
 	require.NotEmpty(t, rr.Header().Get("X-Content-Type-Options"))
-	require.NotEmpty(t, rr.Header().Get("X-XSS-Protection"))
 	require.NotEmpty(t, rr.Header().Get("X-Frame-Options"))
 	require.NotEmpty(t, rr.Header().Get("Content-Security-Policy"))
 	require.Equal(t, rr.Header().Get("Content-Disposition"), fmt.Sprintf(`attachment; filename="%s"`, file.Name))

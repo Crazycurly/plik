@@ -20,30 +20,45 @@ Plik automatically neutralizes content types that could execute code in the brow
 | `application/pdf` | `application/octet-stream` | PDF can contain JavaScript |
 
 ::: tip
-This protection is always active regardless of `EnhancedWebSecurity`. Use the `?dl=true` query parameter to force a download with `Content-Disposition: attachment`.
+This protection is always active. Use the `?dl=true` query parameter to force a download with `Content-Disposition: attachment`.
 :::
 
 ::: warning Office format detection limitation
 Office formats like `.pptx`, `.docx`, and `.xlsx` are ZIP archives internally, so Go's built-in MIME detector (`http.DetectContentType`) identifies them as `application/zip` instead of their proper types (e.g., `application/vnd.openxmlformats-officedocument.presentationml.presentation`).
 :::
 
-## Enhanced Web Security
+## Download Security Headers
 
-When `EnhancedWebSecurity` is enabled in `plikd.cfg`, Plik sets additional HTTP headers:
+Plik unconditionally sets the following HTTP security headers on **every file download** response:
 
-- **X-Content-Type-Options**: `nosniff`
-- **X-XSS-Protection**: enabled
-- **X-Frame-Options**: deny
-- **Content-Security-Policy**: restrictive policy disabling resource loading, XHR, iframes
-- **Strict-Transport-Security**: `max-age=31536000` (1 year) — also set when `SslEnabled` is true
-- **Secure Cookies**: session cookies only transmitted over HTTPS — also set when `SslEnabled` is true
+- **X-Content-Type-Options**: `nosniff` — prevents MIME-type sniffing attacks
+- **X-Frame-Options**: `DENY` — blocks embedding in iframes
+- **Content-Security-Policy**: strict policy (`default-src 'none'; media-src 'self'; sandbox`) — blocks scripts, styles, and cross-origin requests while allowing native audio/video playback
 
-::: warning
-Enhanced security will break audio/video playback, PDF rendering, and other rich content features. Disable it if you need those capabilities.
-:::
+No configuration is required.
 
-::: danger Authentication requires HTTPS with Secure Cookies
-When `EnhancedWebSecurity` or `SslEnabled` is enabled, session cookies have the `Secure` flag set and can only be transmitted over HTTPS connections. Authentication will not work over plain HTTP.
+## HSTS and Secure Cookies (`AssumeHTTPS`)
+
+When Plik is deployed behind HTTPS (either directly or via a reverse proxy), you should enable transport-level security:
+
+```toml
+AssumeHTTPS = true
+```
+
+This enables:
+- **Strict-Transport-Security (HSTS)**: `max-age=31536000` — instructs browsers to always use HTTPS
+- **Secure Cookies**: session cookies include the `Secure` flag and are only transmitted over HTTPS connections
+
+### Auto-Detection
+
+`AssumeHTTPS` is automatically enabled when:
+- `SslEnabled = true` — plikd manages TLS directly
+- `PlikDomain` starts with `https://` — admin explicitly declared an HTTPS public URL
+
+In most reverse-proxy deployments, setting `PlikDomain = "https://plik.example.com"` is sufficient — no explicit `AssumeHTTPS` needed.
+
+::: danger Authentication requires HTTPS when AssumeHTTPS is enabled
+When `AssumeHTTPS` is enabled, session cookies have the `Secure` flag and can **only** be transmitted over HTTPS connections. Authentication will not work over plain HTTP.
 :::
 
 ## Upload Password Protection

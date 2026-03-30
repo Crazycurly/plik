@@ -296,23 +296,55 @@ After the release is published:
   docker pull rootgg/plik:preview          # all releases
   docker pull rootgg/plik:latest           # stable releases only
   ```
-- [ ] **Smoke-test the image** — start the server and verify `/version`:
+- [ ] **Smoke-test the image** — start the server with a default admin and verify `/version`:
   ```bash
-  docker run --rm -d -p 8080:8080 --name plik-release-check rootgg/plik:<VERSION>
+  docker run --rm -d -p 8080:8080 --name plik-release-check \
+    -e PLIKD_DEFAULT_ADMIN_LOGIN=admin \
+    -e PLIKD_DEFAULT_ADMIN_PASSWORD=smoketest \
+    rootgg/plik:<VERSION>
+
+  # Unauthenticated — basic version check
   curl -s http://127.0.0.1:8080/version | jq .
+
+  # Authenticated — full build metadata (admin-only)
+  curl -s -c /tmp/plik-cookies -X POST http://127.0.0.1:8080/auth/local/login \
+    -H 'Content-Type: application/json' \
+    -d '{"login":"admin","password":"smoketest"}'
+  curl -s -b /tmp/plik-cookies http://127.0.0.1:8080/version | jq .
   ```
-  Verify the JSON response:
+  Verify the unauthenticated response:
   - `version` = `<VERSION>`
+  - `clients` array is populated (13 entries: bash, darwin, freebsd, linux, openbsd, windows)
+  - `releases` array includes the new version as the last entry
+
+  Verify the authenticated (admin) response additionally includes:
   - `isRelease` = `true`
   - `isMint` = `true`
   - `goVersion` = expected Go version (e.g. `go1.26.0 linux/amd64`)
-  - `clients` array is populated (13 entries: bash, darwin, freebsd, linux, openbsd, windows)
-  - `releases` array includes the new version as the last entry
-- [ ] **Test client download** — while the container is still running, download a client binary from it:
+- [ ] **Test client round trip** — while the container is still running, download the CLI client and verify upload/download:
   ```bash
-  curl -sf http://127.0.0.1:8080/clients/linux-amd64/plik -o /dev/null && echo "OK" || echo "FAIL"
+  # Download and make executable
+  curl -sf http://127.0.0.1:8080/clients/linux-amd64/plik -o /tmp/plik && chmod +x /tmp/plik
+
+  # Verify client version
+  /tmp/plik --version
+
+  # Upload a test file
+  echo "release smoke test" > /tmp/plik-smoke-test.txt
+  UPLOAD_URL=$(/tmp/plik --server http://127.0.0.1:8080 /tmp/plik-smoke-test.txt 2>&1 | grep -oP 'http://\S+')
+
+  # Download and verify content
+  curl -sf "$UPLOAD_URL" -o /tmp/plik-smoke-download.txt
+  diff /tmp/plik-smoke-test.txt /tmp/plik-smoke-download.txt && echo "ROUND TRIP OK" || echo "ROUND TRIP FAIL"
+
+  # Cleanup
+  rm -f /tmp/plik /tmp/plik-smoke-test.txt /tmp/plik-smoke-download.txt /tmp/plik-cookies
   docker stop plik-release-check
   ```
+  Verify:
+  - `/tmp/plik --version` outputs `<VERSION>`
+  - Upload succeeds and returns a URL
+  - Downloaded content matches the original file
 - [ ] **Verify Helm repo** — check that the chart index on `gh-pages` includes the new version:
   ```bash
   curl -s https://root-gg.github.io/plik/index.yaml | grep <VERSION>

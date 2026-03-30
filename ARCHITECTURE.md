@@ -283,7 +283,7 @@ When processing a request, limits are resolved via the custom `Context`:
 1. User authenticates via `/auth/{provider}/login` → consent URL → `/auth/{provider}/callback`
 2. Server creates JWT session cookie (`plik-session`) signed with server-generated key
 3. XSRF cookie (`plik-xsrf`) must be echoed in `X-XSRFToken` header for mutating requests
-4. Cookies are `Secure` when `EnhancedWebSecurity` is enabled
+4. Cookies are `Secure` when `AssumeHTTPS` is enabled (auto from `SslEnabled` or HTTPS `PlikDomain`)
 
 ### Upload Token (per-upload)
 1. Every upload gets a random `UploadToken` on creation (returned in the `POST /upload` response)

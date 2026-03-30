@@ -56,7 +56,8 @@ type Configuration struct {
 	PlikDomain          string   `json:"plikDomain"`
 	DownloadDomain      string   `json:"downloadDomain"`
 	DownloadDomainAlias []string `json:"downloadDomainAlias"`
-	EnhancedWebSecurity bool     `json:"-"`
+	EnhancedWebSecurity bool     `json:"-"` // Deprecated: use AssumeHTTPS instead
+	AssumeHTTPS         bool     `json:"-"` // Enable HSTS + Secure cookies (auto from SslEnabled or https:// PlikDomain)
 	SessionTimeout      string   `json:"-"`
 	StreamTimeoutStr    string   `json:"-"`
 	StreamTimeout       int      `json:"streamTimeout"`
@@ -145,7 +146,6 @@ func NewConfiguration() (config *Configuration) {
 	config.ListenPort = 8080
 	config.MetricsAddress = "0.0.0.0"
 	config.MetricsPort = 0
-	config.EnhancedWebSecurity = false
 	config.SessionTimeout = "365d"
 	config.StreamTimeoutStr = "5m"
 
@@ -297,6 +297,8 @@ func (config *Configuration) Initialize() (err error) {
 		}
 	}
 
+	config.initializeAssumeHTTPS()
+
 	if config.MaxFileSizeStr == "unlimited" || config.MaxFileSizeStr == "-1" {
 		config.MaxFileSize = int64(-1)
 	} else if config.MaxFileSizeStr != "" {
@@ -354,6 +356,23 @@ func (config *Configuration) Initialize() (err error) {
 	}
 
 	return nil
+}
+
+// initializeAssumeHTTPS promotes AssumeHTTPS to true when any of these conditions hold:
+//   - Legacy EnhancedWebSecurity is true (deprecated — logs a warning)
+//   - SslEnabled is true (plikd handles TLS directly)
+//   - PlikDomain scheme is https (admin declared an HTTPS public URL)
+func (config *Configuration) initializeAssumeHTTPS() {
+	if config.EnhancedWebSecurity {
+		fmt.Fprintln(config.LogOutput, "[WARNING] EnhancedWebSecurity is deprecated — use AssumeHTTPS = true instead")
+		config.AssumeHTTPS = true
+	}
+	if config.SslEnabled {
+		config.AssumeHTTPS = true
+	}
+	if config.plikDomainURL != nil && config.plikDomainURL.Scheme == "https" {
+		config.AssumeHTTPS = true
+	}
 }
 
 // NewLogger returns a new logger instance

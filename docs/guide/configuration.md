@@ -40,7 +40,7 @@ PLIKD_DATA_BACKEND_CONFIG='{"Directory":"/var/files"}' ./plikd
 | `PlikDomain` | `""` | Public webapp URL (e.g., `https://plik.example.com`). Used for OAuth redirects and CORS. Does **not** restrict downloads on its own — set `DownloadDomain` for that |
 | `DownloadDomain` | `""` | Enforce download domain (e.g., `https://dl.plik.example.com`). UI/API blocking and CORS require `PlikDomain` too |
 | `DownloadDomainAlias` | `[]` | Additional accepted download hosts |
-| `EnhancedWebSecurity` | `false` | Extra security headers + secure cookies |
+| `AssumeHTTPS` | `false` | Enable HSTS + Secure cookies (auto-enabled from `SslEnabled` or HTTPS `PlikDomain`) |
 | `SessionTimeout` | `365d` | Authentication session duration |
 | `AbuseContact` | `""` | Abuse contact email shown in footer. `settings.json` `"footer"` takes precedence when set |
 | `WebappDirectory` | `../webapp/dist` | Web UI static files directory |
