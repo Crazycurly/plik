@@ -124,14 +124,6 @@ Setting `PlikDomain` alone does **not** enforce any domain check on file downloa
 - Non-file requests (webapp UI, API) on the download domain are **blocked** when `PlikDomain` is also set (see below)
 - The computed `downloadURL` field (returned in `/config` and upload API responses) equals `DownloadDomain + Path`
 
-::: info Path prefix and DownloadURL
-The `Path` config option is the **single source of truth** for URL path prefixes. Setting it to `/sub` means:
-- All API and webapp routes are served under `/sub`
-- The `downloadURL` field in API responses is `DownloadDomain + /sub` (or `PlikDomain + /sub` if no `DownloadDomain`)
-- File download links from quick upload and the web UI automatically include `/sub`
-
-Do **not** put the path in `PlikDomain` or `DownloadDomain` — use `Path` instead.
-:::
 
 **`DownloadDomainAlias`** — Additional hostnames accepted for file downloads. Useful when:
 - Accessing the server via `localhost` during development
