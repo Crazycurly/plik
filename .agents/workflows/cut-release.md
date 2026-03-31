@@ -72,6 +72,30 @@ For each outdated **direct** dependency, check the release notes or changelog fo
 
 **⏸️ Present the dependency audit summary. Wait for user confirmation before proceeding.**
 
+### 2.5. Check frontend dependency freshness
+
+Run the npm outdated report in the webapp directory:
+
+```bash
+cd webapp && npm outdated; true
+```
+
+Categorize the output:
+- **Semver-safe updates** (`Current` → `Wanted` — same major) — bump these with `npm update`
+- **Major version bumps** (`Current` → `Latest` — different major) — investigate breaking changes before deciding
+
+For each **major** version bump, check the project's migration guide or changelog:
+- If it's a **drop-in** (e.g., vue-router 4→5 has no breaking changes for standard usage) → bump it
+- If it requires **config or code changes** (e.g., vite 7→8 switches to Rolldown bundler) → defer to a dedicated PR
+
+After bumping, run `make test-frontend` to confirm all tests pass:
+
+```bash
+make test-frontend
+```
+
+**⏸️ Present the frontend dependency audit summary. Wait for user confirmation before proceeding.**
+
 ### 3. Check build pipeline versions
 
 Before starting the release, actively check for newer versions of all base images in the `Dockerfile` and propose updates:

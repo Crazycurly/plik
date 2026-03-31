@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Fetch tags
       run: |
@@ -44,7 +44,7 @@ jobs:
 
     - name: Install Helm
       if: github.event_name == 'release'
-      uses: azure/setup-helm@v4
+      uses: azure/setup-helm@v5
 
     - name: Package and publish Helm chart
       if: github.event_name == 'release'
@@ -52,7 +52,7 @@ jobs:
 
     - name: Set up Go
       if: github.event_name == 'release'
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: stable
 
