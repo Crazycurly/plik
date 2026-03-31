@@ -676,7 +676,8 @@ Key classes:
 - Containers: `flex flex-col md:flex-row`
 - Sidebars: `w-full md:w-72 md:shrink-0`
 - Outer wrapper: `overflow-x-hidden` (prevents long URLs from causing horizontal scroll)
-- FileRow: inner container uses `flex-wrap`, "Download" text hidden on mobile (`hidden md:inline`)
+- FileRow: two-row layout on mobile (`flex-col` / `md:flex-row`) — Row 1: icon + filename; Row 2: size (left) + action buttons (right, pushed by a `flex-1 md:hidden` spacer). On `md+`, single inline row as before. \"Download\" / \"View\" / \"Decrypt\" text labels remain `hidden md:inline`.
+
 
 ---
 
