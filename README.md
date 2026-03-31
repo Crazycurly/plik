@@ -19,7 +19,7 @@ Plik is a scalable & friendly temporary file upload system — like WeTransfer, 
 
 ### Features
 
-- 🖥️ Modern Vue 3 web interface
+- 🖥️ Modern Vue 3 web interface with i18n (12 languages) and light, dark, custom themes
 - 🧑‍💻 Powerful [Command line client](https://root-gg.github.io/plik/features/cli-client.html)
 - ☁️ Multiple storage backends (local, S3, OpenStack Swift, Google Cloud Storage)
 - 🗄️ Multiple metadata backends (SQLite, PostgreSQL, MySQL)
@@ -29,6 +29,7 @@ Plik is a scalable & friendly temporary file upload system — like WeTransfer, 
 - ⚡ Stream mode (uploader → downloader, nothing stored)
 - 🔐 Password-protected uploads (BasicAuth)
 - 🔒 End-to-end encryption with [Age](https://age-encryption.org/) (CLI ↔ Web interoperable)
+- 🖼️ File preview with syntax highlighting, Markdown rendering, Mermaid diagrams and media player
 - 📦 Archive directly from CLI/Web
 - 📊 Prometheus metrics
 - 🤖 [MCP server](https://root-gg.github.io/plik/features/mcp-server.html) for AI assistant integration
