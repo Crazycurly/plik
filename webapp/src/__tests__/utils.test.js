@@ -554,8 +554,8 @@ describe('isImageFile', () => {
         expect(isImageFile({ fileType: 'image/gif' })).toBe(true)
     })
 
-    it('returns true for image/svg+xml', () => {
-        expect(isImageFile({ fileType: 'image/svg+xml' })).toBe(true)
+    it('returns false for image/svg+xml (content-type neutralized for security)', () => {
+        expect(isImageFile({ fileType: 'image/svg+xml' })).toBe(false)
     })
 
     it('returns true for image/webp', () => {
@@ -660,6 +660,10 @@ describe('isViewableFile', () => {
 
     it('returns true for audio files', () => {
         expect(isViewableFile({ fileType: 'audio/mpeg' })).toBe(true)
+    })
+
+    it('returns false for SVG files (content-type neutralized for security)', () => {
+        expect(isViewableFile({ fileType: 'image/svg+xml' })).toBe(false)
     })
 })
 
