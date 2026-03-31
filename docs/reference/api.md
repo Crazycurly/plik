@@ -6,8 +6,8 @@ Full REST API reference. All endpoints accept/return JSON unless noted.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/config` | Server configuration (feature flags, limits) |
-| `GET` | `/version` | Build info (version, git commit) |
+| `GET` | `/config` | Server configuration (feature flags, limits, `downloadURL`) |
+| `GET` | `/version` | Build info — public, richer for admin sessions (see below) |
 | `GET` | `/qrcode?url=...&size=...` | Generate QR code PNG |
 | `GET` | `/health` | Health check |
 
@@ -28,8 +28,28 @@ Authentication: session cookie or `X-PlikToken` header.
 | `HEAD` | `/file/{uploadID}/{fileID}/{filename}` | File metadata |
 | `POST` | `/stream/{uploadID}/{fileID}/{filename}` | Stream upload |
 | `DELETE` | `/stream/{uploadID}/{fileID}/{filename}` | Cancel stream upload |
-| `GET` | `/stream/{uploadID}/{fileID}/{filename}` | Stream download |
-| `GET` | `/archive/{uploadID}/{filename}` | Download all files as zip |
+| `GET`, `HEAD` | `/stream/{uploadID}/{fileID}/{filename}` | Stream download |
+| `GET`, `HEAD` | `/archive/{uploadID}/{filename}` | Download all files as zip |
+
+### GET /version
+
+Public endpoint. All callers receive `version`, `clients`, and `releases`. Admin sessions receive the full build details:
+
+| Field | Public | Admin only |
+|-------|--------|------------|
+| `version` | ✅ | |
+| `clients` | ✅ | |
+| `releases` | ✅ | |
+| `date` | | ✅ |
+| `user` | | ✅ |
+| `host` | | ✅ |
+| `gitShortRevision` | | ✅ |
+| `gitFullRevision` | | ✅ |
+| `goVersion` | | ✅ |
+| `isRelease` | | ✅ |
+| `isMint` | | ✅ |
+
+---
 
 ### Create Upload (POST /upload)
 
@@ -53,9 +73,14 @@ Response:
 {
     "id": "TczL35OTIb3InNr6",
     "uploadToken": "50lGHbLEIrpJOl4uECddTI7pga...",
+    "downloadDomain": "https://dl.example.com",
+    "downloadURL": "https://dl.example.com/sub",
     "files": []
 }
 ```
+
+`downloadDomain` — raw domain configured as `DownloadDomain`, kept for backward compatibility.
+`downloadURL` — fully-qualified base URL for file/archive links. Present when `PlikDomain` or `DownloadDomain` is configured. Uses `DownloadDomain + Path` when set, otherwise `PlikDomain + Path`. Absent when neither domain is configured — clients should fall back to the URL they used to reach the server.
 
 ### Add File (POST /file/{uploadID})
 
@@ -67,12 +92,24 @@ The upload token is not required for public uploads. For password-protected uplo
 
 HTTP Range requests (`Range` header) are supported on file downloads, allowing partial content retrieval (206 responses).
 
+### GET /config — Selected Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `downloadDomain` | `string` | Raw configured `DownloadDomain` (backward compat) |
+| `downloadURL` | `string` | Base URL for file/archive links. Present when `PlikDomain` or `DownloadDomain` is configured (`DownloadDomain + Path`, or `PlikDomain + Path`). Absent otherwise |
+| `plikDomain` | `string` | Configured `PlikDomain` (public server URL, no path) |
+| `maxFileSize` | `int` | Max file size in bytes (`-1` = unlimited) |
+| `feature_*` | `string` | Feature flag values: `disabled`, `enabled`, `default`, `forced` |
+
 ## Authentication Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/auth/google/login` | Get Google consent URL |
 | `GET` | `/auth/google/callback` | Google OAuth callback |
+| `GET` | `/auth/github/login` | Get GitHub consent URL |
+| `GET` | `/auth/github/callback` | GitHub OAuth callback |
 | `GET` | `/auth/ovh/login` | Get OVH consent URL |
 | `GET` | `/auth/ovh/callback` | OVH OAuth callback |
 | `GET` | `/auth/oidc/login` | Get OIDC consent URL |
@@ -90,6 +127,7 @@ Requires authenticated session cookie.
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/me` | Current user info |
+| `PATCH` | `/me` | Update self-editable profile fields (`name`, `email`, `theme`, `language`) |
 | `DELETE` | `/me` | Delete own account |
 | `GET` | `/me/token` | List tokens (paginated) |
 | `POST` | `/me/token` | Create upload token `{ "comment": "..." }` |
