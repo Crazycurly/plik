@@ -323,6 +323,7 @@ After the release is published:
 - [ ] **Smoke-test the image** — start the server with a default admin and verify `/version`:
   ```bash
   docker run --rm -d -p 8080:8080 --name plik-release-check \
+    -e PLIKD_FEATURE_AUTHENTICATION=enabled \
     -e PLIKD_DEFAULT_ADMIN_LOGIN=admin \
     -e PLIKD_DEFAULT_ADMIN_PASSWORD=smoketest \
     rootgg/plik:<VERSION>
@@ -389,7 +390,7 @@ After the release is published:
     dpkg -L plik-server | head -20
     dpkg -L plik-client
     echo "--- Verify systemd unit ---"
-    test -f /lib/systemd/system/plik-server.service && echo "systemd unit: OK" || echo "systemd unit: MISSING"
+    test -f /usr/lib/systemd/system/plikd.service && echo "systemd unit: OK" || echo "systemd unit: MISSING"
     echo "--- All checks passed ---"
   '
   ```

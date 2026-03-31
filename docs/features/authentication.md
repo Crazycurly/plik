@@ -20,6 +20,7 @@ Create users via the server CLI:
 For Docker or Kubernetes deployments, you can instead provision a local admin user automatically on first startup via config:
 
 ```toml
+FeatureAuthentication = "enabled"   # Required — DefaultAdminLogin requires authentication to be enabled
 DefaultAdminLogin    = "admin"
 DefaultAdminPassword = "s3cr3tpass"   # Optional: auto-generated and logged if omitted
 ```
@@ -27,6 +28,7 @@ DefaultAdminPassword = "s3cr3tpass"   # Optional: auto-generated and logged if o
 Or equivalently via environment variables:
 
 ```bash
+PLIKD_FEATURE_AUTHENTICATION=enabled
 PLIKD_DEFAULT_ADMIN_LOGIN=admin
 PLIKD_DEFAULT_ADMIN_PASSWORD=s3cr3tpass
 ```
