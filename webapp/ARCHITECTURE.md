@@ -837,11 +837,13 @@ Fenced code blocks with language `mermaid` are rendered as interactive SVG diagr
 
 When viewing an image file (`image/*` MIME type), the file viewer renders an `<img>` tag directly from the server URL — no content fetching or text decoding required.
 
-- **`isImageFile(file)`** in `utils.js` checks that the MIME type starts with `image/`
+- **`isImageFile(file)`** in `utils.js` checks that the MIME type starts with `image/`, **excluding `image/svg+xml`**: the server neutralizes SVG content-type for security (SVG can contain arbitrary JavaScript), so the browser cannot render it as a safe inline image
 - **`isViewableFile(file)`** combines `isTextFile(file) || isImageFile(file) || isVideoFile(file) || isAudioFile(file)` — used by `FileRow` for the View button and the auto-view watcher
 - No file size limit for images (browsers handle large images natively)
 - The viewer header shows a landscape-photo icon (instead of the code angle-brackets icon) for image files
 - E2E encrypted images are not supported in the inline viewer (same limitation as text viewer)
+
+> **Security**: SVG files (`image/svg+xml`) are explicitly excluded from the inline viewer. SVG is an XML format that can embed `<script>` tags, event handlers, and `<foreignObject>` elements, making inline display a potential XSS vector. The server neutralizes the content-type on download; the client mirrors this by suppressing the View button for SVG files.
 
 ### Video & Audio Playback
 

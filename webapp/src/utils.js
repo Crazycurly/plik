@@ -296,11 +296,14 @@ export function isMarkdownFile(file) {
 
 /**
  * Determine if a file is an image (viewable as an inline preview).
- * Checks that the MIME type starts with image/.
+ * Checks that the MIME type starts with image/, but excludes image/svg+xml:
+ * SVG content-type is neutralized by the server for security reasons, so
+ * the browser cannot render it as an inline image.
  * No size limit — browsers handle large images natively.
  */
 export function isImageFile(file) {
     const mime = (file.fileType || '').toLowerCase()
+    if (mime === 'image/svg+xml') return false
     return mime.startsWith('image/')
 }
 
