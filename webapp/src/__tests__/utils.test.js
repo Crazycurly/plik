@@ -24,6 +24,7 @@ import {
     isVideoFile,
     isAudioFile,
     isViewableFile,
+    charsetFromContentType,
     MAX_VIEWABLE_SIZE,
     getUploadUrl,
 } from '../utils.js'
@@ -673,5 +674,53 @@ describe('getUploadUrl', () => {
     it('builds hash-based URL', () => {
         const url = getUploadUrl({ id: 'abc123' })
         expect(url).toContain('#/?id=abc123')
+    })
+})
+
+// ── charsetFromContentType ──
+
+describe('charsetFromContentType', () => {
+    it('returns utf-8 when no charset is present', () => {
+        expect(charsetFromContentType('text/plain')).toBe('utf-8')
+    })
+
+    it('returns utf-8 for explicit utf-8 charset', () => {
+        expect(charsetFromContentType('text/plain; charset=utf-8')).toBe('utf-8')
+    })
+
+    it('returns utf-16be', () => {
+        expect(charsetFromContentType('text/plain; charset=utf-16be')).toBe('utf-16be')
+    })
+
+    it('returns utf-16le', () => {
+        expect(charsetFromContentType('text/plain; charset=utf-16le')).toBe('utf-16le')
+    })
+
+    it('returns iso-8859-1', () => {
+        expect(charsetFromContentType('text/plain; charset=iso-8859-1')).toBe('iso-8859-1')
+    })
+
+    it('returns windows-1252', () => {
+        expect(charsetFromContentType('text/plain; charset=windows-1252')).toBe('windows-1252')
+    })
+
+    it('is case-insensitive on the Charset key', () => {
+        expect(charsetFromContentType('text/plain; Charset=UTF-16BE')).toBe('UTF-16BE')
+    })
+
+    it('handles extra params before charset', () => {
+        expect(charsetFromContentType('text/html; boundary=x; charset=latin1')).toBe('latin1')
+    })
+
+    it('returns utf-8 for empty string', () => {
+        expect(charsetFromContentType('')).toBe('utf-8')
+    })
+
+    it('returns utf-8 for null', () => {
+        expect(charsetFromContentType(null)).toBe('utf-8')
+    })
+
+    it('returns utf-8 for undefined', () => {
+        expect(charsetFromContentType(undefined)).toBe('utf-8')
     })
 })
