@@ -802,6 +802,22 @@ The `isTextFile()` utility in `utils.js` determines if a file can be viewed in t
 
 `FileRow.vue` uses this to conditionally show a "View" button on uploaded files in download mode. The View button is also hidden for one-shot (`isOneShot` prop) and streaming (`isStream` prop) uploads.
 
+### Charset-Aware Text Decoding
+
+`viewFile()` in `DownloadView.vue` intentionally avoids `Response.text()` when fetching text file content. The Fetch API's `resp.text()` always decodes the body as **UTF-8** regardless of the server-advertised encoding, which garbles files encoded as UTF-16, ISO-8859-1, Windows-1252, etc.
+
+Instead, `viewFile()` uses a charset-aware decode pipeline:
+
+```js
+const encoding = charsetFromContentType(resp.headers.get('Content-Type'))
+const buf = await resp.arrayBuffer()
+const text = new TextDecoder(encoding).decode(buf)
+```
+
+The `charsetFromContentType(contentType)` helper in `utils.js` extracts the `charset=` parameter from a `Content-Type` header value (e.g. `'text/plain; charset=utf-16be'` → `'utf-16be'`), defaulting to `'utf-8'` when absent. This is stored as a standalone export so it can be unit-tested independently.
+
+> **Gotcha**: `TextDecoder` also handles UTF-16 BOM detection automatically when the encoding is `utf-16` (without BE/LE suffix). When the server provides an explicit `charset=utf-16be` or `charset=utf-16le`, the BOM is still consumed and the decoder uses the explicit byte order.
+
 ### Markdown File Preview
 
 When viewing or editing a Markdown file (`.md` or `.markdown` extension), **Code / Preview** tabs appear. All three usages share the `MarkdownTabs.vue` component:

@@ -265,6 +265,20 @@ export function buildEditPayload(form, ttlUnit) {
 export const MAX_VIEWABLE_SIZE = 5 * 1024 * 1024
 
 /**
+ * Extract the charset from a Content-Type header value.
+ * Returns the charset string or 'utf-8' as the default.
+ *
+ * Examples:
+ *   charsetFromContentType('text/plain; charset=utf-16be') → 'utf-16be'
+ *   charsetFromContentType('text/plain')                  → 'utf-8'
+ *   charsetFromContentType('')                            → 'utf-8'
+ */
+export function charsetFromContentType(contentType) {
+    const m = (contentType || '').match(/charset=([^\s;]+)/i)
+    return m ? m[1] : 'utf-8'
+}
+
+/**
  * Determine if a file object is a viewable text file.
  * The server walks the MIME type hierarchy to check if any ancestor is text/*,
  * which covers text-like application/* types (json, perl, php, etc.).

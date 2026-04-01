@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { getUpload, removeUpload, removeFile as apiRemoveFile, uploadFile, getFileURL } from '../api.js'
-import { generateRef, isMarkdownFile, isImageFile, isVideoFile, isAudioFile, isViewableFile } from '../utils.js'
+import { generateRef, isMarkdownFile, isImageFile, isVideoFile, isAudioFile, isViewableFile, charsetFromContentType } from '../utils.js'
 import { fetchAndDecrypt } from '../crypto.js'
 import { getToken, setToken } from '../tokenStore.js'
 import { config } from '../config.js'
@@ -134,7 +134,11 @@ async function viewFile(file) {
       const text = await resp.text().catch(() => '')
       throw new Error(text || `Failed to load file (HTTP ${resp.status})`)
     }
-    const text = await resp.text()
+    // Decode using the charset from the Content-Type header (e.g. "text/plain; charset=utf-16be").
+    // resp.text() always assumes UTF-8, which garbles non-UTF-8 files.
+    const encoding = charsetFromContentType(resp.headers.get('Content-Type'))
+    const buf = await resp.arrayBuffer()
+    const text = new TextDecoder(encoding).decode(buf)
     viewingContent.value = text
   } catch (err) {
     viewingError.value = err.message || $t('downloadView.failedToLoadUpload')
