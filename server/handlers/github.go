@@ -100,10 +100,13 @@ func GitHubLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Reque
 		Endpoint:     endpoint,
 	}
 
+	verifier := oauth2.GenerateVerifier()
+
 	/* Generate state */
 	claims := jwt.MapClaims{
-		"redirectURL": redirectURL,
-		"expire":      time.Now().Add(time.Minute * 5).Unix(),
+		"redirectURL":  redirectURL,
+		"expire":       time.Now().Add(time.Minute * 5).Unix(),
+		"pkceVerifier": verifier,
 	}
 	state := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
@@ -115,7 +118,7 @@ func GitHubLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Reque
 	}
 
 	// Redirect user to GitHub's consent page
-	url := conf.AuthCodeURL(b64state)
+	url := conf.AuthCodeURL(b64state, oauth2.S256ChallengeOption(verifier))
 
 	_, _ = resp.Write([]byte(url))
 }
@@ -178,6 +181,7 @@ func GitHubCallback(ctx *context.Context, resp http.ResponseWriter, req *http.Re
 	}
 
 	redirectURL := state.Claims.(jwt.MapClaims)["redirectURL"].(string)
+	pkceVerifier, _ := state.Claims.(jwt.MapClaims)["pkceVerifier"].(string)
 
 	parsedRedirectURL, err := url.Parse(redirectURL)
 	if err != nil || !strings.HasSuffix(parsedRedirectURL.Path, "/auth/github/callback") {
@@ -204,7 +208,11 @@ func GitHubCallback(ctx *context.Context, resp http.ResponseWriter, req *http.Re
 		Endpoint:     endpoint,
 	}
 
-	token, err := conf.Exchange(req.Context(), code)
+	var exchangeOpts []oauth2.AuthCodeOption
+	if pkceVerifier != "" {
+		exchangeOpts = append(exchangeOpts, oauth2.VerifierOption(pkceVerifier))
+	}
+	token, err := conf.Exchange(req.Context(), code, exchangeOpts...)
 	if err != nil {
 		ctx.InternalServerError("unable to exchange GitHub authorization code", err)
 		return

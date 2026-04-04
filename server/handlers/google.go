@@ -68,10 +68,13 @@ func GoogleLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Reque
 		Endpoint: google.Endpoint,
 	}
 
+	verifier := oauth2.GenerateVerifier()
+
 	/* Generate state */
 	claims := jwt.MapClaims{
-		"redirectURL": redirectURL,
-		"expire":      time.Now().Add(time.Minute * 5).Unix(),
+		"redirectURL":  redirectURL,
+		"expire":       time.Now().Add(time.Minute * 5).Unix(),
+		"pkceVerifier": verifier,
 	}
 	state := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
@@ -84,7 +87,7 @@ func GoogleLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Reque
 
 	// Redirect user to Google's consent page to ask for permission
 	// for the scopes specified above.
-	url := conf.AuthCodeURL(b64state)
+	url := conf.AuthCodeURL(b64state, oauth2.S256ChallengeOption(verifier))
 
 	_, _ = resp.Write([]byte(url))
 }
@@ -147,6 +150,7 @@ func GoogleCallback(ctx *context.Context, resp http.ResponseWriter, req *http.Re
 	}
 
 	redirectURL := state.Claims.(jwt.MapClaims)["redirectURL"].(string)
+	pkceVerifier, _ := state.Claims.(jwt.MapClaims)["pkceVerifier"].(string)
 
 	parsedRedirectURL, err := url.Parse(redirectURL)
 	if err != nil || !strings.HasSuffix(parsedRedirectURL.Path, "/auth/google/callback") {
@@ -170,7 +174,11 @@ func GoogleCallback(ctx *context.Context, resp http.ResponseWriter, req *http.Re
 		conf.Endpoint = customEndpoint.(oauth2.Endpoint)
 	}
 
-	token, err := conf.Exchange(req.Context(), code)
+	var exchangeOpts []oauth2.AuthCodeOption
+	if pkceVerifier != "" {
+		exchangeOpts = append(exchangeOpts, oauth2.VerifierOption(pkceVerifier))
+	}
+	token, err := conf.Exchange(req.Context(), code, exchangeOpts...)
 	if err != nil {
 		ctx.InternalServerError("unable to get user info from Google API (1)", err)
 		return

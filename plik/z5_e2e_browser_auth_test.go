@@ -9,7 +9,9 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 
 	"github.com/root-gg/plik/server/common"
@@ -360,6 +362,108 @@ func TestOIDCLoginRedirectURL(t *testing.T) {
 	decodedURL, err := url.QueryUnescape(authURL)
 	require.NoError(t, err)
 	require.Contains(t, decodedURL, fmt.Sprintf("127.0.0.1:%d", ps.GetConfig().ListenPort))
+
+	// Verify PKCE S256 parameters are present
+	parsedAuthURL, err := url.Parse(authURL)
+	require.NoError(t, err)
+	require.Equal(t, "S256", parsedAuthURL.Query().Get("code_challenge_method"), "expected PKCE S256 in auth URL")
+	require.NotEmpty(t, parsedAuthURL.Query().Get("code_challenge"), "expected non-empty code_challenge in auth URL")
+}
+
+// TestOIDCLoginBrowserPKCEEnforced verifies that Keycloak's pkce.code.challenge.method=S256
+// setting actually enforces PKCE. It does this by:
+//  1. Getting a real authorization code from Keycloak (which saw a real code_challenge)
+//  2. Calling Plik's callback with a forged state JWT that has no pkceVerifier
+//  3. Plik sends no code_verifier to Keycloak → Keycloak rejects the exchange
+//
+// This test would fail if the Keycloak client were NOT configured to enforce PKCE.
+func TestOIDCLoginBrowserPKCEEnforced(t *testing.T) {
+	ps, _ := newPlikServerAndClient()
+	defer shutdown(ps)
+
+	ps.GetConfig().FeatureAuthentication = common.FeatureForced
+	_ = ps.GetConfig().Initialize()
+
+	if !oidcAvailable(ps.GetConfig()) {
+		t.Skip("OIDC provider not available, skipping OIDC test")
+	}
+
+	err := start(ps)
+	require.NoError(t, err, "unable to start Plik server")
+
+	baseURL := ps.GetConfig().GetServerURL().String()
+	jar := newInsecureCookieJar()
+
+	noRedirectClient := &http.Client{
+		Jar: jar,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	// Step 1: Get the authorization URL from Plik (Keycloak sees a real code_challenge)
+	loginReq, err := http.NewRequest("GET", baseURL+"/auth/oidc/login", nil)
+	require.NoError(t, err)
+	loginReq.Header.Set("Referer", baseURL+"/")
+	loginResp, err := noRedirectClient.Do(loginReq)
+	require.NoError(t, err)
+	defer loginResp.Body.Close()
+	require.Equal(t, http.StatusOK, loginResp.StatusCode)
+
+	authURLBytes, err := io.ReadAll(loginResp.Body)
+	require.NoError(t, err)
+	authURL := string(authURLBytes)
+
+	// Step 2: Follow Keycloak redirects to get the login page
+	followClient := &http.Client{Jar: jar}
+	kcResp, err := followClient.Get(authURL)
+	require.NoError(t, err)
+	defer kcResp.Body.Close()
+	require.Equal(t, http.StatusOK, kcResp.StatusCode)
+
+	loginPageBody, err := io.ReadAll(kcResp.Body)
+	require.NoError(t, err)
+	formActionURL := extractFormAction(string(loginPageBody))
+	require.NotEmpty(t, formActionURL, "unable to find Keycloak login form action")
+
+	// Step 3: Submit credentials — Keycloak returns a redirect to Plik callback with real code
+	formData := url.Values{"username": {"testuser"}, "password": {"password"}}
+	submitResp, err := noRedirectClient.PostForm(formActionURL, formData)
+	require.NoError(t, err)
+	defer submitResp.Body.Close()
+	require.True(t, submitResp.StatusCode == http.StatusFound || submitResp.StatusCode == http.StatusSeeOther,
+		"expected redirect from Keycloak after login, got %d", submitResp.StatusCode)
+
+	realCallbackURL := submitResp.Header.Get("Location")
+	require.Contains(t, realCallbackURL, "/auth/oidc/callback")
+
+	// Step 4: Extract the real authorization code from the callback URL
+	parsedCallback, err := url.Parse(realCallbackURL)
+	require.NoError(t, err)
+	realCode := parsedCallback.Query().Get("code")
+	require.NotEmpty(t, realCode, "expected real authorization code from Keycloak")
+
+	// Step 5: Build a callback URL using the real code but a forged state JWT (no pkceVerifier)
+	// Plik will send no code_verifier to Keycloak → Keycloak must reject the exchange
+	forgedStateToken := jwt.New(jwt.SigningMethodHS256)
+	forgedStateToken.Claims.(jwt.MapClaims)["redirectURL"] = baseURL + "/auth/oidc/callback"
+	forgedStateToken.Claims.(jwt.MapClaims)["expire"] = time.Now().Add(5 * time.Minute).Unix()
+	// deliberately omit "pkceVerifier" so Plik sends no code_verifier to Keycloak
+	forgedState, err := forgedStateToken.SignedString([]byte(ps.GetConfig().OIDCClientSecret))
+	require.NoError(t, err)
+
+	tamperedCallback := fmt.Sprintf("%s/auth/oidc/callback?code=%s&state=%s",
+		baseURL, url.QueryEscape(realCode), url.QueryEscape(forgedState))
+
+	callbackResp, err := noRedirectClient.Get(tamperedCallback)
+	require.NoError(t, err)
+	defer callbackResp.Body.Close()
+
+	// Keycloak rejects the exchange → Plik must NOT return a 302 redirect with session cookies
+	require.NotEqual(t, http.StatusFound, callbackResp.StatusCode,
+		"callback must not succeed when PKCE is enforced but no verifier is sent to Keycloak")
+	sessionCookie := getCookie(callbackResp, common.SessionCookieName)
+	require.Nil(t, sessionCookie, "must not get a session cookie when Keycloak rejects the PKCE exchange")
 }
 
 // extractFormAction parses HTML to find the action attribute of the login form

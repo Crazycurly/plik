@@ -318,9 +318,12 @@ func OIDCLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Request
 		},
 	}
 
+	verifier := oauth2.GenerateVerifier()
+
 	claims := jwt.MapClaims{
-		"redirectURL": redirectURL,
-		"expire":      time.Now().Add(time.Minute * 5).Unix(),
+		"redirectURL":  redirectURL,
+		"expire":       time.Now().Add(time.Minute * 5).Unix(),
+		"pkceVerifier": verifier,
 	}
 	state := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
@@ -330,7 +333,7 @@ func OIDCLogin(ctx *context.Context, resp http.ResponseWriter, req *http.Request
 		return
 	}
 
-	url := conf.AuthCodeURL(b64state)
+	url := conf.AuthCodeURL(b64state, oauth2.S256ChallengeOption(verifier))
 
 	_, _ = resp.Write([]byte(url))
 }
@@ -396,6 +399,7 @@ func OIDCCallback(ctx *context.Context, resp http.ResponseWriter, req *http.Requ
 	}
 
 	redirectURL := state.Claims.(jwt.MapClaims)["redirectURL"].(string)
+	pkceVerifier, _ := state.Claims.(jwt.MapClaims)["pkceVerifier"].(string)
 
 	parsedRedirectURL, err := url.Parse(redirectURL)
 	if err != nil || !strings.HasSuffix(parsedRedirectURL.Path, "/auth/oidc/callback") {
@@ -430,7 +434,11 @@ func OIDCCallback(ctx *context.Context, resp http.ResponseWriter, req *http.Requ
 		userinfoEndpoint = customUserinfo.(string)
 	}
 
-	token, err := conf.Exchange(req.Context(), code)
+	var exchangeOpts []oauth2.AuthCodeOption
+	if pkceVerifier != "" {
+		exchangeOpts = append(exchangeOpts, oauth2.VerifierOption(pkceVerifier))
+	}
+	token, err := conf.Exchange(req.Context(), code, exchangeOpts...)
 	if err != nil {
 		ctx.InternalServerError("unable to exchange OIDC authorization code", err)
 		return

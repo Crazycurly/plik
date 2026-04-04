@@ -65,6 +65,13 @@ func TestGitHubLogin(t *testing.T) {
 	require.NoError(t, err, "invalid oauth2 state")
 
 	require.Equal(t, origin+"/auth/github/callback", state.Claims.(jwt.MapClaims)["redirectURL"].(string), "invalid state origin")
+
+	// PKCE: code_challenge and method must be present in the auth URL
+	require.NotEmpty(t, URL.Query().Get("code_challenge"), "code_challenge must be present in auth URL")
+	require.Equal(t, "S256", URL.Query().Get("code_challenge_method"), "code_challenge_method must be S256")
+
+	// PKCE: verifier must be embedded in the state JWT
+	require.NotEmpty(t, state.Claims.(jwt.MapClaims)["pkceVerifier"], "pkceVerifier must be present in state JWT")
 }
 
 func TestGitHubLoginWithOrgScope(t *testing.T) {

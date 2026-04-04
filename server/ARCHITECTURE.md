@@ -228,10 +228,10 @@ Each handler file contains one or more `http.Handler` functions.
 | `remove_upload.go` | `RemoveUpload` | Soft-delete upload |
 | `misc.go` | `GetConfiguration`, `GetVersion`, `GetQrCode`, `Health` | Utility endpoints |
 | `local.go` | `LocalLogin`, `Logout` | Local auth |
-| `google.go` | `GoogleLogin`, `GoogleCallback` | Google OAuth |
+| `google.go` | `GoogleLogin`, `GoogleCallback` | Google OAuth with PKCE S256 (RFC 7636) |
 | `ovh.go` | `OvhLogin`, `OvhCallback` | OVH OAuth |
-| `oidc.go` | `OIDCLogin`, `OIDCCallback` | OpenID Connect |
-| `github.go` | `GitHubLogin`, `GitHubCallback` | GitHub OAuth (optional org restriction) |
+| `oidc.go` | `OIDCLogin`, `OIDCCallback` | OpenID Connect with PKCE S256 (RFC 7636) |
+| `github.go` | `GitHubLogin`, `GitHubCallback` | GitHub OAuth with PKCE S256 (RFC 7636); optional org restriction |
 | `cli_auth.go` | `CLIAuthInit`, `CLIAuthApprove`, `CLIAuthPoll` | CLI device auth flow |
 | `me.go` | `UserInfo`, `PatchMe`, `DeleteAccount`, `GetUserStatistics`, `GetUserUploads`, `RemoveUserUploads` | Current user; token filter param accepts both prefixed and legacy UUID formats (no DB lookup, works for revoked tokens) |
 | `token.go` | `GetUserTokens`, `CreateToken`, `RevokeToken` | Token management |

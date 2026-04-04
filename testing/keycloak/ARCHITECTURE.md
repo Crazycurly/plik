@@ -71,3 +71,4 @@ Keycloak is included in `make test-backends`, which runs all backend tests inclu
 - The realm configuration is fully automated via REST API on startup
 - FeatureLocalLogin is set to "disabled", so only OIDC login is available
 - Domain validation is disabled by default (OIDCValidDomains is commented out)
+- The Keycloak client is configured with **`pkce.code.challenge.method: S256`** enforcement. This means Keycloak will reject any token exchange that does not include a valid `code_verifier`, making `TestOIDCLoginBrowser` a live validation of Plik's PKCE implementation.

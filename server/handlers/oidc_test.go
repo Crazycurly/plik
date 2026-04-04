@@ -82,8 +82,10 @@ func marshalOIDCClaimsForTest(claims oidcClaims) []byte {
 }
 
 type oidcMockOptions struct {
-	userinfo oidcClaims
-	idToken  *oidcClaims
+	userinfo            oidcClaims
+	idToken             *oidcClaims
+	gotCodeVerifier     *string // if non-nil, receives the code_verifier sent during token exchange
+	requireCodeVerifier bool    // if true, returns 400 when code_verifier is absent (simulates PKCE enforcement)
 }
 
 func oidcMockHandler(opts oidcMockOptions) http.HandlerFunc {
@@ -93,6 +95,19 @@ func oidcMockHandler(opts oidcMockOptions) http.HandlerFunc {
 		case "/.well-known/openid-configuration":
 			responseBody, _ = json.Marshal(oidcTestDiscovery)
 		case "/token":
+			_ = req.ParseForm()
+			// Capture code_verifier if the caller wants to inspect it
+			if opts.gotCodeVerifier != nil {
+				*opts.gotCodeVerifier = req.FormValue("code_verifier")
+			}
+			// Enforce PKCE: reject exchanges that omit code_verifier
+			if opts.requireCodeVerifier {
+				if req.FormValue("code_verifier") == "" {
+					resp.WriteHeader(http.StatusBadRequest)
+					resp.Write([]byte(`{"error":"invalid_grant","error_description":"PKCE code verifier required"}`))
+					return
+				}
+			}
 			tokenResp := map[string]any{
 				"access_token":  "access_token",
 				"token_type":    "Bearer",
@@ -127,6 +142,7 @@ func oidcTestState(t *testing.T, secret string) string {
 	state := jwt.New(jwt.SigningMethodHS256)
 	state.Claims.(jwt.MapClaims)["redirectURL"] = "https://plik.root.gg/auth/oidc/callback"
 	state.Claims.(jwt.MapClaims)["expire"] = time.Now().Add(5 * time.Minute).Unix()
+	state.Claims.(jwt.MapClaims)["pkceVerifier"] = "test-pkce-verifier"
 	b64state, err := state.SignedString([]byte(secret))
 	require.NoError(t, err, "unable to sign state")
 	return b64state
@@ -169,6 +185,10 @@ func TestOIDCLogin(t *testing.T) {
 	URL, err := url.Parse(string(respBody))
 	require.NoError(t, err, "unable to parse OIDC auth url")
 
+	// Verify PKCE challenge parameters are present in the authorization URL
+	require.Equal(t, "S256", URL.Query().Get("code_challenge_method"), "expected PKCE S256 method in auth URL")
+	require.NotEmpty(t, URL.Query().Get("code_challenge"), "expected non-empty code_challenge in auth URL")
+
 	state, err := jwt.Parse(URL.Query().Get("state"), func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			t.Fatalf("Unexpected signing method: %v", token.Header["alg"])
@@ -191,6 +211,11 @@ func TestOIDCLogin(t *testing.T) {
 	require.NoError(t, err, "invalid oauth2 state")
 
 	require.Equal(t, origin+"/auth/oidc/callback", state.Claims.(jwt.MapClaims)["redirectURL"].(string), "invalid state origin")
+
+	// Verify pkceVerifier is embedded in the state JWT
+	verifier, ok := state.Claims.(jwt.MapClaims)["pkceVerifier"].(string)
+	require.True(t, ok, "pkceVerifier claim missing from state JWT")
+	require.NotEmpty(t, verifier, "pkceVerifier must not be empty")
 }
 
 func TestOIDCLoginAuthDisabled(t *testing.T) {
@@ -393,6 +418,70 @@ func TestOIDCCallback(t *testing.T) {
 
 	require.NotEqual(t, "", sessionCookie, "missing plik session cookie")
 	require.NotEqual(t, "", xsrfCookie, "missing plik xsrf cookie")
+}
+
+func TestOIDCCallbackPKCEVerifier(t *testing.T) {
+	ResetOIDCDiscoveryCache()
+	ctx := newTestingContext(common.NewConfiguration())
+	setupOIDCConfig(ctx.GetConfig())
+
+	oidcUser := oidcClaims{
+		Sub:   "pkce-user",
+		Email: "pkce@root.gg",
+		Name:  "PKCE User",
+	}
+
+	// Capture the code_verifier that OIDCCallback sends to the token endpoint
+	var gotVerifier string
+	_, shutdown, err := common.StartAPIMockServerCustomPort(common.APIMockServerDefaultPort, oidcMockHandler(oidcMockOptions{
+		userinfo:        oidcUser,
+		gotCodeVerifier: &gotVerifier,
+	}))
+	defer shutdown()
+	require.NoError(t, err, "unable to start mock server")
+
+	// The state JWT helper now always embeds pkceVerifier = "test-pkce-verifier"
+	req := oidcCallbackRequest(t, oidcTestState(t, ctx.GetConfig().OIDCClientSecret))
+
+	rr := ctx.NewRecorder(req)
+	OIDCCallback(ctx, rr, req)
+
+	require.Equal(t, 302, rr.Code, "handler returned wrong status code")
+
+	// The verifier embedded in the state JWT must be forwarded to the token endpoint
+	require.Equal(t, "test-pkce-verifier", gotVerifier, "code_verifier not forwarded to token endpoint")
+}
+
+// TestOIDCCallbackPKCEEnforced verifies that when the token endpoint enforces PKCE
+// (e.g. Keycloak with pkce.code.challenge.method=S256) and the state holds no verifier,
+// the callback returns an error. This test would fail if OIDCLogin stopped sending
+// code_challenge / if OIDCCallback stopped forwarding code_verifier.
+func TestOIDCCallbackPKCEEnforced(t *testing.T) {
+	ResetOIDCDiscoveryCache()
+	ctx := newTestingContext(common.NewConfiguration())
+	setupOIDCConfig(ctx.GetConfig())
+
+	// Token endpoint enforces PKCE: rejects exchanges that omit code_verifier
+	_, shutdown, err := common.StartAPIMockServerCustomPort(common.APIMockServerDefaultPort, oidcMockHandler(oidcMockOptions{
+		requireCodeVerifier: true,
+	}))
+	defer shutdown()
+	require.NoError(t, err, "unable to start mock server")
+
+	// State without pkceVerifier → callback sends no code_verifier → token server rejects it
+	state := jwt.New(jwt.SigningMethodHS256)
+	state.Claims.(jwt.MapClaims)["redirectURL"] = "https://plik.root.gg/auth/oidc/callback"
+	state.Claims.(jwt.MapClaims)["expire"] = time.Now().Add(5 * time.Minute).Unix()
+	// deliberately omit "pkceVerifier"
+	b64state, err := state.SignedString([]byte(ctx.GetConfig().OIDCClientSecret))
+	require.NoError(t, err)
+
+	req := oidcCallbackRequest(t, b64state)
+	rr := ctx.NewRecorder(req)
+	OIDCCallback(ctx, rr, req)
+
+	// The enforcing token server returns 400 → Plik must surface an error, not redirect
+	require.NotEqual(t, 302, rr.Code, "callback must not succeed when PKCE is enforced but verifier is absent")
 }
 
 func TestOIDCCallbackCreateUser(t *testing.T) {

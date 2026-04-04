@@ -81,7 +81,7 @@ function configure_keycloak {
             "displayName": "Plik"
         }' || echo "Realm may already exist"
 
-    # Create client
+    # Create client with PKCE S256 enforcement
     echo "Creating client 'plik'..."
     curl -s -X POST "http://localhost:$DOCKER_PORT/admin/realms/plik/clients" \
         -H "Authorization: Bearer $TOKEN" \
@@ -95,7 +95,10 @@ function configure_keycloak {
             "webOrigins": ["http://localhost:8080"],
             "protocol": "openid-connect",
             "standardFlowEnabled": true,
-            "directAccessGrantsEnabled": false
+            "directAccessGrantsEnabled": false,
+            "attributes": {
+                "pkce.code.challenge.method": "S256"
+            }
         }' || echo "Client may already exist"
 
     # Create test user
