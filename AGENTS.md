@@ -125,6 +125,7 @@ make vuln                   # govulncheck (report only)
 - **Archive compression**: Enabled by default (`EnableArchiveCompression = true`). Can be disabled to `zip.Store` (no compression) on public instances to prevent CPU exhaustion DoS.
 - **Default admin provisioning**: `DefaultAdminLogin` / `DefaultAdminPassword` config options (+ `PLIKD_DEFAULT_ADMIN_LOGIN` / `PLIKD_DEFAULT_ADMIN_PASSWORD` env vars) create a local admin user on first startup via `ensureDefaultAdmin()`. Idempotent — skipped if the user already exists. Intended for bootstrap only; remove from config once a real admin account exists.
 - **Transport security (`AssumeHTTPS`)**: Enables HSTS and the `Secure` cookie flag. Auto-enabled when `SslEnabled = true` or `PlikDomain` starts with `https://`. The legacy `EnhancedWebSecurity` flag is deprecated — it still works but logs a warning and maps to `AssumeHTTPS`. Download security headers (`X-Content-Type-Options`, `X-Frame-Options`, CSP) are always set unconditionally regardless of config.
+- **OAuth PKCE (all providers)**: All OAuth2 flows (OIDC, Google, GitHub) use **PKCE S256 (RFC 7636)** — always-on, no config required. The `code_verifier` is generated in the Login handler, embedded in the signed JWT state, and extracted in the Callback handler to pass to `conf.Exchange`. This keeps the server stateless and satisfies providers that enforce PKCE (e.g. Keycloak with `pkce.code.challenge.method=S256`, Kanidm).
 
 ## Best Practices
 

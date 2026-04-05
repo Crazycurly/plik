@@ -44,6 +44,8 @@ This is idempotent — if the user already exists it is left untouched. In Kuber
 2. Get your Client ID and Client Secret
 3. Whitelist the redirect URL: `https://yourdomain/auth/google/callback`
 
+Plik sends **PKCE S256** automatically — no extra configuration needed.
+
 ```toml
 GoogleApiClientID = "your-client-id"
 GoogleApiSecret = "your-client-secret"
@@ -54,6 +56,8 @@ GoogleValidDomains = ["company.com"]  # Optional: restrict to email domains
 
 1. Create an OAuth App in [GitHub Developer Settings](https://github.com/settings/developers)
 2. Set the callback URL to `https://yourdomain/auth/github/callback`
+
+Plik sends **PKCE S256** automatically — no extra configuration needed.
 
 ```toml
 GitHubApiClientID = "your-client-id"
@@ -74,7 +78,9 @@ OvhApiEndpoint = "https://eu.api.ovh.com/1.0"  # Optional, defaults to EU
 
 ## OpenID Connect (OIDC)
 
-Works with any OIDC provider (Keycloak, Authentik, Dex, etc.).
+Works with any OIDC provider (Keycloak, Authentik, Dex, Kanidm, etc.).
+
+Plik uses **PKCE (Proof Key for Code Exchange, S256)** automatically for every OIDC login — no extra configuration required. This is required by providers that enforce PKCE (e.g. Kanidm) and is harmlessly ignored by providers that do not.
 
 1. Create a client application in your OIDC provider
 2. Set redirect URI to `https://yourdomain/auth/oidc/callback`
