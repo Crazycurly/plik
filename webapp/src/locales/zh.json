@@ -79,6 +79,7 @@
         "extendTTL": "访问时延长 TTL",
         "extendTTLHelp": "每次访问文件时重置过期计时器",
         "expiration": "过期时间",
+        "expirationHelp": "上传内容在被自动删除前的可用时长",
         "neverExpires": "永不过期",
         "neverExpiresHelp": "上传将永远不会被自动删除",
         "minutes": "分钟",

@@ -79,6 +79,7 @@
         "extendTTL": "Prolonger la durée à chaque accès",
         "extendTTLHelp": "Réinitialiser le délai d'expiration chaque fois qu'un fichier est consulté",
         "expiration": "Expiration",
+        "expirationHelp": "Durée pendant laquelle l'envoi sera disponible avant d'être automatiquement supprimé",
         "neverExpires": "N'expire jamais",
         "neverExpiresHelp": "L'envoi ne sera jamais supprimé automatiquement",
         "minutes": "minutes",

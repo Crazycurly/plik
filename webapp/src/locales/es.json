@@ -79,6 +79,7 @@
         "extendTTL": "Extender TTL con acceso",
         "extendTTLHelp": "Reiniciar el temporizador de expiración cada vez que se accede a un archivo",
         "expiration": "Expiración",
+        "expirationHelp": "Cuánto tiempo estará disponible el envío antes de ser eliminado automáticamente",
         "neverExpires": "No expira nunca",
         "neverExpiresHelp": "La subida nunca se eliminará automáticamente",
         "minutes": "minutos",

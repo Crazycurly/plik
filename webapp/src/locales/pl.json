@@ -79,6 +79,7 @@
         "extendTTL": "Wydłuż TTL przy dostępie",
         "extendTTLHelp": "Resetuj timer wygaśnięcia za każdym razem, gdy plik jest otwierany",
         "expiration": "Wygaśnięcie",
+        "expirationHelp": "Jak długo upload będzie dostępny przed automatycznym usunięciem",
         "neverExpires": "Nigdy nie wygasa",
         "neverExpiresHelp": "Wysyłka nigdy nie zostanie automatycznie usunięta",
         "minutes": "minuty",
