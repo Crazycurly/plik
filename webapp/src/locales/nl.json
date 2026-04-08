@@ -106,7 +106,10 @@
         "addFiles": "Bestanden toevoegen",
         "deleteUpload": "Upload verwijderen",
         "shareFailed": "Delen mislukt",
-        "shareTitle": "Plik-upload"
+        "shareTitle": "Plik-upload",
+        "credentials": "Inloggegevens",
+        "login": "Gebruikersnaam",
+        "password": "Wachtwoord"
     },
     "fileRow": {
         "uploaded": "Geüpload",
@@ -145,6 +148,7 @@
         "creatingUpload": "Upload aanmaken...",
         "commentRequired": "Een opmerking is vereist",
         "e2eePassphraseEmpty": "E2EE is ingeschakeld maar de passphrase is leeg",
+        "passwordCredentialsIncomplete": "Wachtwoordbeveiliging is ingeschakeld — gebruikersnaam en wachtwoord zijn verplicht",
         "failedToCreateUpload": "Kon upload niet aanmaken",
         "textUpload": "Tekst-upload",
         "filename": "Bestandsnaam",

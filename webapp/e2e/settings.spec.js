@@ -55,6 +55,131 @@ test.describe('Upload settings', () => {
         await expect(page.getByText('🔒 Password')).toBeVisible({ timeout: 5_000 })
     })
 
+    test('password toggle reveals login and password input fields', async ({ page }) => {
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Login/password inputs should not be visible before enabling the toggle
+        await expect(page.getByPlaceholder('Login')).not.toBeVisible()
+        await expect(page.getByPlaceholder('Password')).not.toBeVisible()
+
+        // Enable the password toggle
+        const toggle = page.getByText('Password').first().locator('xpath=..').locator('.toggle-switch')
+        await toggle.click()
+
+        // Both input fields should now be visible
+        await expect(page.getByPlaceholder('Login')).toBeVisible()
+        await expect(page.getByPlaceholder('Password')).toBeVisible()
+
+        // Disabling the toggle should hide them again
+        await toggle.click()
+        await expect(page.getByPlaceholder('Login')).not.toBeVisible()
+        await expect(page.getByPlaceholder('Password')).not.toBeVisible()
+    })
+
+    test('upload is blocked when password enabled but credentials are incomplete', async ({ page }) => {
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Add a file
+        const input = page.locator('input[type="file"]')
+        await input.setInputFiles({
+            name: 'incomplete.txt',
+            mimeType: 'text/plain',
+            buffer: Buffer.from('incomplete credentials'),
+        })
+
+        // Enable password toggle but leave login empty (only fill password)
+        const toggle = page.getByText('Password').first().locator('xpath=..').locator('.toggle-switch')
+        await toggle.click()
+        await page.getByPlaceholder('Login').fill('')
+        await page.getByPlaceholder('Password').fill('somepass')
+
+        // Try to upload — should be blocked
+        await page.getByRole('button', { name: 'Upload', exact: true }).click()
+
+        // Should stay on upload page (no URL change with ?id=)
+        await page.waitForTimeout(500)
+        expect(page.url()).not.toMatch(/[?&]id=/)
+
+        // Error message should be shown
+        await expect(page.getByText(/login and password are required/i)).toBeVisible({ timeout: 3_000 })
+    })
+
+    test('password-protected upload shows credentials in share card for the uploader', async ({ page }) => {
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Add a file
+        const input = page.locator('input[type="file"]')
+        await input.setInputFiles({
+            name: 'cred-test.txt',
+            mimeType: 'text/plain',
+            buffer: Buffer.from('credentials test'),
+        })
+
+        // Enable password and fill credentials
+        const toggle = page.getByText('Password').first().locator('xpath=..').locator('.toggle-switch')
+        await toggle.click()
+        await page.getByPlaceholder('Login').fill('shareuser')
+        await page.getByPlaceholder('Password').fill('sharepass')
+
+        // Upload → navigate to download view
+        await page.getByRole('button', { name: 'Upload', exact: true }).click()
+        await page.waitForURL(/[?&]id=/, { timeout: 10_000 })
+        await page.waitForLoadState('networkidle')
+
+        // Credentials section should appear in the share card
+        // exact:true avoids matching the server error text "please provide valid credentials..."
+        await expect(page.getByText('Credentials', { exact: true })).toBeVisible({ timeout: 5_000 })
+
+        // Login row: the label span and the value span should both be visible
+        const credSection = page.locator('.sidebar-section').filter({ hasText: 'Credentials' })
+        const loginLabel = credSection.locator('span').filter({ hasText: 'Login' }).first()
+        await expect(loginLabel).toBeVisible()
+        await expect(credSection.locator('span.font-mono').filter({ hasText: 'shareuser' })).toBeVisible()
+
+        // Password row
+        const passwordLabel = credSection.locator('span').filter({ hasText: 'Password' }).first()
+        await expect(passwordLabel).toBeVisible()
+        await expect(credSection.locator('span.font-mono').filter({ hasText: 'sharepass' })).toBeVisible()
+    })
+
+    test('credentials are not shown to a fresh visitor opening the share link', async ({ page, context }) => {
+        await page.goto('/')
+        await page.waitForLoadState('networkidle')
+
+        // Upload with password
+        const input = page.locator('input[type="file"]')
+        await input.setInputFiles({
+            name: 'visitor-test.txt',
+            mimeType: 'text/plain',
+            buffer: Buffer.from('visitor should not see creds'),
+        })
+
+        const toggle = page.getByText('Password').first().locator('xpath=..').locator('.toggle-switch')
+        await toggle.click()
+        await page.getByPlaceholder('Login').fill('hiddenlogin')
+        await page.getByPlaceholder('Password').fill('hiddenpass')
+
+        await page.getByRole('button', { name: 'Upload', exact: true }).click()
+        await page.waitForURL(/[?&]id=/, { timeout: 10_000 })
+
+        // Grab the current URL (the share link)
+        const shareUrl = page.url()
+
+        // Open the share URL in a fresh page (simulating another user)
+        const freshPage = await context.newPage()
+        await freshPage.goto(shareUrl)
+        await freshPage.waitForLoadState('networkidle')
+        await freshPage.waitForTimeout(1_000)
+
+        // The fresh visitor should NOT see a Credentials section
+        // exact:true avoids matching the server error text "please provide valid credentials..."
+        await expect(freshPage.getByText('Credentials', { exact: true })).not.toBeVisible()
+        await freshPage.close()
+    })
+
     test('password-protected upload returns 401 without credentials', async ({ page, context }) => {
         await page.goto('/')
         await page.waitForLoadState('networkidle')

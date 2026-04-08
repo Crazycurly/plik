@@ -106,7 +106,10 @@
         "addFiles": "添加文件",
         "deleteUpload": "删除上传",
         "shareFailed": "分享失败",
-        "shareTitle": "Plik 上传"
+        "shareTitle": "Plik 上传",
+        "credentials": "凭据",
+        "login": "用户名",
+        "password": "密码"
     },
     "fileRow": {
         "uploaded": "已上传",
@@ -145,6 +148,7 @@
         "creatingUpload": "正在创建上传...",
         "commentRequired": "备注为必填项",
         "e2eePassphraseEmpty": "E2EE 已启用但密码短语为空",
+        "passwordCredentialsIncomplete": "密码保护已启用 — 登录名和密码均为必填项",
         "failedToCreateUpload": "创建上传失败",
         "textUpload": "文本上传",
         "filename": "文件名",

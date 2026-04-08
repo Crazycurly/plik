@@ -106,7 +106,10 @@
         "addFiles": "Aggiungi file",
         "deleteUpload": "Elimina caricamento",
         "shareFailed": "Condivisione fallita",
-        "shareTitle": "Caricamento Plik"
+        "shareTitle": "Caricamento Plik",
+        "credentials": "Credenziali",
+        "login": "Utente",
+        "password": "Password"
     },
     "fileRow": {
         "uploaded": "Caricato",
@@ -145,6 +148,7 @@
         "creatingUpload": "Creazione caricamento...",
         "commentRequired": "È richiesto un commento",
         "e2eePassphraseEmpty": "La crittografia E2EE è attiva ma la passphrase è vuota",
+        "passwordCredentialsIncomplete": "La protezione con password è attiva — utente e password sono obbligatori",
         "failedToCreateUpload": "Impossibile creare il caricamento",
         "textUpload": "Caricamento testo",
         "filename": "Nome file",

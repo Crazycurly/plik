@@ -106,7 +106,10 @@
         "addFiles": "Dodaj pliki",
         "deleteUpload": "Usuń wysyłkę",
         "shareFailed": "Udostępnianie nie powiodło się",
-        "shareTitle": "Przesyłanie Plik"
+        "shareTitle": "Przesyłanie Plik",
+        "credentials": "Dane logowania",
+        "login": "Login",
+        "password": "Hasło"
     },
     "fileRow": {
         "uploaded": "Wysłano",
@@ -145,6 +148,7 @@
         "creatingUpload": "Tworzenie wysyłki...",
         "commentRequired": "Komentarz jest wymagany",
         "e2eePassphraseEmpty": "Szyfrowanie E2EE jest włączone, ale passphrase jest puste",
+        "passwordCredentialsIncomplete": "Ochrona hasłem jest włączona — login i hasło są wymagane",
         "failedToCreateUpload": "Nie udało się utworzyć wysyłki",
         "textUpload": "Wysyłka tekstu",
         "filename": "Nazwa pliku",

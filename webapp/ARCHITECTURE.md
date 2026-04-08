@@ -304,7 +304,7 @@ The URL prefix changes based on whether the upload uses streaming:
 
 1. `buildUploadParams()` pre-populates files (with `reference` fields) so the server assigns IDs upfront
 2. `createUpload(params)` → server returns upload with `id`, `uploadToken`, and pre-created file entries (with IDs)
-3. `setPendingFiles(id, files, basicAuth)` stashes files in the in-memory `pendingUploadStore` — file IDs are matched via `reference` (not array index)
+3. `setPendingFiles(id, files, basicAuth, passphrase, login, password)` stashes files in the in-memory `pendingUploadStore` — file IDs are matched via `reference` (not array index)
 4. `setToken(id, token)`, then `router.push({ path: '/', query: { id } })` — **navigates immediately**
 5. DownloadView mounts, calls `consumePendingFiles(id)` to retrieve the stashed files
 6. Auto-starts `uploadPendingFiles()` — uploads files concurrently (max 5 at a time) with a worker pool
@@ -318,8 +318,10 @@ The URL prefix changes based on whether the upload uses streaming:
 ### Pending Upload Store (`pendingUploadStore.js`)
 
 In-memory store (same pattern as `tokenStore.js`) to pass files from UploadView → DownloadView across navigation:
-- `setPendingFiles(uploadId, files, basicAuth, passphrase)` — stash after `createUpload()` (includes E2EE passphrase if enabled)
+- `setPendingFiles(uploadId, files, basicAuth, passphrase, login, password)` — stash after `createUpload()` (includes E2EE passphrase and raw basic auth credentials if enabled)
 - `consumePendingFiles(uploadId)` — retrieve and clear (one-shot)
+
+> **Credential display**: When basic auth is enabled, the raw `login`/`password` values are carried through the pending store and displayed in DownloadSidebar's share card. These are **transient** — the server strips credentials from API responses (`upload.Sanitize()`), so they only exist in the uploader's browser tab right after upload. Refreshing the page loses them (by design).
 
 ### Staged upload flow (DownloadView)
 
@@ -538,7 +540,7 @@ App.vue
 │   │   ├── ErrorBanner    — inline dismissible error banner
 │   │   └── CodeEditor     — text paste mode with syntax highlighting
 │   └── DownloadView.vue   — file list, admin actions
-│       ├── DownloadSidebar — upload info (E2EE badge), share (passphrase + toggle), admin URL, actions
+│       ├── DownloadSidebar — upload info (E2EE badge), share (credentials + passphrase + toggle), admin URL, actions
 │       ├── FileRow         — file link (preview), caret (details), download/QR/copy/view/remove
 │       ├── ErrorState      — full-page error state (not found, network error)
 │       ├── ErrorBanner     — inline dismissible error banner

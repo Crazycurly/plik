@@ -106,7 +106,10 @@
         "addFiles": "Добавить файлы",
         "deleteUpload": "Удалить загрузку",
         "shareFailed": "Не удалось поделиться",
-        "shareTitle": "Загрузка Plik"
+        "shareTitle": "Загрузка Plik",
+        "credentials": "Учётные данные",
+        "login": "Логин",
+        "password": "Пароль"
     },
     "fileRow": {
         "uploaded": "Загружено",
@@ -145,6 +148,7 @@
         "creatingUpload": "Создание загрузки...",
         "commentRequired": "Комментарий обязателен",
         "e2eePassphraseEmpty": "E2EE включено, но парольная фраза пуста",
+        "passwordCredentialsIncomplete": "Защита паролем включена — логин и пароль обязательны",
         "failedToCreateUpload": "Не удалось создать загрузку",
         "textUpload": "Текстовая загрузка",
         "filename": "Имя файла",

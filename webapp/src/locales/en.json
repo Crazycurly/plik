@@ -106,7 +106,10 @@
         "addFiles": "Add Files",
         "deleteUpload": "Delete Upload",
         "shareFailed": "Share failed",
-        "shareTitle": "Share"
+        "shareTitle": "Share",
+        "credentials": "Credentials",
+        "login": "Login",
+        "password": "Password"
     },
     "fileRow": {
         "uploaded": "Uploaded",
@@ -145,6 +148,7 @@
         "creatingUpload": "Creating upload...",
         "commentRequired": "A comment is required",
         "e2eePassphraseEmpty": "E2EE is enabled but the passphrase is empty",
+        "passwordCredentialsIncomplete": "Password is enabled — both login and password are required",
         "failedToCreateUpload": "Failed to create upload",
         "textUpload": "Text Upload",
         "filename": "Filename",

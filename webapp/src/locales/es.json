@@ -106,7 +106,10 @@
         "addFiles": "Añadir archivos",
         "deleteUpload": "Eliminar subida",
         "shareFailed": "Error al compartir",
-        "shareTitle": "Carga Plik"
+        "shareTitle": "Carga Plik",
+        "credentials": "Credenciales",
+        "login": "Usuario",
+        "password": "Contraseña"
     },
     "fileRow": {
         "uploaded": "Subido",
@@ -145,6 +148,7 @@
         "creatingUpload": "Creando subida...",
         "commentRequired": "Se requiere un comentario",
         "e2eePassphraseEmpty": "El cifrado E2EE está activado pero la passphrase está vacía",
+        "passwordCredentialsIncomplete": "La contraseña está activada — se requieren usuario y contraseña",
         "failedToCreateUpload": "No se pudo crear la subida",
         "textUpload": "Subida de texto",
         "filename": "Nombre de archivo",

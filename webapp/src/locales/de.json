@@ -106,7 +106,10 @@
         "addFiles": "Dateien hinzufügen",
         "deleteUpload": "Upload löschen",
         "shareFailed": "Teilen fehlgeschlagen",
-        "shareTitle": "Plik-Upload"
+        "shareTitle": "Plik-Upload",
+        "credentials": "Zugangsdaten",
+        "login": "Benutzername",
+        "password": "Passwort"
     },
     "fileRow": {
         "uploaded": "Hochgeladen",
@@ -145,6 +148,7 @@
         "creatingUpload": "Upload wird erstellt...",
         "commentRequired": "Ein Kommentar ist erforderlich",
         "e2eePassphraseEmpty": "E2EE ist aktiviert, aber die Passphrase ist leer",
+        "passwordCredentialsIncomplete": "Passwortschutz ist aktiv – Benutzername und Passwort sind erforderlich",
         "failedToCreateUpload": "Upload konnte nicht erstellt werden",
         "textUpload": "Text-Upload",
         "filename": "Dateiname",

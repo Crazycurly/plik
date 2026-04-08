@@ -106,7 +106,10 @@
         "addFiles": "Adicionar arquivos",
         "deleteUpload": "Excluir envio",
         "shareFailed": "Falha ao compartilhar",
-        "shareTitle": "Upload Plik"
+        "shareTitle": "Upload Plik",
+        "credentials": "Credenciais",
+        "login": "Utilizador",
+        "password": "Senha"
     },
     "fileRow": {
         "uploaded": "Enviado",
@@ -145,6 +148,7 @@
         "creatingUpload": "Criando envio...",
         "commentRequired": "Um comentário é obrigatório",
         "e2eePassphraseEmpty": "A criptografia E2EE está ativada, mas a passphrase está vazia",
+        "passwordCredentialsIncomplete": "A proteção por senha está ativada — utilizador e senha são obrigatórios",
         "failedToCreateUpload": "Não foi possível criar o envio",
         "textUpload": "Envio de texto",
         "filename": "Nome do arquivo",
