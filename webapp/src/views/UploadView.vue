@@ -285,6 +285,10 @@ async function doUpload() {
     uploadError.value = $t('uploadView.e2eePassphraseEmpty')
     return
   }
+  if (settings.passwordEnabled && (!settings.login.trim() || !settings.password.trim())) {
+    uploadError.value = $t('uploadView.passwordCredentialsIncomplete')
+    return
+  }
 
   isUploading.value = true
   uploadError.value = null
@@ -293,10 +297,11 @@ async function doUpload() {
     const params = buildUploadParams()
     const upload = await createUpload(params)
 
-    // Prepare basic auth if password was set
-    const basicAuth = (settings.passwordEnabled && settings.login && settings.password)
-      ? encodeBasicAuth(settings.login, settings.password)
-      : null
+    // Prepare basic auth if password was set (both fields required — validated above)
+    const hasCredentials = settings.passwordEnabled && settings.login && settings.password
+    const basicAuth = hasCredentials ? encodeBasicAuth(settings.login, settings.password) : null
+    const rawLogin = hasCredentials ? settings.login : null
+    const rawPassword = hasCredentials ? settings.password : null
 
     // Stash files for DownloadView to pick up and upload
     // If E2EE is enabled, encrypt files before stashing
@@ -318,7 +323,7 @@ async function doUpload() {
     }
 
     const passphrase = settings.e2eeEnabled ? settings.e2eePassphrase : null
-    setPendingFiles(upload.id, pendingFiles, basicAuth, passphrase)
+    setPendingFiles(upload.id, pendingFiles, basicAuth, passphrase, rawLogin, rawPassword)
 
     // Navigate to download view — passphrase is carried via pendingUploadStore
     setToken(upload.id, upload.uploadToken)

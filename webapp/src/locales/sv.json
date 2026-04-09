@@ -106,7 +106,10 @@
         "addFiles": "Lägg till filer",
         "deleteUpload": "Radera uppladdning",
         "shareFailed": "Delning misslyckades",
-        "shareTitle": "Dela"
+        "shareTitle": "Dela",
+        "credentials": "Inloggningsuppgifter",
+        "login": "Användarnamn",
+        "password": "Lösenord"
     },
     "fileRow": {
         "uploaded": "Uppladdad",
@@ -145,6 +148,7 @@
         "creatingUpload": "Skapar uppladdning…",
         "commentRequired": "En kommentar krävs",
         "e2eePassphraseEmpty": "E2EE är aktiverat men lösenfrasen är tom",
+        "passwordCredentialsIncomplete": "Lösenordsskydd är aktiverat — både användarnamn och lösenord krävs",
         "failedToCreateUpload": "Kunde inte skapa uppladdning",
         "textUpload": "Textuppladdning",
         "filename": "Filnamn",

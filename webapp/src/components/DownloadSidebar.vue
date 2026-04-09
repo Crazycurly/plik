@@ -10,6 +10,8 @@ const passphrase = defineModel('passphrase', { type: String, default: null })
 
 const props = defineProps({
   upload: { type: Object, required: true },
+  login: { type: String, default: null },
+  password: { type: String, default: null },
 })
 
 const emit = defineEmits(['delete-upload', 'add-files', 'show-qr', 'edit-passphrase', 'error'])
@@ -106,6 +108,23 @@ const canAddFiles = computed(() => props.upload.admin && !props.upload.stream)
     <!-- Share -->
     <div class="sidebar-section">
       <h3 class="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">{{ $t('downloadSidebar.share') }}</h3>
+
+      <!-- Basic auth credentials display (transient — only for the uploader) -->
+      <div v-if="login || password" class="mb-3">
+        <label class="text-xs text-surface-500 mb-1 block">{{ $t('downloadSidebar.credentials') }}</label>
+        <div class="space-y-1.5">
+          <div v-if="login" class="flex items-center gap-2 p-2 rounded bg-surface-800/50 border border-surface-700 min-w-0 overflow-hidden">
+            <span class="text-xs text-surface-400 shrink-0">{{ $t('downloadSidebar.login') }}</span>
+            <span class="text-xs text-yellow-400 font-mono truncate flex-1">{{ login }}</span>
+            <CopyButton :text="login" size="sm" />
+          </div>
+          <div v-if="password" class="flex items-center gap-2 p-2 rounded bg-surface-800/50 border border-surface-700 min-w-0 overflow-hidden">
+            <span class="text-xs text-surface-400 shrink-0">{{ $t('downloadSidebar.password') }}</span>
+            <span class="text-xs text-yellow-400 font-mono truncate flex-1">{{ password }}</span>
+            <CopyButton :text="password" size="sm" />
+          </div>
+        </div>
+      </div>
 
       <!-- Passphrase display (E2EE only) -->
       <div v-if="upload.e2ee" class="mb-3">

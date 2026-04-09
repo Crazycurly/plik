@@ -106,7 +106,10 @@
         "addFiles": "फ़ाइलें जोड़ें",
         "deleteUpload": "अपलोड मिटाएँ",
         "shareFailed": "साझा करना विफल",
-        "shareTitle": "साझा करें"
+        "shareTitle": "साझा करें",
+        "credentials": "प्रमाण-पत्र",
+        "login": "लॉगिन",
+        "password": "पासवर्ड"
     },
     "fileRow": {
         "uploaded": "अपलोड हो गया",
@@ -145,6 +148,7 @@
         "creatingUpload": "अपलोड बनाया जा रहा है…",
         "commentRequired": "टिप्पणी आवश्यक है",
         "e2eePassphraseEmpty": "E2EE सक्षम है लेकिन कूटवाक्य खाली है",
+        "passwordCredentialsIncomplete": "पासवर्ड सक्षम है — लॉगिन और पासवर्ड दोनों आवश्यक हैं",
         "failedToCreateUpload": "अपलोड बनाने में विफल",
         "textUpload": "पाठ अपलोड",
         "filename": "फ़ाइल नाम",

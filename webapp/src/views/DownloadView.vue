@@ -54,6 +54,10 @@ let pendingBasicAuth = null
 // Track whether uploads were cancelled
 let uploadsCancelled = false
 
+// Basic auth credentials (transient — only available right after upload via pending store)
+const basicAuthLogin = ref(null)
+const basicAuthPassword = ref(null)
+
 // E2EE passphrase (extracted from URL fragment or pending store, or prompted)
 const e2eePassphrase = ref(null)
 const showPassphraseModal = ref(false)
@@ -663,6 +667,9 @@ onMounted(async () => {
     if (pending.passphrase && !e2eePassphrase.value) {
       e2eePassphrase.value = pending.passphrase
     }
+    // Carry basic auth credentials for display in share card
+    if (pending.login) basicAuthLogin.value = pending.login
+    if (pending.password) basicAuthPassword.value = pending.password
     // Auto-start uploading
     uploadPendingFiles()
   }
@@ -739,6 +746,8 @@ watch(activeFiles, (files) => {
         v-if="upload"
         :upload="{ ...upload, admin: isAdmin }"
         v-model:passphrase="e2eePassphrase"
+        :login="basicAuthLogin"
+        :password="basicAuthPassword"
         @edit-passphrase="openPassphraseModal"
         @delete-upload="deleteUpload"
         @add-files="triggerAddFiles"

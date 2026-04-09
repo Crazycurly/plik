@@ -16,6 +16,8 @@ describe('pendingUploadStore', () => {
         expect(result.files).toEqual(files)
         expect(result.basicAuth).toBe(basicAuth)
         expect(result.passphrase).toBeNull()
+        expect(result.login).toBeNull()
+        expect(result.password).toBeNull()
     })
 
     it('consumes once — second call returns null', () => {
@@ -49,5 +51,13 @@ describe('pendingUploadStore', () => {
         const result = consumePendingFiles('upload4')
         expect(result.files[0].fileName).toBe('new.txt')
         expect(result.basicAuth).toBe('auth2')
+    })
+
+    it('stores login and password when provided', () => {
+        setPendingFiles('upload5', [], null, null, 'myuser', 's3cret')
+
+        const result = consumePendingFiles('upload5')
+        expect(result.login).toBe('myuser')
+        expect(result.password).toBe('s3cret')
     })
 })
