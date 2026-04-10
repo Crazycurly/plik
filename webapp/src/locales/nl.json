@@ -79,6 +79,7 @@
         "extendTTL": "TTL verlengen bij toegang",
         "extendTTLHelp": "De vervaltimer resetten telkens wanneer een bestand wordt geopend",
         "expiration": "Vervaldatum",
+        "expirationHelp": "Hoe lang de upload beschikbaar is voordat deze automatisch wordt verwijderd",
         "neverExpires": "Verloopt nooit",
         "neverExpiresHelp": "De upload wordt nooit automatisch verwijderd",
         "minutes": "minuten",

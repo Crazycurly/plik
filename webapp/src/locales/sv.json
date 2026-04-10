@@ -79,6 +79,7 @@
         "extendTTL": "Förläng TTL vid åtkomst",
         "extendTTLHelp": "Återställ utgångstimern varje gång en fil öppnas",
         "expiration": "Utgångstid",
+        "expirationHelp": "Hur länge uppladdningen är tillgänglig innan den raderas automatiskt",
         "neverExpires": "Går aldrig ut",
         "neverExpiresHelp": "Uppladdningen kommer aldrig att raderas automatiskt",
         "minutes": "minuter",

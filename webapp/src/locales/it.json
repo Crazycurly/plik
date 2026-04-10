@@ -79,6 +79,7 @@
         "extendTTL": "Estendi TTL con accesso",
         "extendTTLHelp": "Reimposta il timer di scadenza ogni volta che si accede a un file",
         "expiration": "Scadenza",
+        "expirationHelp": "Per quanto tempo l'upload sarà disponibile prima di essere eliminato automaticamente",
         "neverExpires": "Non scade mai",
         "neverExpiresHelp": "Il caricamento non verrà mai eliminato automaticamente",
         "minutes": "minuti",

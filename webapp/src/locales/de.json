@@ -79,6 +79,7 @@
         "extendTTL": "TTL bei Zugriff verlängern",
         "extendTTLHelp": "Den Ablauftimer bei jedem Dateizugriff zurücksetzen",
         "expiration": "Ablauf",
+        "expirationHelp": "Wie lange der Upload verfügbar ist, bevor er automatisch gelöscht wird",
         "neverExpires": "Läuft nie ab",
         "neverExpiresHelp": "Der Upload wird nie automatisch gelöscht",
         "minutes": "Minuten",
