@@ -18,6 +18,7 @@ charts/plik/
     ├── _helpers.tpl            ← Template helpers (plik.fullname, plik.secretName, etc.)
     ├── configmap.yaml          ← Renders plikd.cfg from non-sensitive plikd.* values
     ├── secret.yaml             ← Renders Kubernetes Secret from secrets.* values
+    ├── serviceaccount.yaml     ← Optional ServiceAccount (when serviceAccount.create is true)
     ├── deployment.yaml         ← Deployment or StatefulSet (controlled by .Values.kind)
     ├── service.yaml            ← ClusterIP service on port 8080
     ├── ingress.yaml            ← Optional Ingress resource

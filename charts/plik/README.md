@@ -180,6 +180,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions around config vs. se
 | service.port | int | `8080` | Service port |
 | service.type | string | `"ClusterIP"` | Kubernetes Service type |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
+| serviceAccount.automount | bool | `false` | Automatically mount the service account token |
 | serviceAccount.create | bool | `false` | Specifies whether a service account should be created |
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set and create is true, a name is generated using the fullname template |
 | tolerations | list | `[]` | Tolerations for pod scheduling |
