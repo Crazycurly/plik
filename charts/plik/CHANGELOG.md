@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Add missing `serviceaccount.yaml` template — `serviceAccount.create: true` now correctly creates a ServiceAccount resource
+
+### Added
+- New `serviceAccount.automount` value to control `automountServiceAccountToken` on the ServiceAccount (default: `false`)
+
 ## [1.4.2]
 
 ### Added
