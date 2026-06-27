@@ -8,6 +8,10 @@ services:
         VERSION: "0.0.0-dev"
     image: plik:local
     container_name: plik
+    environment:
+      # Public URL of the webapp — used for share/admin links, OAuth redirects and CORS.
+      # Set this in a local, untracked .env file: PLIKD_PLIK_DOMAIN=https://your.domain
+      PLIKD_PLIK_DOMAIN: "${PLIKD_PLIK_DOMAIN:-}"
     volumes:
       - ./plikd.cfg:/home/plik/server/plikd.cfg
       - ./data:/data

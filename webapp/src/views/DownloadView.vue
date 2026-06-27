@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { getUpload, removeUpload, removeFile as apiRemoveFile, uploadFile, getFileURL } from '../api.js'
+import { getUpload, removeUpload, removeFile as apiRemoveFile, uploadFile, getFileURL, shareOrigin } from '../api.js'
 import { generateRef, isMarkdownFile, isImageFile, isVideoFile, isAudioFile, isViewableFile, charsetFromContentType } from '../utils.js'
 import { fetchAndDecrypt } from '../crypto.js'
 import { getToken, setToken } from '../tokenStore.js'
@@ -210,7 +210,7 @@ const shareAtTimeUrl = computed(() => {
   const query = { id: props.id, file: viewingFile.value.id }
   if (t > 0) query.t = String(t)
   const resolved = router.resolve({ query })
-  return window.location.origin + resolved.href
+  return shareOrigin() + resolved.href
 })
 
 // Viewer navigation — prev/next through viewable files
@@ -577,7 +577,9 @@ function fileLinks() {
 // QR code helpers
 function openQrUpload() {
   qrTitle.value = $t('downloadView.uploadLink')
-  qrUrl.value = window.location.href
+  // Honor the configured public domain (PlikDomain) for the shareable QR link,
+  // keeping the current path/hash/query. Identical to window.location.href when unset.
+  qrUrl.value = shareOrigin() + window.location.href.slice(window.location.origin.length)
   showQr.value = true
 }
 

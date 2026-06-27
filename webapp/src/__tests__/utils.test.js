@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import {
     humanReadableSize,
     humanDuration,
@@ -28,6 +28,7 @@ import {
     MAX_VIEWABLE_SIZE,
     getUploadUrl,
 } from '../utils.js'
+import { setPlikDomain } from '../api.js'
 
 // ── humanReadableSize ──
 
@@ -671,9 +672,29 @@ describe('isViewableFile', () => {
 // ── getUploadUrl ──
 
 describe('getUploadUrl', () => {
+    afterEach(() => setPlikDomain(''))
+
     it('builds hash-based URL', () => {
         const url = getUploadUrl({ id: 'abc123' })
         expect(url).toContain('#/?id=abc123')
+    })
+
+    it('uses the connection origin when no public domain is configured', () => {
+        const url = getUploadUrl({ id: 'abc123' })
+        expect(url.startsWith(window.location.origin)).toBe(true)
+    })
+
+    it('uses the configured public domain when set', () => {
+        setPlikDomain('https://share.example.com')
+        const url = getUploadUrl({ id: 'abc123' })
+        expect(url).toBe(`https://share.example.com${window.location.pathname}#/?id=abc123`)
+    })
+
+    it('strips a trailing slash from the configured domain (no double slash)', () => {
+        setPlikDomain('https://share.example.com/')
+        const url = getUploadUrl({ id: 'abc123' })
+        expect(url).not.toContain('.com//')
+        expect(url).toBe(`https://share.example.com${window.location.pathname}#/?id=abc123`)
     })
 })
 

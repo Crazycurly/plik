@@ -347,6 +347,19 @@ function downloadBase() {
     return _downloadURL || base
 }
 
+// Configured public webapp domain (PlikDomain) for copyable share/admin links.
+let _plikDomain = ''
+
+export function setPlikDomain(domain) {
+    _plikDomain = (domain || '').replace(/\/$/, '')
+}
+
+// Origin used for copyable webapp/share links: the configured public domain
+// when set, otherwise the URL the browser actually connected to.
+export function shareOrigin() {
+    return _plikDomain || window.location.origin
+}
+
 export function getFileURL(uploadId, fileId, fileName, stream = false) {
     const mode = stream ? 'stream' : 'file'
     return `${downloadBase()}/${mode}/${uploadId}/${fileId}/${encodeURIComponent(fileName)}`
@@ -357,7 +370,7 @@ export function getArchiveURL(uploadId, fileName = 'archive.zip') {
 }
 
 export function getAdminURL(uploadId, uploadToken) {
-    const url = `${window.location.origin}${window.location.pathname}#/?id=${uploadId}`
+    const url = `${shareOrigin()}${window.location.pathname}#/?id=${uploadId}`
     return uploadToken ? `${url}&uploadToken=${uploadToken}` : url
 }
 

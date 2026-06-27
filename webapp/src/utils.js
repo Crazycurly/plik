@@ -1,5 +1,7 @@
 // Utility functions
 
+import { shareOrigin } from './api.js'
+
 /**
  * Format bytes into human-readable size string
  */
@@ -101,7 +103,7 @@ export const TTL_UNITS = [
  * Build the hash-based URL for an upload
  */
 export function getUploadUrl(upload) {
-    return `${window.location.origin}${window.location.pathname}#/?id=${upload.id}`
+    return `${shareOrigin()}${window.location.pathname}#/?id=${upload.id}`
 }
 
 /**

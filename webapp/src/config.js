@@ -2,7 +2,7 @@
 // Fetches server configuration once and provides reactive state
 
 import { reactive, ref } from 'vue'
-import { getConfig, getVersion, setDownloadURL } from './api.js'
+import { getConfig, getVersion, setDownloadURL, setPlikDomain } from './api.js'
 
 export const config = reactive({
     loaded: false,
@@ -33,6 +33,9 @@ export const config = reactive({
     feature_text: 'default',
     feature_e2ee: 'enabled',
 
+    // Public webapp domain (used for copyable share links)
+    plikDomain: '',
+
     // Download domain / URL
     downloadDomain: '',
     downloadURL: '',
@@ -56,6 +59,8 @@ export async function loadConfig() {
         config.loaded = true
         // Prefer downloadURL (domain+path) if present; fall back to downloadDomain for old servers
         setDownloadURL(config.downloadURL || config.downloadDomain || '')
+        // Public webapp domain for share/admin links (falls back to window.location when empty)
+        setPlikDomain(config.plikDomain || '')
     } catch (err) {
         config.error = err.message || 'Failed to load configuration'
         console.error('Failed to load config:', err)

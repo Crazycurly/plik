@@ -18,6 +18,11 @@ coverage.out
 # Runtime / generated config
 plikd_*.cfg
 
+# Local compose runtime (keep private config out of git)
+/.env
+/plikd.cfg
+/data/
+
 # TLS certificates
 *.key
 *.crt

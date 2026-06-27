@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatDate } from '../utils.js'
+import { formatDate, getUploadUrl } from '../utils.js'
 import { getArchiveURL, getAdminURL } from '../api.js'
 import CopyButton from './CopyButton.vue'
 import UploadBadges from './UploadBadges.vue'
@@ -42,7 +42,7 @@ const adminUrl = computed(() => {
 // Share URL (download page without upload token)
 const includePassphrase = ref(false)
 const shareUrl = computed(() => {
-  let url = `${window.location.origin}${window.location.pathname}#/?id=${props.upload.id}`
+  let url = getUploadUrl(props.upload)
   if (includePassphrase.value && passphrase.value) {
     url += `&key=${encodeURIComponent(passphrase.value)}`
   }
