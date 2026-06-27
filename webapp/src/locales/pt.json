@@ -418,7 +418,8 @@
         "pt": "Português",
         "ru": "Русский",
         "sv": "Svenska",
-        "zh": "中文"
+        "zh": "中文",
+        "zh_TW": "繁體中文"
     },
     "footer": {
         "abuseContact": "Para denunciar abuso, contacte {link}"

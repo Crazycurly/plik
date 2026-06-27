@@ -24,6 +24,7 @@ Plik supports multiple languages in the web interface, with automatic detection 
 | `ru` | Русский |
 | `sv` | Svenska |
 | `zh` | 中文 |
+| `zh_TW` | 繁體中文 |
 
 ## Configuration
 

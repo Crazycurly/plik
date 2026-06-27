@@ -35,6 +35,7 @@ export const BUILTIN_LANGUAGES = [
     { name: 'ru', label: 'Русский', flag: 'flags/ru.svg' },
     { name: 'sv', label: 'Svenska', flag: 'flags/sv.svg' },
     { name: 'zh', label: '中文', flag: 'flags/zh.svg' },
+    { name: 'zh_TW', label: '繁體中文', flag: 'flags/zh_TW.svg' },
 ]
 
 const STORAGE_KEY = 'plik-theme'
@@ -282,12 +283,24 @@ export function getAvailableLanguages() {
  * Returns the best matching supported locale, or 'en' as fallback.
  */
 export function resolveAutoLanguage() {
-    const lang = navigator.language?.split('-')[0]
+    const full = navigator.language || ''
+    const lang = full.split('-')[0]
     const available = getAvailableLanguages()
+    const has = (name) => available.some(l => l.name === name)
+
+    // Chinese: route Traditional (Hant / TW / HK / MO) to zh_TW, else Simplified zh.
+    // navigator.language uses BCP-47 hyphens (e.g. 'zh-TW', 'zh-Hant-TW').
+    if (lang === 'zh') {
+        const tag = full.toLowerCase()
+        const isTraditional = tag.includes('hant') || /-(tw|hk|mo)\b/.test(tag)
+        if (isTraditional && has('zh_TW')) return 'zh_TW'
+        if (has('zh')) return 'zh'
+    }
+
     // Only match against concrete languages (not 'auto')
-    if (lang && available.some(l => l.name === lang)) return lang
+    if (lang && has(lang)) return lang
     // Fallback: prefer 'en', then first non-auto language
-    if (available.some(l => l.name === 'en')) return 'en'
+    if (has('en')) return 'en'
     const first = available.find(l => l.name !== 'auto')
     return first ? first.name : 'en'
 }

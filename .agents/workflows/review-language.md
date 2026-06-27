@@ -56,6 +56,29 @@ The critical rule is not "keep English words" — it's **preserve semantic disti
 | streaming | download/upload | Distinct mode; can be translated if the meaning is clear |
 | admin | user | Role distinction; can use native word (zh→"管理员") |
 
+#### Traditional Chinese (zh_TW) — Taiwan vs mainland vocabulary
+
+`zh_TW` is a full Taiwan-Mandarin localization, not a character conversion of `zh`. Beyond Simplified→Traditional characters, verify Taiwan computing terms are used (not just mainland words written in Traditional). Common false friends — the **left** is mainland (`zh`), the **right** is the expected Taiwan term (`zh_TW`):
+
+| Concept | mainland (`zh`) | Taiwan (`zh_TW`) |
+|---------|-----------------|------------------|
+| file | 文件 | 檔案 (note: 文件 means *document* in Taiwan) |
+| software | 软件 | 軟體 |
+| network | 网络 | 網路 |
+| default | 默认 | 預設 |
+| login | 登录 | 登入 |
+| server | 服务器 | 伺服器 |
+| link | 链接 | 連結 |
+| settings | 设置 | 設定 |
+| data | 数据 | 資料 |
+| program / code | 程序 | 程式 / 程式碼 |
+| user | 用户 | 使用者 |
+| save | 保存 | 儲存 |
+| create | 创建 | 建立 |
+| client (software) | 客户端 | 用戶端 |
+
+For `zh_TW`, passphrase=密語 vs password=密碼 keeps the critical distinction.
+
 Check passphrase/password distinction (the most common mistake):
 ```bash
 cd webapp/src/locales && python3 -c "
@@ -117,6 +140,7 @@ Check language-specific punctuation conventions:
 | Hindi (hi) | Space before `:` (matches Hindi typography convention); Devanagari purna viram `।` can replace period but not required in short UI strings |
 | Spanish (es) | Opening `¡` and `¿` for exclamations/questions (optional in short UI strings) |
 | Chinese (zh) | No spaces before punctuation; uses full-width punctuation marks（：、？、！） |
+| Chinese Traditional (zh_TW) | Same as zh — no spaces before punctuation; full-width marks（：、？、！）; quote names with「」 |
 | Others | Standard punctuation |
 
 ### 5. Plural forms
@@ -131,7 +155,7 @@ Verify pipe-separated plurals match the language's plural rules:
 | pl | 3 | `one \| few \| many` |
 | ru | 3 | `one \| few \| many` |
 | ar | 6 | `zero \| one \| two \| few \| many \| other` |
-| ja, zh, ko | 1 | No plural form needed |
+| ja, zh, zh_TW, ko | 1 | No plural form needed |
 
 ```bash
 # Count pipe-separated forms per locale

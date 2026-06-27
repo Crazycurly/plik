@@ -11,13 +11,14 @@ import pt from './locales/pt.json'
 import ru from './locales/ru.json'
 import sv from './locales/sv.json'
 import zh from './locales/zh.json'
+import zh_TW from './locales/zh_TW.json'
 
 const i18n = createI18n({
     legacy: false,          // use Composition API
     globalInjection: true,  // ensure $t is available in all templates
     locale: 'en',           // default; overridden by loadSettings() before mount
     fallbackLocale: 'en',
-    messages: { de, en, es, fr, hi, it, nl, pl, pt, ru, sv, zh },
+    messages: { de, en, es, fr, hi, it, nl, pl, pt, ru, sv, zh, zh_TW },
 })
 
 /**
@@ -26,7 +27,8 @@ const i18n = createI18n({
  */
 export function setLocale(lang) {
     i18n.global.locale.value = lang
-    document.documentElement.lang = lang
+    // Normalize to a valid BCP-47 tag for the HTML lang attribute (e.g. 'zh_TW' → 'zh-TW').
+    document.documentElement.lang = lang.replace('_', '-')
 }
 
 /**
