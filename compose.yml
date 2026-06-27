@@ -1,0 +1,16 @@
+services:
+  plik:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: plik-image
+      args:
+        VERSION: "0.0.0-dev"
+    image: plik:local
+    container_name: plik
+    volumes:
+      - ./plikd.cfg:/home/plik/server/plikd.cfg
+      - ./data:/data
+    ports:
+      - 9393:8080
+    restart: "unless-stopped"
